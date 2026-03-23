@@ -3,19 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0a0f2c" />
+  <meta name="theme-color" content="#050a1a" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#050a1a" />
+  <meta name="color-scheme" content="dark" />
+
+  <!-- Universal PWA — works on macOS, iOS, iPadOS, Android, Windows -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Brainance" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="Brainance" />
   <meta name="description" content="AI-powered daily intelligence and money tracking app" />
+
+  <!-- Open Graph — for link previews -->
+  <meta property="og:title" content="Brainance — Daily Intelligence Engine" />
+  <meta property="og:description" content="AI-powered daily intelligence and money tracking app" />
+  <meta property="og:type" content="website" />
   <title>Brainance</title>
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json" />
 
-  <!-- Apple Touch Icons -->
+  <!-- Icons — all platforms -->
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
 
   <!-- Stylesheets -->
   <link rel="stylesheet" href="styles.css" />
@@ -28,10 +40,111 @@
   <!-- ──────────────── APP SHELL ──────────────── -->
   <div id="app">
 
+    <!-- Particle canvas background -->
+    <canvas id="particle-canvas"></canvas>
+    <!-- Extra ambient orbs -->
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN 0 — AUTH (Login / Sign Up)
+    ════════════════════════════════════════════ -->
+    <div class="screen active" id="screen-auth">
+      <div class="auth-wrap">
+
+        <!-- Logo -->
+        <div class="auth-logo">
+          <span class="auth-logo-icon">⚡</span>
+          <h1 class="auth-brand">Brainance</h1>
+          <p class="auth-tagline">Your Daily Intelligence Engine</p>
+        </div>
+
+        <!-- Tab Toggle -->
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
+          <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- Login Form -->
+        <div class="auth-form active" id="form-login">
+          <div class="auth-field-wrap">
+            <label class="auth-label">Email</label>
+            <div class="auth-input-row">
+              <span class="auth-input-icon">✉️</span>
+              <input type="email" class="auth-input" id="login-email" placeholder="you@example.com" autocomplete="email" />
+            </div>
+          </div>
+          <div class="auth-field-wrap">
+            <label class="auth-label">Password</label>
+            <div class="auth-input-row">
+              <span class="auth-input-icon">🔒</span>
+              <input type="password" class="auth-input" id="login-password" placeholder="Enter password" autocomplete="current-password" />
+              <button class="auth-eye-btn" onclick="togglePassword('login-password', this)" tabindex="-1">👁</button>
+            </div>
+          </div>
+          <button class="auth-forgot" onclick="showAuthMessage('Reset link sent to your email!')">Forgot password?</button>
+          <button class="btn-primary auth-submit-btn" onclick="handleLogin()">
+            <span>Log In</span><span class="auth-btn-arrow">→</span>
+          </button>
+          <div class="auth-or"><span>or continue with</span></div>
+          <button class="auth-social-btn" onclick="handleSocialAuth('Google')">
+            <span>🌐</span> Continue with Google
+          </button>
+          <button class="auth-social-btn" onclick="handleSocialAuth('Apple')">
+            <span>🍎</span> Continue with Apple
+          </button>
+        </div>
+
+        <!-- Sign Up Form -->
+        <div class="auth-form" id="form-signup">
+          <div class="auth-field-wrap">
+            <label class="auth-label">Full Name</label>
+            <div class="auth-input-row">
+              <span class="auth-input-icon">👤</span>
+              <input type="text" class="auth-input" id="signup-name" placeholder="Your name" autocomplete="name" />
+            </div>
+          </div>
+          <div class="auth-field-wrap">
+            <label class="auth-label">Email</label>
+            <div class="auth-input-row">
+              <span class="auth-input-icon">✉️</span>
+              <input type="email" class="auth-input" id="signup-email" placeholder="you@example.com" autocomplete="email" />
+            </div>
+          </div>
+          <div class="auth-field-wrap">
+            <label class="auth-label">Password</label>
+            <div class="auth-input-row">
+              <span class="auth-input-icon">🔒</span>
+              <input type="password" class="auth-input" id="signup-password" placeholder="Min 8 characters" autocomplete="new-password" />
+              <button class="auth-eye-btn" onclick="togglePassword('signup-password', this)" tabindex="-1">👁</button>
+            </div>
+          </div>
+          <p class="auth-terms">By signing up you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a></p>
+          <button class="btn-primary auth-submit-btn" onclick="handleSignup()">
+            <span>Create Account</span><span class="auth-btn-arrow">→</span>
+          </button>
+          <div class="auth-or"><span>or continue with</span></div>
+          <button class="auth-social-btn" onclick="handleSocialAuth('Google')">
+            <span>🌐</span> Continue with Google
+          </button>
+          <button class="auth-social-btn" onclick="handleSocialAuth('Apple')">
+            <span>🍎</span> Continue with Apple
+          </button>
+        </div>
+
+        <!-- Auth message toast -->
+        <div class="auth-toast hidden" id="auth-toast"></div>
+
+        <p class="auth-footer-text">Founded by <strong>Sanskaar</strong> &amp; <strong>Kashish Devnani</strong></p>
+      </div>
+    </div>
+
     <!-- ═══════════════════════════════════════════
          SCREEN 1 — ONBOARDING
     ════════════════════════════════════════════ -->
-    <div class="screen active" id="screen-onboarding">
+    <div class="screen" id="screen-onboarding">
       <div class="onboarding-wrap">
         <!-- Logo -->
         <div class="brand-logo">
@@ -115,9 +228,21 @@
         <div class="score-ring-wrap">
           <div class="score-ring">
             <svg class="ring-svg" viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%"   stop-color="#60a5fa" />
+                  <stop offset="50%"  stop-color="#818cf8" />
+                  <stop offset="100%" stop-color="#f5e27a" />
+                </linearGradient>
+                <filter id="ringGlow">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
               <circle class="ring-bg" cx="60" cy="60" r="52" />
+              <circle class="ring-bg ring-bg-inner" cx="60" cy="60" r="44" />
               <circle class="ring-progress" id="score-ring-circle" cx="60" cy="60" r="52"
-                stroke-dasharray="326.7" stroke-dashoffset="326.7" />
+                stroke-dasharray="326.7" stroke-dashoffset="326.7" filter="url(#ringGlow)" />
             </svg>
             <div class="score-center">
               <span class="score-number" id="daily-score">--</span>
@@ -131,7 +256,7 @@
         <div class="pillars-section">
           <h3 class="section-title">Intelligence Pillars</h3>
           <div class="pillars-grid">
-            <div class="pillar-card">
+            <div class="pillar-card stagger-1">
               <div class="pillar-header">
                 <span class="pillar-icon">⚡</span>
                 <span class="pillar-name">Speed</span>
@@ -141,7 +266,7 @@
                 <div class="progress-bar" id="pillar-speed" style="width:0%"></div>
               </div>
             </div>
-            <div class="pillar-card">
+            <div class="pillar-card stagger-2">
               <div class="pillar-header">
                 <span class="pillar-icon">🧩</span>
                 <span class="pillar-name">Reasoning</span>
@@ -151,7 +276,7 @@
                 <div class="progress-bar reasoning" id="pillar-reasoning" style="width:0%"></div>
               </div>
             </div>
-            <div class="pillar-card">
+            <div class="pillar-card stagger-3">
               <div class="pillar-header">
                 <span class="pillar-icon">🎯</span>
                 <span class="pillar-name">Focus</span>
@@ -161,7 +286,7 @@
                 <div class="progress-bar focus" id="pillar-focus" style="width:0%"></div>
               </div>
             </div>
-            <div class="pillar-card">
+            <div class="pillar-card stagger-4">
               <div class="pillar-header">
                 <span class="pillar-icon">📖</span>
                 <span class="pillar-name">Knowledge</span>
@@ -201,8 +326,26 @@
 
         <!-- Review Button -->
         <button class="btn-primary review-btn" onclick="navigateTo('screen-review')">
-          <span>🧠</span> Review My Day
+          <span class="btn-icon-spin">🧠</span> Start Daily Review
+          <span class="btn-ripple"></span>
         </button>
+
+        <!-- Voice Day Dump Card -->
+        <div class="voice-day-card glass-card">
+          <div class="voice-day-header">
+            <div>
+              <h3 class="voice-day-title">Tell me about your day</h3>
+              <p class="voice-day-sub">Speak freely — AI will ask follow-ups</p>
+            </div>
+            <div class="voice-day-orb" id="home-voice-orb" onclick="startVoiceDump()">
+              <span class="voice-orb-icon" id="home-voice-icon">🎙️</span>
+            </div>
+          </div>
+          <div class="voice-day-preview hidden" id="voice-day-preview">
+            <p class="voice-day-transcript" id="voice-day-transcript"></p>
+            <button class="voice-day-send" onclick="sendVoiceDump()">Send to AI → </button>
+          </div>
+        </div>
 
       </div>
     </div>
@@ -214,22 +357,45 @@
       <div class="chat-header">
         <button class="back-btn" onclick="navigateTo('screen-home')">‹</button>
         <div class="chat-header-info">
-          <div class="ai-avatar">⚡</div>
+          <div class="ai-avatar" id="ai-avatar-wrap">⚡</div>
           <div>
             <p class="chat-name">Brainance AI</p>
-            <p class="chat-status">Analysing your day…</p>
+            <p class="chat-status" id="chat-status-text">Ready to analyse your day</p>
           </div>
         </div>
-        <div class="chat-header-spacer"></div>
+        <!-- AI Speaking indicator -->
+        <div class="ai-speaking-badge hidden" id="ai-speaking-badge">
+          <span class="speak-wave"></span>
+          <span class="speak-wave"></span>
+          <span class="speak-wave"></span>
+          <span>Speaking</span>
+        </div>
       </div>
 
       <div class="chat-messages" id="chat-messages"></div>
 
       <div class="chat-input-wrap" id="chat-input-wrap">
+        <!-- Quick-reply option buttons (shown for multiple-choice questions) -->
         <div class="chat-options" id="chat-options"></div>
-        <div class="chat-text-input hidden" id="chat-text-row">
-          <input type="text" id="chat-text-field" placeholder="Type your answer…" />
-          <button class="send-btn" onclick="sendTextAnswer()">↑</button>
+
+        <!-- Mic recording state -->
+        <div class="chat-mic-status hidden" id="chat-mic-status">
+          <div class="mic-pulse-ring"></div>
+          <span class="mic-status-text" id="mic-status-label">Listening…</span>
+          <button class="mic-stop-btn" onclick="stopChatMic()">Stop</button>
+        </div>
+
+        <!-- Text input row — ALWAYS VISIBLE -->
+        <div class="chat-text-input" id="chat-text-row">
+          <button class="mic-btn" id="chat-mic-btn" onclick="toggleChatMic()" title="Speak your answer">🎤️</button>
+          <input type="text" id="chat-text-field"
+            placeholder="Type your answer…"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="true" />
+          <button class="send-btn" id="chat-send-btn" onclick="sendTextAnswer()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
         </div>
       </div>
     </div>

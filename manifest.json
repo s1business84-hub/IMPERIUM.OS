@@ -4,9 +4,9 @@
   "description": "AI-powered daily intelligence and money tracking app",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0a0f2c",
-  "theme_color": "#0a0f2c",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#050a1a",
+  "theme_color": "#050a1a",
   "icons": [
     {
       "src": "icons/icon-192.png",
