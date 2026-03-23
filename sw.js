@@ -1,4 +1,4 @@
-const CACHE_NAME = 'brainance-v1';
+const CACHE_NAME = 'imperium-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

@@ -1,5 +1,5 @@
 /* ===================================================
-   BRAINANCE — app.js
+   IMPERIUM — app.js
    Full SPA: Auth, Onboarding, Voice Chat, AI Engine
 =================================================== */
 
@@ -31,12 +31,12 @@ let moneyChart = null;
 
 // ─── PERSIST ──────────────────────────────────────
 function saveState() {
-  try { localStorage.setItem('brainance_state', JSON.stringify(STATE)); } catch (_) {}
+  try { localStorage.setItem('imperium_state', JSON.stringify(STATE)); } catch (_) {}
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem('brainance_state');
+    const raw = localStorage.getItem('imperium_state');
     if (raw) Object.assign(STATE, JSON.parse(raw));
   } catch (_) {}
 }
@@ -211,7 +211,7 @@ function skipToAuth() {
 }
 
 function continueAsGuest() {
-  STATE.userEmail = 'guest@brainance.app';
+  STATE.userEmail = 'guest@imperium.app';
   STATE.userName  = 'Guest';
   STATE.userType  = 'student';
   STATE.userGoal  = 'focus';
@@ -1066,7 +1066,7 @@ function initProfile() {
       var footer = document.createElement('div');
       footer.id = 'profile-footer';
       footer.className = 'profile-footer';
-      footer.innerHTML = '<p>Founded &amp; Owned by <strong>Sanskaar</strong></p><p>Co-founded by <strong>Kashish Devnani</strong></p><p class="footer-copy">\u00A9 2026 Brainance. All rights reserved.</p>';
+      footer.innerHTML = '<p>Founded &amp; Owned by <strong>Sanskaar</strong></p><p>Co-founded by <strong>Kashish Devnani</strong></p><p class="footer-copy">\u00A9 2026 Imperium. All rights reserved.</p>';
       sc.appendChild(footer);
     }
   }
@@ -1081,7 +1081,7 @@ function closeProModal() { document.getElementById('pro-modal').classList.add('h
 
 function resetApp() {
   if (!confirm('Reset all data? This cannot be undone.')) return;
-  localStorage.removeItem('brainance_state');
+  localStorage.removeItem('imperium_state');
   location.reload();
 }
 
@@ -1268,10 +1268,10 @@ function initGuestMode() {
   if (!STATE.isGuest) return;
 
   // Track first guest visit
-  var guestStart = localStorage.getItem('brainance_guest_start');
+  var guestStart = localStorage.getItem('imperium_guest_start');
   if (!guestStart) {
     guestStart = Date.now().toString();
-    localStorage.setItem('brainance_guest_start', guestStart);
+    localStorage.setItem('imperium_guest_start', guestStart);
   }
 
   var elapsed = Date.now() - parseInt(guestStart);
