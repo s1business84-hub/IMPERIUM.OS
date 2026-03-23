@@ -487,7 +487,6 @@ function askQuestion() {
   if (chatStep >= REVIEW_QUESTIONS.length) { finishReview(); return; }
   var q = REVIEW_QUESTIONS[chatStep];
   showTypingThenBubble(q.text, function() {
-    aiSpeak(q.text);
     showInputForQuestion(q);
   });
 }
@@ -522,71 +521,23 @@ function scrollChatBottom() {
   if (c) setTimeout(function() { c.scrollTop = c.scrollHeight; }, 60);
 }
 
-// ── Speech Synthesis (AI speaks) ──────────────────
-function aiSpeak(text) {
-  if (!('speechSynthesis' in window)) return;
-  stopAISpeech();
-  aiSpeechUtterance = new SpeechSynthesisUtterance(text);
-  aiSpeechUtterance.rate  = 1.05;
-  aiSpeechUtterance.pitch = 1.0;
-  aiSpeechUtterance.volume = 1.0;
-
-  var voices = speechSynthesis.getVoices();
-  var preferred = null;
-  for (var i = 0; i < voices.length; i++) {
-    var v = voices[i];
-    if (v.name.indexOf('Samantha') >= 0 || v.name.indexOf('Alex') >= 0 ||
-        v.name.indexOf('Google UK') >= 0 || v.name.indexOf('Daniel') >= 0 ||
-        v.lang === 'en-GB' || v.lang === 'en-US') {
-      preferred = v; break;
-    }
-  }
-  if (preferred) aiSpeechUtterance.voice = preferred;
-
-  var badge  = document.getElementById('ai-speaking-badge');
-  var avatar = document.getElementById('ai-avatar-wrap');
-
-  aiSpeechUtterance.onstart = function() {
-    if (badge)  badge.classList.remove('hidden');
-    if (avatar) avatar.classList.add('speaking');
-    setEl('chat-status-text', 'Speaking\u2026');
-  };
-  aiSpeechUtterance.onend = function() {
-    if (badge)  badge.classList.add('hidden');
-    if (avatar) avatar.classList.remove('speaking');
-    setEl('chat-status-text', 'Listening for your answer');
-  };
-  aiSpeechUtterance.onerror = function() {
-    if (badge)  badge.classList.add('hidden');
-    if (avatar) avatar.classList.remove('speaking');
-  };
-  speechSynthesis.speak(aiSpeechUtterance);
-}
-
-function stopAISpeech() {
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
-  var badge  = document.getElementById('ai-speaking-badge');
-  var avatar = document.getElementById('ai-avatar-wrap');
-  if (badge)  badge.classList.add('hidden');
-  if (avatar) avatar.classList.remove('speaking');
-}
+// ── Speech Synthesis (disabled — text only) ──────────────────
+function aiSpeak() { /* disabled */ }
+function stopAISpeech() { /* disabled */ }
 
 // ── Show input controls ────────────────────────────
 function showInputForQuestion(q) {
   var optionsWrap = document.getElementById('chat-options');
   var textRow     = document.getElementById('chat-text-row');
-  var micStatus   = document.getElementById('chat-mic-status');
-  if (micStatus) micStatus.classList.add('hidden');
 
-  // Always show the text input row
+  // ALWAYS show text input
   if (textRow) textRow.classList.remove('hidden');
   var field = document.getElementById('chat-text-field');
   if (field) {
     field.value = '';
     field.placeholder = q.type === 'options' ? 'Or type your own answer…' : 'Type your answer…';
     field.onkeydown = function(e) { if (e.key === 'Enter') sendTextAnswer(); };
-    // Focus only on desktop to avoid unwanted keyboard on mobile
-    if (window.innerWidth > 600) field.focus();
+    setTimeout(function() { field.focus(); }, 100);
   }
   var sendBtn = document.getElementById('chat-send-btn');
   if (sendBtn) sendBtn.onclick = sendTextAnswer;
@@ -621,11 +572,7 @@ function submitAnswer(answer) {
   var q = REVIEW_QUESTIONS[chatStep];
 
   var optionsWrap = document.getElementById('chat-options');
-  var textRow     = document.getElementById('chat-text-row');
-  var micStatus   = document.getElementById('chat-mic-status');
   if (optionsWrap) { optionsWrap.innerHTML = ''; optionsWrap.classList.add('hidden'); }
-  if (micStatus)   micStatus.classList.add('hidden');
-  stopChatMic();
 
   chatAnswers[q.id] = answer;
   addBubble(answer, 'user');
@@ -638,14 +585,12 @@ function submitAnswer(answer) {
       waitingForFollowUp = true;
       setTimeout(function() {
         showTypingThenBubble(fu.question, function() {
-          aiSpeak(fu.question);
-          var row = document.getElementById('chat-text-row');
-          if (row) row.classList.remove('hidden');
           var field = document.getElementById('chat-text-field');
           if (field) {
             field.value = '';
             field.placeholder = 'Follow up…';
             field.onkeydown = function(e) { if (e.key === 'Enter') submitFollowUp(); };
+            setTimeout(function() { field.focus(); }, 100);
           }
           var sendBtn = document.getElementById('chat-send-btn');
           if (sendBtn) sendBtn.onclick = submitFollowUp;
@@ -672,9 +617,7 @@ function submitFollowUp() {
     var q = REVIEW_QUESTIONS[chatStep];
     chatAnswers[q.id] = (chatAnswers[q.id] || '') + '. Follow-up: ' + val;
   }
-  var textRow = document.getElementById('chat-text-row');
-  if (textRow) textRow.classList.add('hidden');
-  var sendBtn = document.querySelector('.send-btn');
+  var sendBtn = document.getElementById('chat-send-btn');
   if (sendBtn) sendBtn.onclick = sendTextAnswer;
   waitingForFollowUp = false;
   chatStep++;
@@ -707,7 +650,6 @@ function startChatMic() {
   chatMicActive = true;
   if (micBtn)    { micBtn.classList.add('listening'); micBtn.textContent = '\uD83D\uDD34'; }
   if (micStatus) micStatus.classList.remove('hidden');
-  if (textRow)   textRow.classList.add('hidden');
   if (statusLbl) statusLbl.textContent = 'Listening\u2026';
 
   chatSpeechRecognition.onresult = function(e) {
@@ -763,7 +705,6 @@ function finishReview() {
   setEl('chat-status-text', 'Analysing\u2026');
 
   showTypingThenBubble("That's everything I need. Crunching your intelligence score now\u2026", function() {
-    aiSpeak("Give me a moment to analyse your day.");
     setTimeout(function() {
       var result = analyseDay(chatAnswers);
       STATE.analysisResult = result;
@@ -771,13 +712,11 @@ function finishReview() {
       saveState();
 
       addBubble('Your Intelligence Score today: ' + result.score + '/100 \u26A1', 'ai');
-      aiSpeak('Your intelligence score today is ' + result.score + ' out of 100.');
       setEl('chat-status-text', 'Analysis complete');
 
       setTimeout(function() {
         var insightMsg = getTeaserInsight(result);
         showTypingThenBubble(insightMsg, function() {
-          aiSpeak(insightMsg);
           setTimeout(function() {
             var optionsWrap = document.getElementById('chat-options');
             optionsWrap.innerHTML = '';
@@ -878,11 +817,11 @@ function generateMistake(avoided, timeWasted) {
 
 function generateMoneyImpact(spent, earned, missed) {
   if (missed && missed.length > 3) {
-    return 'Missed opportunity in "' + missed + '" could outweigh today\'s \u20B9' + spent + ' spend.';
+    return 'Missed opportunity in "' + missed + '" could outweigh today\'s $' + spent.toFixed(2) + ' spend.';
   }
   return earned > 0
-    ? 'Net: \u20B9' + earned + ' earned, \u20B9' + spent + ' spent. Scale what generated that \u20B9' + earned + '.'
-    : '\u20B9' + spent + ' spent, no income recorded. Days like this compound into a deficit.';
+    ? 'Net: $' + earned.toFixed(2) + ' earned, $' + spent.toFixed(2) + ' spent. Scale what generated that $' + earned.toFixed(2) + '.'
+    : '$' + spent.toFixed(2) + ' spent, no income recorded. Days like this compound into a deficit.';
 }
 
 function generateThinkingPattern(discipline) {
@@ -903,9 +842,9 @@ function generateMissedOpp(missed) {
 
 function generateFixes(discipline) {
   var templates = [
-    ['Block 2 hours tomorrow exclusively for your avoided task.', 'Write the outcome you want from tomorrow in one sentence before you sleep.', 'Set a \u20B90 spend limit unless it directly generates income.'],
+    ['Block 2 hours tomorrow exclusively for your avoided task.', 'Write the outcome you want from tomorrow in one sentence before you sleep.', 'Set a $0 spend limit unless it directly generates income.'],
     ['Do your single highest-value task before 10 AM tomorrow.', 'Delete or silence 1 app that killed your focus today.', 'Convert one missed opportunity into a scheduled action with a deadline.'],
-    ['Use a 25-min timer sprint to tackle your most avoided task first thing.', 'Track every rupee tomorrow \u2014 awareness alone changes behaviour.', 'Replace 30 mins of low-value time with reading related to your goal.'],
+    ['Use a 25-min timer sprint to tackle your most avoided task first thing.', 'Track every dollar tomorrow \u2014 awareness alone changes behaviour.', 'Replace 30 mins of low-value time with reading related to your goal.'],
   ];
   var i = discipline.indexOf('low') >= 0 ? 0 : discipline.indexOf('medium') >= 0 ? 2 : 1;
   return templates[i];

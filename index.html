@@ -90,11 +90,8 @@
 
         <!-- Footer credits -->
         <div class="landing-credits">
-          <span class="credits-label">Built by</span>
-          <span class="credits-name">Sanskaar</span>
-          <span class="credits-dot">·</span>
-          <span class="credits-role">Co-founder</span>
-          <span class="credits-name">Kashish</span>
+          <span class="credits-label">Co-founded by</span>
+          <span class="credits-name">Kashish Devnani</span>
         </div>
 
       </div>
@@ -213,11 +210,8 @@
 
         <!-- Footer credits -->
         <div class="auth-credits-footer">
-          <span class="credits-label">Founder</span>
-          <span class="credits-name-footer">Sanskaar</span>
-          <span class="credits-sep">·</span>
-          <span class="credits-label">Co-Founder</span>
-          <span class="credits-name-footer">Kashish</span>
+          <span class="credits-label">Co-founded by</span>
+          <span class="credits-name-footer">Kashish Devnani</span>
         </div>
       </div>
     </div>
@@ -412,19 +406,18 @@
         </button>
 
         <!-- Voice Day Dump Card -->
-        <div class="voice-day-card glass-card">
+        <div class="voice-day-card glass-card" onclick="startVoiceDump()">
           <div class="voice-day-header">
-            <div>
-              <h3 class="voice-day-title">Tell me about your day</h3>
-              <p class="voice-day-sub">Speak freely — AI will ask follow-ups</p>
-            </div>
-            <div class="voice-day-orb" id="home-voice-orb" onclick="startVoiceDump()">
+            <div class="voice-day-orb" id="home-voice-orb">
               <span class="voice-orb-icon" id="home-voice-icon">🎙️</span>
+            </div>
+            <div>
+              <h3 class="voice-day-title">Speak your day</h3>
+              <p class="voice-day-sub">Tap anywhere — AI listens, then asks follow-ups</p>
             </div>
           </div>
           <div class="voice-day-preview hidden" id="voice-day-preview">
             <p class="voice-day-transcript" id="voice-day-transcript"></p>
-            <button class="voice-day-send" onclick="sendVoiceDump()">Send to AI → </button>
           </div>
         </div>
 
@@ -444,31 +437,17 @@
             <p class="chat-status" id="chat-status-text">Ready to analyse your day</p>
           </div>
         </div>
-        <!-- AI Speaking indicator -->
-        <div class="ai-speaking-badge hidden" id="ai-speaking-badge">
-          <span class="speak-wave"></span>
-          <span class="speak-wave"></span>
-          <span class="speak-wave"></span>
-          <span>Speaking</span>
-        </div>
+        <div class="chat-header-spacer"></div>
       </div>
 
       <div class="chat-messages" id="chat-messages"></div>
 
       <div class="chat-input-wrap" id="chat-input-wrap">
-        <!-- Quick-reply option buttons (shown for multiple-choice questions) -->
+        <!-- Quick-reply option buttons -->
         <div class="chat-options" id="chat-options"></div>
-
-        <!-- Mic recording state -->
-        <div class="chat-mic-status hidden" id="chat-mic-status">
-          <div class="mic-pulse-ring"></div>
-          <span class="mic-status-text" id="mic-status-label">Listening…</span>
-          <button class="mic-stop-btn" onclick="stopChatMic()">Stop</button>
-        </div>
 
         <!-- Text input row — ALWAYS VISIBLE -->
         <div class="chat-text-input" id="chat-text-row">
-          <button class="mic-btn" id="chat-mic-btn" onclick="toggleChatMic()" title="Speak your answer">🎤️</button>
           <input type="text" id="chat-text-field"
             placeholder="Type your answer…"
             autocomplete="off"
@@ -865,7 +844,6 @@
          FOOTER
     ════════════════════════════════════════════ -->
     <footer class="app-footer">
-      <p>Founded &amp; Owned by <strong>Sanskaar</strong></p>
       <p>Co-founded by <strong>Kashish Devnani</strong></p>
       <p class="footer-copy">© 2026 Brainance. All rights reserved.</p>
     </footer>
