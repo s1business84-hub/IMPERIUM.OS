@@ -49,11 +49,17 @@ document.addEventListener('DOMContentLoaded', () => {
   setScoreDate();
 
   if (STATE.userType && STATE.userGoal) {
+    // Already fully onboarded — skip landing
+    document.getElementById('screen-landing').classList.remove('active');
     showMainApp();
   } else if (STATE.userEmail) {
+    // Has account but not onboarded
+    document.getElementById('screen-landing').classList.remove('active');
     navigateTo('screen-onboarding');
+  } else {
+    // Show landing intro — it's the default active screen
+    startLandingSequence();
   }
-  // else auth screen is default active
 });
 
 // ─── SVG GRADIENT ────────────────────────────────
@@ -112,10 +118,12 @@ function navigateTo(screenId) {
 // =======================================================
 
 function switchAuthTab(tab) {
-  document.getElementById('tab-login').classList.toggle('active',  tab === 'login');
-  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
-  document.getElementById('form-login').classList.toggle('active',  tab === 'login');
-  document.getElementById('form-signup').classList.toggle('active', tab === 'signup');
+  ['login','signup','guest'].forEach(t => {
+    const tabBtn = document.getElementById('tab-' + t);
+    const form   = document.getElementById('form-' + t);
+    if (tabBtn) tabBtn.classList.toggle('active',  t === tab);
+    if (form)   form.classList.toggle('active',   t === tab);
+  });
 }
 
 function togglePassword(fieldId, btn) {
@@ -169,6 +177,47 @@ function handleSignup() {
 
 function handleSocialAuth(provider) {
   showAuthMessage(provider + ' sign-in coming soon! Use email for now.');
+}
+
+// =======================================================
+//  LANDING
+// =======================================================
+
+function startLandingSequence() {
+  // Pills and CTA animate in via CSS; after 5s auto-advance hint
+  // Nothing forced — user drives the flow
+}
+
+function skipToAuth() {
+  const landing = document.getElementById('screen-landing');
+  const auth    = document.getElementById('screen-auth');
+  if (landing) {
+    landing.classList.add('exit');
+    setTimeout(() => landing.classList.remove('active', 'exit'), 350);
+  }
+  if (auth) {
+    auth.classList.add('active');
+    currentScreen = 'screen-auth';
+  }
+}
+
+function continueAsGuest() {
+  STATE.userEmail = 'guest@brainance.app';
+  STATE.userName  = 'Guest';
+  STATE.userType  = 'student';
+  STATE.userGoal  = 'focus';
+  STATE.isGuest   = true;
+  // Don't persist guest state
+  const landing = document.getElementById('screen-landing');
+  const auth    = document.getElementById('screen-auth');
+  if (landing) {
+    landing.classList.add('exit');
+    setTimeout(() => landing.classList.remove('active', 'exit'), 350);
+  }
+  if (auth) auth.classList.remove('active');
+  document.getElementById('bottom-nav').classList.add('visible');
+  currentScreen = 'screen-landing';
+  navigateTo('screen-home');
 }
 
 // =======================================================

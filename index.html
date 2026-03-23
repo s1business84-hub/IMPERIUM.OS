@@ -49,9 +49,61 @@
     <div class="orb orb-4"></div>
 
     <!-- ═══════════════════════════════════════════
+         SCREEN LANDING — Animated Intro
+    ════════════════════════════════════════════ -->
+    <div class="screen active" id="screen-landing">
+      <div class="landing-wrap">
+
+        <!-- Animated logo -->
+        <div class="landing-logo">
+          <div class="landing-orb-ring">
+            <div class="landing-orb-ring-inner"></div>
+          </div>
+          <div class="landing-icon-wrap">
+            <span class="landing-icon">⚡</span>
+          </div>
+        </div>
+
+        <!-- Headline -->
+        <div class="landing-text">
+          <h1 class="landing-brand">Brainance</h1>
+          <p class="landing-sub">Your Daily Intelligence Engine</p>
+        </div>
+
+        <!-- Animated feature pills -->
+        <div class="landing-features">
+          <div class="landing-pill" style="--d:0.2s">🧠 AI-Powered Analysis</div>
+          <div class="landing-pill" style="--d:0.4s">📈 Track Your Progress</div>
+          <div class="landing-pill" style="--d:0.6s">🎯 Daily Missions</div>
+          <div class="landing-pill" style="--d:0.8s">💰 Money Intelligence</div>
+        </div>
+
+        <!-- CTA buttons -->
+        <div class="landing-cta">
+          <button class="btn-primary landing-btn-main" onclick="skipToAuth()">
+            Get Started
+          </button>
+          <button class="landing-btn-guest" onclick="continueAsGuest()">
+            Continue as Guest
+          </button>
+        </div>
+
+        <!-- Footer credits -->
+        <div class="landing-credits">
+          <span class="credits-label">Built by</span>
+          <span class="credits-name">Sanskaar</span>
+          <span class="credits-dot">·</span>
+          <span class="credits-role">Co-founder</span>
+          <span class="credits-name">Kashish</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
          SCREEN 0 — AUTH (Login / Sign Up)
     ════════════════════════════════════════════ -->
-    <div class="screen active" id="screen-auth">
+    <div class="screen" id="screen-auth">
       <div class="auth-wrap">
 
         <!-- Logo -->
@@ -65,6 +117,7 @@
         <div class="auth-tabs">
           <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
           <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+          <button class="auth-tab" id="tab-guest" onclick="switchAuthTab('guest')">Guest</button>
         </div>
 
         <!-- Login Form -->
@@ -134,10 +187,38 @@
           </button>
         </div>
 
+        <!-- Guest Form -->
+        <div class="auth-form" id="form-guest">
+          <div class="guest-hero">
+            <div class="guest-icon">👤</div>
+            <h3 class="guest-title">Explore Brainance</h3>
+            <p class="guest-desc">Try the full experience without an account. Your progress won't be saved between sessions.</p>
+          </div>
+          <div class="guest-perks">
+            <div class="guest-perk"><span>✅</span> Full AI analysis</div>
+            <div class="guest-perk"><span>✅</span> Daily review session</div>
+            <div class="guest-perk"><span>✅</span> Missions &amp; scoring</div>
+            <div class="guest-perk"><span>⚠️</span> Progress not saved</div>
+          </div>
+          <button class="btn-primary auth-submit-btn" onclick="continueAsGuest()">
+            <span>Enter as Guest</span><span class="auth-btn-arrow">→</span>
+          </button>
+          <button class="auth-social-btn" onclick="switchAuthTab('signup')">
+            <span>✨</span> Create a free account instead
+          </button>
+        </div>
+
         <!-- Auth message toast -->
         <div class="auth-toast hidden" id="auth-toast"></div>
 
-        <p class="auth-footer-text">Founded by <strong>Sanskaar</strong> &amp; <strong>Kashish Devnani</strong></p>
+        <!-- Footer credits -->
+        <div class="auth-credits-footer">
+          <span class="credits-label">Founder</span>
+          <span class="credits-name-footer">Sanskaar</span>
+          <span class="credits-sep">·</span>
+          <span class="credits-label">Co-Founder</span>
+          <span class="credits-name-footer">Kashish</span>
+        </div>
       </div>
     </div>
 
