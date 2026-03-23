@@ -543,15 +543,24 @@ function stopAISpeech() { /* disabled */ }
 function showInputForQuestion(q) {
   var optionsWrap = document.getElementById('chat-options');
   var textRow     = document.getElementById('chat-text-row');
+  var inputWrap   = document.getElementById('chat-input-wrap');
 
-  // ALWAYS show text input
+  // ALWAYS show text input and input wrap
+  if (inputWrap) inputWrap.classList.remove('hidden');
   if (textRow) textRow.classList.remove('hidden');
   var field = document.getElementById('chat-text-field');
   if (field) {
     field.value = '';
     field.placeholder = q.type === 'options' ? 'Or type your own answer…' : 'Type your answer…';
     field.onkeydown = function(e) { if (e.key === 'Enter') sendTextAnswer(); };
-    setTimeout(function() { field.focus(); }, 100);
+    // Focus with delay — helps iOS show keyboard
+    setTimeout(function() {
+      field.focus();
+      // Scroll into view as fallback
+      if (field.scrollIntoView) {
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 200);
   }
   var sendBtn = document.getElementById('chat-send-btn');
   if (sendBtn) sendBtn.onclick = sendTextAnswer;
@@ -1431,4 +1440,60 @@ function showInsightWidget() {
   }
 
   animate();
+})();
+
+// ─── VIRTUAL KEYBOARD HANDLER ─────────────────────
+// Moves chat-input-wrap above the virtual keyboard on iOS/iPadOS/Android
+(function() {
+  var inputWrap = null;
+
+  function getEls() {
+    inputWrap = document.getElementById('chat-input-wrap');
+  }
+
+  function handleViewportResize() {
+    getEls();
+    if (!inputWrap) return;
+
+    var vv = window.visualViewport;
+    if (!vv) return;
+
+    // Calculate keyboard height
+    var keyboardHeight = window.innerHeight - vv.height;
+
+    if (keyboardHeight > 100) {
+      // Keyboard is open — move input wrap up using bottom
+      inputWrap.style.bottom = keyboardHeight + 'px';
+      // Scroll chat to bottom
+      setTimeout(function() {
+        var c = document.getElementById('chat-messages');
+        if (c) c.scrollTop = c.scrollHeight;
+      }, 100);
+    } else {
+      // Keyboard is closed
+      inputWrap.style.bottom = '0';
+    }
+  }
+
+  // Handle focus on the chat text field
+  document.addEventListener('focusin', function(e) {
+    if (e.target && e.target.id === 'chat-text-field') {
+      setTimeout(function() {
+        handleViewportResize();
+      }, 300);
+    }
+  });
+
+  document.addEventListener('focusout', function(e) {
+    if (e.target && e.target.id === 'chat-text-field') {
+      getEls();
+      if (inputWrap) inputWrap.style.bottom = '0';
+    }
+  });
+
+  // Listen to visualViewport resize (fires when keyboard opens/closes)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportResize);
+    window.visualViewport.addEventListener('scroll', handleViewportResize);
+  }
 })();
