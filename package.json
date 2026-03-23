@@ -1,0 +1,13 @@
+{
+  "name": "brainance",
+  "version": "1.0.0",
+  "description": "AI-powered daily intelligence and money tracking PWA",
+  "private": true,
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "dev": "npx serve . -l 3000"
+  },
+  "keywords": ["pwa", "ai", "productivity", "finance"],
+  "author": "Sanskaar",
+  "license": "UNLICENSED"
+}

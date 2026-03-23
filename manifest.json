@@ -1,0 +1,26 @@
+{
+  "name": "Brainance",
+  "short_name": "Brainance",
+  "description": "AI-powered daily intelligence and money tracking app",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0f2c",
+  "theme_color": "#0a0f2c",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "finance", "lifestyle"],
+  "lang": "en"
+}

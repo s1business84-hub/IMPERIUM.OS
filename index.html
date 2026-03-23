@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0f2c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Brainance" />
+  <meta name="description" content="AI-powered daily intelligence and money tracking app" />
+  <title>Brainance</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+
+  <!-- ──────────────── APP SHELL ──────────────── -->
+  <div id="app">
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN 1 — ONBOARDING
+    ════════════════════════════════════════════ -->
+    <div class="screen active" id="screen-onboarding">
+      <div class="onboarding-wrap">
+        <!-- Logo -->
+        <div class="brand-logo">
+          <span class="logo-icon">⚡</span>
+          <h1 class="brand-name">Brainance</h1>
+          <p class="brand-tagline">Your Daily Intelligence Engine</p>
+        </div>
+
+        <!-- Step 1: Role -->
+        <div class="onboarding-step active" id="ob-step-1">
+          <h2 class="ob-question">What do you do?</h2>
+          <p class="ob-subtitle">We personalise your analysis based on your world</p>
+          <div class="ob-cards">
+            <button class="ob-card" data-value="student" onclick="selectRole(this)">
+              <span class="ob-card-icon">📚</span>
+              <span class="ob-card-label">Student</span>
+              <span class="ob-card-desc">Learning & growing</span>
+            </button>
+            <button class="ob-card" data-value="sales" onclick="selectRole(this)">
+              <span class="ob-card-icon">💼</span>
+              <span class="ob-card-label">Sales</span>
+              <span class="ob-card-desc">Closing & earning</span>
+            </button>
+            <button class="ob-card" data-value="business" onclick="selectRole(this)">
+              <span class="ob-card-icon">🚀</span>
+              <span class="ob-card-label">Business</span>
+              <span class="ob-card-desc">Building & scaling</span>
+            </button>
+          </div>
+          <button class="btn-primary ob-next hidden" id="ob-next-1" onclick="goToObStep2()">Continue →</button>
+        </div>
+
+        <!-- Step 2: Goal -->
+        <div class="onboarding-step" id="ob-step-2">
+          <h2 class="ob-question">What's your #1 goal?</h2>
+          <p class="ob-subtitle">This shapes every insight we give you</p>
+          <div class="ob-cards">
+            <button class="ob-card" data-value="money" onclick="selectGoal(this)">
+              <span class="ob-card-icon">💰</span>
+              <span class="ob-card-label">Make Money</span>
+              <span class="ob-card-desc">Maximise earning potential</span>
+            </button>
+            <button class="ob-card" data-value="discipline" onclick="selectGoal(this)">
+              <span class="ob-card-icon">🎯</span>
+              <span class="ob-card-label">Discipline</span>
+              <span class="ob-card-desc">Build unbreakable habits</span>
+            </button>
+            <button class="ob-card" data-value="focus" onclick="selectGoal(this)">
+              <span class="ob-card-icon">🧠</span>
+              <span class="ob-card-label">Focus</span>
+              <span class="ob-card-desc">Deep work & clarity</span>
+            </button>
+          </div>
+          <button class="btn-primary ob-next hidden" id="ob-next-2" onclick="finishOnboarding()">Start My Journey →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN 2 — HOME DASHBOARD
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-home">
+      <div class="screen-content has-nav">
+
+        <!-- Header -->
+        <header class="dash-header">
+          <div>
+            <p class="greeting" id="greeting-text">Good morning</p>
+            <h2 class="dash-title">Your Intelligence</h2>
+          </div>
+          <div class="header-right">
+            <div class="coins-badge">
+              <span class="coin-icon">🪙</span>
+              <span id="coin-count">0</span>
+            </div>
+            <div class="level-badge" id="level-badge">Lv 1</div>
+          </div>
+        </header>
+
+        <!-- Daily Score Ring -->
+        <div class="score-ring-wrap">
+          <div class="score-ring">
+            <svg class="ring-svg" viewBox="0 0 120 120">
+              <circle class="ring-bg" cx="60" cy="60" r="52" />
+              <circle class="ring-progress" id="score-ring-circle" cx="60" cy="60" r="52"
+                stroke-dasharray="326.7" stroke-dashoffset="326.7" />
+            </svg>
+            <div class="score-center">
+              <span class="score-number" id="daily-score">--</span>
+              <span class="score-label">Today's Score</span>
+            </div>
+          </div>
+          <p class="score-date" id="score-date"></p>
+        </div>
+
+        <!-- 4 Pillars -->
+        <div class="pillars-section">
+          <h3 class="section-title">Intelligence Pillars</h3>
+          <div class="pillars-grid">
+            <div class="pillar-card">
+              <div class="pillar-header">
+                <span class="pillar-icon">⚡</span>
+                <span class="pillar-name">Speed</span>
+                <span class="pillar-val" id="pillar-speed-val">0</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" id="pillar-speed" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="pillar-card">
+              <div class="pillar-header">
+                <span class="pillar-icon">🧩</span>
+                <span class="pillar-name">Reasoning</span>
+                <span class="pillar-val" id="pillar-reasoning-val">0</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar reasoning" id="pillar-reasoning" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="pillar-card">
+              <div class="pillar-header">
+                <span class="pillar-icon">🎯</span>
+                <span class="pillar-name">Focus</span>
+                <span class="pillar-val" id="pillar-focus-val">0</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar focus" id="pillar-focus" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="pillar-card">
+              <div class="pillar-header">
+                <span class="pillar-icon">📖</span>
+                <span class="pillar-name">Knowledge</span>
+                <span class="pillar-val" id="pillar-knowledge-val">0</span>
+              </div>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar knowledge" id="pillar-knowledge" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+          <div class="stat-chip">
+            <span class="stat-icon">🔥</span>
+            <div>
+              <span class="stat-num" id="streak-count">0</span>
+              <span class="stat-lbl">Day Streak</span>
+            </div>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-icon">✅</span>
+            <div>
+              <span class="stat-num" id="missions-done">0/4</span>
+              <span class="stat-lbl">Missions</span>
+            </div>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-icon">📈</span>
+            <div>
+              <span class="stat-num" id="weekly-avg">--</span>
+              <span class="stat-lbl">Week Avg</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Review Button -->
+        <button class="btn-primary review-btn" onclick="navigateTo('screen-review')">
+          <span>🧠</span> Review My Day
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN 3 — DAILY REVIEW (CHAT)
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-review">
+      <div class="chat-header">
+        <button class="back-btn" onclick="navigateTo('screen-home')">‹</button>
+        <div class="chat-header-info">
+          <div class="ai-avatar">⚡</div>
+          <div>
+            <p class="chat-name">Brainance AI</p>
+            <p class="chat-status">Analysing your day…</p>
+          </div>
+        </div>
+        <div class="chat-header-spacer"></div>
+      </div>
+
+      <div class="chat-messages" id="chat-messages"></div>
+
+      <div class="chat-input-wrap" id="chat-input-wrap">
+        <div class="chat-options" id="chat-options"></div>
+        <div class="chat-text-input hidden" id="chat-text-row">
+          <input type="text" id="chat-text-field" placeholder="Type your answer…" />
+          <button class="send-btn" onclick="sendTextAnswer()">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN 4 — RESULTS
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-results">
+      <div class="screen-content has-nav">
+        <header class="results-header">
+          <button class="back-btn ghost" onclick="navigateTo('screen-home')">‹ Home</button>
+          <h2 class="results-title">Today's Analysis</h2>
+          <div></div>
+        </header>
+
+        <!-- Score Banner -->
+        <div class="results-score-banner">
+          <div class="results-score-inner">
+            <span class="results-score-num" id="result-score-num">--</span>
+            <span class="results-score-lbl">Intelligence Score</span>
+          </div>
+          <div class="results-score-trend" id="result-trend"></div>
+        </div>
+
+        <!-- Result Cards -->
+        <div class="result-cards" id="result-cards">
+          <div class="result-card mistake-card">
+            <div class="result-card-header">
+              <span class="result-icon">❌</span>
+              <h3>Biggest Mistake</h3>
+            </div>
+            <p class="result-body" id="res-mistake">Complete your daily review to see insights.</p>
+          </div>
+
+          <div class="result-card money-card">
+            <div class="result-card-header">
+              <span class="result-icon">💰</span>
+              <h3>Money Impact</h3>
+            </div>
+            <p class="result-body" id="res-money">—</p>
+          </div>
+
+          <div class="result-card thinking-card">
+            <div class="result-card-header">
+              <span class="result-icon">🧠</span>
+              <h3>Thinking Pattern</h3>
+            </div>
+            <p class="result-body" id="res-thinking">—</p>
+          </div>
+
+          <div class="result-card missed-card">
+            <div class="result-card-header">
+              <span class="result-icon">⚠️</span>
+              <h3>Missed Opportunity</h3>
+            </div>
+            <p class="result-body" id="res-missed">—</p>
+          </div>
+
+          <div class="result-card fix-card">
+            <div class="result-card-header">
+              <span class="result-icon">⚡</span>
+              <h3>Fix for Tomorrow</h3>
+            </div>
+            <ul class="result-fixes" id="res-fixes">
+              <li>—</li>
+            </ul>
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="navigateTo('screen-missions')" style="margin:1.5rem 0 0.5rem">
+          View Today's Missions →
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN 5 — MISSIONS
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-missions">
+      <div class="screen-content has-nav">
+        <header class="section-header-row">
+          <h2 class="page-title">Daily Missions</h2>
+          <div class="coins-badge">
+            <span>🪙</span>
+            <span id="missions-coin-count">0</span>
+          </div>
+        </header>
+        <p class="page-sub">Complete all 4 to unlock your bonus</p>
+
+        <!-- Missions List -->
+        <div class="missions-list" id="missions-list">
+          <div class="mission-item" id="mission-speed" data-pillar="speed">
+            <div class="mission-check" onclick="completeMission('speed')">
+              <div class="check-circle" id="check-speed"></div>
+            </div>
+            <div class="mission-info">
+              <span class="mission-pillar speed-tag">⚡ Speed</span>
+              <p class="mission-task" id="mission-speed-task">Complete your morning routine in under 30 minutes</p>
+            </div>
+            <span class="mission-coins">+10 🪙</span>
+          </div>
+
+          <div class="mission-item" id="mission-reasoning" data-pillar="reasoning">
+            <div class="mission-check" onclick="completeMission('reasoning')">
+              <div class="check-circle" id="check-reasoning"></div>
+            </div>
+            <div class="mission-info">
+              <span class="mission-pillar reasoning-tag">🧩 Reasoning</span>
+              <p class="mission-task" id="mission-reasoning-task">Identify one decision you regret and write why</p>
+            </div>
+            <span class="mission-coins">+10 🪙</span>
+          </div>
+
+          <div class="mission-item" id="mission-focus" data-pillar="focus">
+            <div class="mission-check" onclick="completeMission('focus')">
+              <div class="check-circle" id="check-focus"></div>
+            </div>
+            <div class="mission-info">
+              <span class="mission-pillar focus-tag">🎯 Focus</span>
+              <p class="mission-task" id="mission-focus-task">Work 90 minutes uninterrupted on your #1 task</p>
+            </div>
+            <span class="mission-coins">+10 🪙</span>
+          </div>
+
+          <div class="mission-item" id="mission-knowledge" data-pillar="knowledge">
+            <div class="mission-check" onclick="completeMission('knowledge')">
+              <div class="check-circle" id="check-knowledge"></div>
+            </div>
+            <div class="mission-info">
+              <span class="mission-pillar knowledge-tag">📖 Knowledge</span>
+              <p class="mission-task" id="mission-knowledge-task">Read or listen to 20 minutes of industry content</p>
+            </div>
+            <span class="mission-coins">+10 🪙</span>
+          </div>
+        </div>
+
+        <!-- Bonus Banner -->
+        <div class="bonus-banner" id="bonus-banner">
+          <span class="bonus-icon">🏆</span>
+          <div>
+            <p class="bonus-title">All missions complete!</p>
+            <p class="bonus-sub">+50 bonus coins earned</p>
+          </div>
+          <span class="bonus-coins">+50 🪙</span>
+        </div>
+
+        <!-- Coin Animation -->
+        <div class="coin-burst" id="coin-burst"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN 6 — PROGRESS
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-progress">
+      <div class="screen-content has-nav">
+        <header class="section-header-row">
+          <h2 class="page-title">Progress</h2>
+          <div class="level-coin-row">
+            <div class="level-badge big" id="progress-level">Lv 1</div>
+            <div class="coins-badge">
+              <span>🪙</span>
+              <span id="progress-coins">0</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- Stats Row -->
+        <div class="progress-stats-row">
+          <div class="progress-stat-card">
+            <span class="p-stat-icon">🔥</span>
+            <span class="p-stat-num" id="prog-streak">0</span>
+            <span class="p-stat-lbl">Streak</span>
+          </div>
+          <div class="progress-stat-card">
+            <span class="p-stat-icon">📊</span>
+            <span class="p-stat-num" id="prog-avg">--</span>
+            <span class="p-stat-lbl">Avg Score</span>
+          </div>
+          <div class="progress-stat-card">
+            <span class="p-stat-icon">✅</span>
+            <span class="p-stat-num" id="prog-missions">0</span>
+            <span class="p-stat-lbl">Missions</span>
+          </div>
+        </div>
+
+        <!-- Score Chart -->
+        <div class="chart-card">
+          <h3 class="chart-title">Weekly Score</h3>
+          <div class="chart-wrap">
+            <canvas id="score-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Money Chart -->
+        <div class="chart-card">
+          <h3 class="chart-title">Money Behaviour</h3>
+          <div class="chart-wrap">
+            <canvas id="money-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Pillar Breakdown -->
+        <div class="chart-card">
+          <h3 class="chart-title">Pillar Breakdown</h3>
+          <div class="pillar-breakdown" id="pillar-breakdown-prog">
+            <div class="pb-row">
+              <span>⚡ Speed</span>
+              <div class="pb-bar-wrap"><div class="pb-bar speed-bar" id="pb-speed" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-speed-val">0</span>
+            </div>
+            <div class="pb-row">
+              <span>🧩 Reasoning</span>
+              <div class="pb-bar-wrap"><div class="pb-bar reasoning-bar" id="pb-reasoning" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-reasoning-val">0</span>
+            </div>
+            <div class="pb-row">
+              <span>🎯 Focus</span>
+              <div class="pb-bar-wrap"><div class="pb-bar focus-bar" id="pb-focus" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-focus-val">0</span>
+            </div>
+            <div class="pb-row">
+              <span>📖 Knowledge</span>
+              <div class="pb-bar-wrap"><div class="pb-bar knowledge-bar" id="pb-knowledge" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-knowledge-val">0</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN 7 — PROFILE / SETTINGS
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-profile">
+      <div class="screen-content has-nav">
+
+        <!-- Profile Header -->
+        <div class="profile-hero">
+          <div class="profile-avatar">
+            <span id="profile-avatar-icon">🧠</span>
+          </div>
+          <h2 class="profile-name" id="profile-user-type">Intelligence Agent</h2>
+          <p class="profile-goal" id="profile-user-goal">Goal: —</p>
+          <div class="profile-badges">
+            <span class="badge gold" id="profile-level-badge">Level 1</span>
+            <span class="badge blue" id="profile-coins-badge">0 🪙</span>
+            <span class="badge green" id="profile-streak-badge">0 🔥 Streak</span>
+          </div>
+        </div>
+
+        <!-- Settings Cards -->
+        <div class="settings-section">
+          <h3 class="settings-heading">Notifications</h3>
+          <div class="settings-card">
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Daily Review Reminder</span>
+                <span class="setting-desc">Every evening at 9 PM</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-review" checked />
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Mission Alerts</span>
+                <span class="setting-desc">Morning reminders for daily missions</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-missions" checked />
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Streak Protection</span>
+                <span class="setting-desc">Alert before midnight if streak at risk</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-streak" />
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pro Upgrade -->
+        <div class="pro-card">
+          <div class="pro-card-top">
+            <div>
+              <h3 class="pro-title">Brainance Pro</h3>
+              <p class="pro-subtitle">Unlock your full potential</p>
+            </div>
+            <span class="pro-badge">PRO</span>
+          </div>
+          <ul class="pro-features">
+            <li>✦ Unlimited AI reviews per day</li>
+            <li>✦ Advanced money behaviour tracking</li>
+            <li>✦ Weekly strategy sessions</li>
+            <li>✦ Custom mission builder</li>
+            <li>✦ Export insights as PDF</li>
+          </ul>
+          <button class="btn-gold" onclick="showProModal()">Upgrade to Pro — ₹499/mo</button>
+        </div>
+
+        <!-- App Info -->
+        <div class="settings-section">
+          <h3 class="settings-heading">App</h3>
+          <div class="settings-card">
+            <div class="setting-row" onclick="resetApp()">
+              <div class="setting-info">
+                <span class="setting-label danger">Reset All Data</span>
+                <span class="setting-desc">Clear your history and start fresh</span>
+              </div>
+              <span class="setting-arrow">›</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Version</span>
+                <span class="setting-desc">Brainance v1.0.0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         BOTTOM NAV
+    ════════════════════════════════════════════ -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" onclick="navigateTo('screen-home')" id="nav-home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('screen-missions')" id="nav-missions">
+        <span class="nav-icon">🎮</span>
+        <span class="nav-label">Missions</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('screen-results')" id="nav-results">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Results</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('screen-progress')" id="nav-progress">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Progress</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('screen-profile')" id="nav-profile">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Profile</span>
+      </button>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════
+         PRO MODAL
+    ════════════════════════════════════════════ -->
+    <div class="modal-overlay hidden" id="pro-modal" onclick="closeProModal()">
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <div class="modal-icon">✦</div>
+        <h2 class="modal-title">Brainance Pro</h2>
+        <p class="modal-desc">Unlimited intelligence. No limits.</p>
+        <div class="modal-plans">
+          <div class="plan-card selected">
+            <span class="plan-label">Monthly</span>
+            <span class="plan-price">₹499</span>
+            <span class="plan-period">/month</span>
+          </div>
+          <div class="plan-card">
+            <span class="plan-label">Yearly</span>
+            <span class="plan-price">₹3,999</span>
+            <span class="plan-period">/year</span>
+            <span class="plan-save">Save 33%</span>
+          </div>
+        </div>
+        <button class="btn-gold full-width" onclick="closeProModal()">Start Free Trial</button>
+        <p class="modal-footer-text">7-day free trial • Cancel anytime</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         FOOTER
+    ════════════════════════════════════════════ -->
+    <footer class="app-footer">
+      <p>Founded &amp; Owned by <strong>Sanskaar</strong></p>
+      <p>Co-founded by <strong>Kashish Devnani</strong></p>
+      <p class="footer-copy">© 2026 Brainance. All rights reserved.</p>
+    </footer>
+
+  </div><!-- /#app -->
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
