@@ -52,6 +52,8 @@
          SCREEN LANDING — Animated Intro
     ════════════════════════════════════════════ -->
     <div class="screen active" id="screen-landing">
+      <!-- Background beams canvas -->
+      <canvas id="beams-canvas"></canvas>
       <div class="landing-wrap">
 
         <!-- Animated logo -->
@@ -60,31 +62,117 @@
             <div class="landing-orb-ring-inner"></div>
           </div>
           <div class="landing-icon-wrap">
-            <span class="landing-icon">⚡</span>
+            <span class="landing-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
           </div>
         </div>
 
         <!-- Headline -->
         <div class="landing-text">
           <h1 class="landing-brand">Brainance</h1>
-          <p class="landing-sub">Your Daily Intelligence Engine</p>
+          <p class="landing-sub">Track your intelligence. Upgrade your life.</p>
+          <p class="landing-sub-2">Financial. Mental. Physical. Execution.</p>
         </div>
 
-        <!-- Animated feature pills -->
+        <!-- Live demo score animation -->
+        <div class="landing-demo">
+          <div class="demo-ring">
+            <svg class="demo-ring-svg" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="demoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#60a5fa"/>
+                  <stop offset="50%" stop-color="#818cf8"/>
+                  <stop offset="100%" stop-color="#f5e27a"/>
+                </linearGradient>
+              </defs>
+              <circle class="demo-ring-bg" cx="50" cy="50" r="42" />
+              <circle class="demo-ring-progress" cx="50" cy="50" r="42" />
+            </svg>
+            <span class="demo-score" id="demo-score">0</span>
+          </div>
+          <div class="demo-pillars">
+            <div class="demo-pillar"><span class="demo-p-label">Focus</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:78%"></div></div></div>
+            <div class="demo-pillar"><span class="demo-p-label">Execution</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:65%"></div></div></div>
+            <div class="demo-pillar"><span class="demo-p-label">Financial</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:52%"></div></div></div>
+            <div class="demo-pillar"><span class="demo-p-label">Mental</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:89%"></div></div></div>
+          </div>
+        </div>
+
+        <!-- How it works — 3 steps -->
+        <div class="landing-steps">
+          <div class="landing-step" style="--d:0.3s">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h4>Check in daily</h4>
+              <p>Answer 7 quick questions about your day</p>
+            </div>
+          </div>
+          <div class="landing-step" style="--d:0.5s">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h4>AI analyses everything</h4>
+              <p>Patterns, mistakes, money leaks — all detected</p>
+            </div>
+          </div>
+          <div class="landing-step" style="--d:0.7s">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h4>Level up daily</h4>
+              <p>Missions, streaks, and coaching to upgrade yourself</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expandable feature pills -->
         <div class="landing-features">
-          <div class="landing-pill" style="--d:0.2s">🧠 AI-Powered Analysis</div>
-          <div class="landing-pill" style="--d:0.4s">📈 Track Your Progress</div>
-          <div class="landing-pill" style="--d:0.6s">🎯 Daily Missions</div>
-          <div class="landing-pill" style="--d:0.8s">💰 Money Intelligence</div>
+          <div class="landing-pill" style="--d:0.2s" onclick="toggleLandingPill(this)">
+            <div class="pill-header">
+              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 1.1 3.4 2.7 4.2.4.2.6.6.6 1V13h1.4v-1.8c0-.4.2-.8.6-1C14.9 9.4 16 8 16 6a4 4 0 0 0-4-4z"/><line x1="10" y1="17" x2="14" y2="17"/><line x1="10" y1="21" x2="14" y2="21"/><line x1="10" y1="17" x2="10" y2="21"/><line x1="14" y1="17" x2="14" y2="21"/></svg>
+              <span>AI-Powered Analysis</span>
+              <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="pill-body">
+              <p>Deep AI engine scores your focus, energy, productivity and money habits across 4 pillars every single day.</p>
+            </div>
+          </div>
+          <div class="landing-pill" style="--d:0.4s" onclick="toggleLandingPill(this)">
+            <div class="pill-header">
+              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              <span>Track Your Progress</span>
+              <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="pill-body">
+              <p>Beautiful charts and streaks show how your intelligence score evolves over time. Watch yourself level up.</p>
+            </div>
+          </div>
+          <div class="landing-pill" style="--d:0.6s" onclick="toggleLandingPill(this)">
+            <div class="pill-header">
+              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+              <span>Daily Missions</span>
+              <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="pill-body">
+              <p>Earn coins and XP by completing personalised micro-challenges that sharpen your mind and wallet.</p>
+            </div>
+          </div>
+          <div class="landing-pill" style="--d:0.8s" onclick="toggleLandingPill(this)">
+            <div class="pill-header">
+              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span>Money Intelligence</span>
+              <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="pill-body">
+              <p>Track spending, get AI-driven financial insights, and build smart money habits — all in one place.</p>
+            </div>
+          </div>
         </div>
 
         <!-- CTA buttons -->
         <div class="landing-cta">
           <button class="btn-primary landing-btn-main" onclick="skipToAuth()">
-            Get Started
+            Create Account
           </button>
           <button class="landing-btn-guest" onclick="continueAsGuest()">
-            Continue as Guest
+            Start as Guest — No signup required
           </button>
         </div>
 
@@ -107,7 +195,7 @@
 
         <!-- Logo -->
         <div class="auth-logo">
-          <span class="auth-logo-icon">⚡</span>
+          <span class="auth-logo-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
           <h1 class="auth-brand">Brainance</h1>
           <p class="auth-tagline">Your Daily Intelligence Engine</p>
         </div>
@@ -124,16 +212,16 @@
           <div class="auth-field-wrap">
             <label class="auth-label">Email</label>
             <div class="auth-input-row">
-              <span class="auth-input-icon">✉️</span>
+              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
               <input type="email" class="auth-input" id="login-email" placeholder="you@example.com" autocomplete="email" />
             </div>
           </div>
           <div class="auth-field-wrap">
             <label class="auth-label">Password</label>
             <div class="auth-input-row">
-              <span class="auth-input-icon">🔒</span>
+              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
               <input type="password" class="auth-input" id="login-password" placeholder="Enter password" autocomplete="current-password" />
-              <button class="auth-eye-btn" onclick="togglePassword('login-password', this)" tabindex="-1">👁</button>
+              <button class="auth-eye-btn" onclick="togglePassword('login-password', this)" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
             </div>
           </div>
           <button class="auth-forgot" onclick="showAuthMessage('Reset link sent to your email!')">Forgot password?</button>
@@ -142,10 +230,10 @@
           </button>
           <div class="auth-or"><span>or continue with</span></div>
           <button class="auth-social-btn" onclick="handleSocialAuth('Google')">
-            <span>🌐</span> Continue with Google
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Continue with Google
           </button>
           <button class="auth-social-btn" onclick="handleSocialAuth('Apple')">
-            <span>🍎</span> Continue with Apple
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.33-3.14-2.57C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> Continue with Apple
           </button>
         </div>
 
@@ -154,23 +242,23 @@
           <div class="auth-field-wrap">
             <label class="auth-label">Full Name</label>
             <div class="auth-input-row">
-              <span class="auth-input-icon">👤</span>
+              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
               <input type="text" class="auth-input" id="signup-name" placeholder="Your name" autocomplete="name" />
             </div>
           </div>
           <div class="auth-field-wrap">
             <label class="auth-label">Email</label>
             <div class="auth-input-row">
-              <span class="auth-input-icon">✉️</span>
+              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
               <input type="email" class="auth-input" id="signup-email" placeholder="you@example.com" autocomplete="email" />
             </div>
           </div>
           <div class="auth-field-wrap">
             <label class="auth-label">Password</label>
             <div class="auth-input-row">
-              <span class="auth-input-icon">🔒</span>
+              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
               <input type="password" class="auth-input" id="signup-password" placeholder="Min 8 characters" autocomplete="new-password" />
-              <button class="auth-eye-btn" onclick="togglePassword('signup-password', this)" tabindex="-1">👁</button>
+              <button class="auth-eye-btn" onclick="togglePassword('signup-password', this)" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
             </div>
           </div>
           <p class="auth-terms">By signing up you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a></p>
@@ -179,31 +267,35 @@
           </button>
           <div class="auth-or"><span>or continue with</span></div>
           <button class="auth-social-btn" onclick="handleSocialAuth('Google')">
-            <span>🌐</span> Continue with Google
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Continue with Google
           </button>
           <button class="auth-social-btn" onclick="handleSocialAuth('Apple')">
-            <span>🍎</span> Continue with Apple
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.33-3.14-2.57C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> Continue with Apple
           </button>
         </div>
 
         <!-- Guest Form -->
         <div class="auth-form" id="form-guest">
           <div class="guest-hero">
-            <div class="guest-icon">👤</div>
+            <div class="guest-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
             <h3 class="guest-title">Explore Brainance</h3>
             <p class="guest-desc">Try the full experience without an account. Your progress won't be saved between sessions.</p>
           </div>
+          <div class="guest-limit-info">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Guest mode limited to 3 days of history</span>
+          </div>
           <div class="guest-perks">
-            <div class="guest-perk"><span>✅</span> Full AI analysis</div>
-            <div class="guest-perk"><span>✅</span> Daily review session</div>
-            <div class="guest-perk"><span>✅</span> Missions &amp; scoring</div>
-            <div class="guest-perk"><span>⚠️</span> Progress not saved</div>
+            <div class="guest-perk"><svg class="perk-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Full AI analysis</div>
+            <div class="guest-perk"><svg class="perk-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Daily review session</div>
+            <div class="guest-perk"><svg class="perk-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Missions &amp; scoring</div>
+            <div class="guest-perk"><svg class="perk-warn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Progress not saved</div>
           </div>
           <button class="btn-primary auth-submit-btn" onclick="continueAsGuest()">
             <span>Enter as Guest</span><span class="auth-btn-arrow">→</span>
           </button>
           <button class="auth-social-btn" onclick="switchAuthTab('signup')">
-            <span>✨</span> Create a free account instead
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Create a free account instead
           </button>
         </div>
 
@@ -227,7 +319,7 @@
       <div class="onboarding-wrap">
         <!-- Logo -->
         <div class="brand-logo">
-          <span class="logo-icon">⚡</span>
+          <span class="logo-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
           <h1 class="brand-name">Brainance</h1>
           <p class="brand-tagline">Your Daily Intelligence Engine</p>
         </div>
@@ -238,17 +330,17 @@
           <p class="ob-subtitle">We personalise your analysis based on your world</p>
           <div class="ob-cards">
             <button class="ob-card" data-value="student" onclick="selectRole(this)">
-              <span class="ob-card-icon">📚</span>
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
               <span class="ob-card-label">Student</span>
               <span class="ob-card-desc">Learning & growing</span>
             </button>
             <button class="ob-card" data-value="sales" onclick="selectRole(this)">
-              <span class="ob-card-icon">💼</span>
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></span>
               <span class="ob-card-label">Sales</span>
               <span class="ob-card-desc">Closing & earning</span>
             </button>
             <button class="ob-card" data-value="business" onclick="selectRole(this)">
-              <span class="ob-card-icon">🚀</span>
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span>
               <span class="ob-card-label">Business</span>
               <span class="ob-card-desc">Building & scaling</span>
             </button>
@@ -262,17 +354,17 @@
           <p class="ob-subtitle">This shapes every insight we give you</p>
           <div class="ob-cards">
             <button class="ob-card" data-value="money" onclick="selectGoal(this)">
-              <span class="ob-card-icon">💰</span>
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
               <span class="ob-card-label">Make Money</span>
               <span class="ob-card-desc">Maximise earning potential</span>
             </button>
             <button class="ob-card" data-value="discipline" onclick="selectGoal(this)">
-              <span class="ob-card-icon">🎯</span>
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
               <span class="ob-card-label">Discipline</span>
               <span class="ob-card-desc">Build unbreakable habits</span>
             </button>
             <button class="ob-card" data-value="focus" onclick="selectGoal(this)">
-              <span class="ob-card-icon">🧠</span>
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
               <span class="ob-card-label">Focus</span>
               <span class="ob-card-desc">Deep work & clarity</span>
             </button>
@@ -288,6 +380,21 @@
     <div class="screen" id="screen-home">
       <div class="screen-content has-nav">
 
+        <!-- Guest upgrade banner -->
+        <div class="guest-banner hidden" id="guest-banner">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="guest-banner-text">Guest mode — <strong id="guest-days-left">3 days</strong> remaining</span>
+          <button class="guest-banner-btn" onclick="skipToAuth()">Save Progress →</button>
+        </div>
+
+        <!-- AI insight widget -->
+        <div class="insight-widget hidden" id="insight-widget">
+          <div class="insight-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <p class="insight-text" id="insight-text"></p>
+        </div>
+
         <!-- Header -->
         <header class="dash-header">
           <div>
@@ -296,7 +403,7 @@
           </div>
           <div class="header-right">
             <div class="coins-badge">
-              <span class="coin-icon">🪙</span>
+              <span class="coin-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a3.5 3.5 0 1 0 0 6H12"/><line x1="12" y1="7" x2="12" y2="17"/></svg></span>
               <span id="coin-count">0</span>
             </div>
             <div class="level-badge" id="level-badge">Lv 1</div>
@@ -337,7 +444,7 @@
           <div class="pillars-grid">
             <div class="pillar-card stagger-1">
               <div class="pillar-header">
-                <span class="pillar-icon">⚡</span>
+                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
                 <span class="pillar-name">Speed</span>
                 <span class="pillar-val" id="pillar-speed-val">0</span>
               </div>
@@ -347,7 +454,7 @@
             </div>
             <div class="pillar-card stagger-2">
               <div class="pillar-header">
-                <span class="pillar-icon">🧩</span>
+                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg></span>
                 <span class="pillar-name">Reasoning</span>
                 <span class="pillar-val" id="pillar-reasoning-val">0</span>
               </div>
@@ -357,7 +464,7 @@
             </div>
             <div class="pillar-card stagger-3">
               <div class="pillar-header">
-                <span class="pillar-icon">🎯</span>
+                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
                 <span class="pillar-name">Focus</span>
                 <span class="pillar-val" id="pillar-focus-val">0</span>
               </div>
@@ -367,7 +474,7 @@
             </div>
             <div class="pillar-card stagger-4">
               <div class="pillar-header">
-                <span class="pillar-icon">📖</span>
+                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
                 <span class="pillar-name">Knowledge</span>
                 <span class="pillar-val" id="pillar-knowledge-val">0</span>
               </div>
@@ -381,21 +488,21 @@
         <!-- Quick Stats -->
         <div class="quick-stats">
           <div class="stat-chip">
-            <span class="stat-icon">🔥</span>
+            <span class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3.5-7.5C14 4 15 6 15 7.5c0 1.62-.73 2.64 0 4 .98 1.83 2 3 2 5A5 5 0 0 1 12 21a5 5 0 0 1-5-5c0-1.4.5-2.5 1.5-3.5z"/></svg></span>
             <div>
               <span class="stat-num" id="streak-count">0</span>
               <span class="stat-lbl">Day Streak</span>
             </div>
           </div>
           <div class="stat-chip">
-            <span class="stat-icon">✅</span>
+            <span class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
             <div>
               <span class="stat-num" id="missions-done">0/4</span>
               <span class="stat-lbl">Missions</span>
             </div>
           </div>
           <div class="stat-chip">
-            <span class="stat-icon">📈</span>
+            <span class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
             <div>
               <span class="stat-num" id="weekly-avg">--</span>
               <span class="stat-lbl">Week Avg</span>
@@ -405,7 +512,7 @@
 
         <!-- Review Button -->
         <button class="btn-primary review-btn" onclick="navigateTo('screen-review')">
-          <span class="btn-icon-spin">🧠</span> Start Daily Review
+          <svg class="btn-icon-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg> Start Daily Review
           <span class="btn-ripple"></span>
         </button>
 
@@ -413,7 +520,7 @@
         <div class="voice-day-card glass-card" onclick="startVoiceDump()">
           <div class="voice-day-header">
             <div class="voice-day-orb" id="home-voice-orb">
-              <span class="voice-orb-icon" id="home-voice-icon">🎙️</span>
+              <span class="voice-orb-icon" id="home-voice-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></span>
             </div>
             <div>
               <h3 class="voice-day-title">Speak your day</h3>
@@ -435,7 +542,7 @@
       <div class="chat-header">
         <button class="back-btn" onclick="navigateTo('screen-home')">‹</button>
         <div class="chat-header-info">
-          <div class="ai-avatar" id="ai-avatar-wrap">⚡</div>
+          <div class="ai-avatar" id="ai-avatar-wrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
           <div>
             <p class="chat-name">Brainance AI</p>
             <p class="chat-status" id="chat-status-text">Ready to analyse your day</p>
@@ -488,7 +595,7 @@
         <div class="result-cards" id="result-cards">
           <div class="result-card mistake-card">
             <div class="result-card-header">
-              <span class="result-icon">❌</span>
+              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
               <h3>Biggest Mistake</h3>
             </div>
             <p class="result-body" id="res-mistake">Complete your daily review to see insights.</p>
@@ -496,7 +603,7 @@
 
           <div class="result-card money-card">
             <div class="result-card-header">
-              <span class="result-icon">💰</span>
+              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
               <h3>Money Impact</h3>
             </div>
             <p class="result-body" id="res-money">—</p>
@@ -504,7 +611,7 @@
 
           <div class="result-card thinking-card">
             <div class="result-card-header">
-              <span class="result-icon">🧠</span>
+              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
               <h3>Thinking Pattern</h3>
             </div>
             <p class="result-body" id="res-thinking">—</p>
@@ -512,7 +619,7 @@
 
           <div class="result-card missed-card">
             <div class="result-card-header">
-              <span class="result-icon">⚠️</span>
+              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
               <h3>Missed Opportunity</h3>
             </div>
             <p class="result-body" id="res-missed">—</p>
@@ -520,7 +627,7 @@
 
           <div class="result-card fix-card">
             <div class="result-card-header">
-              <span class="result-icon">⚡</span>
+              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
               <h3>Fix for Tomorrow</h3>
             </div>
             <ul class="result-fixes" id="res-fixes">
@@ -543,7 +650,7 @@
         <header class="section-header-row">
           <h2 class="page-title">Daily Missions</h2>
           <div class="coins-badge">
-            <span>🪙</span>
+            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a3.5 3.5 0 1 0 0 6H12"/><line x1="12" y1="7" x2="12" y2="17"/></svg></span>
             <span id="missions-coin-count">0</span>
           </div>
         </header>
@@ -556,10 +663,10 @@
               <div class="check-circle" id="check-speed"></div>
             </div>
             <div class="mission-info">
-              <span class="mission-pillar speed-tag">⚡ Speed</span>
+              <span class="mission-pillar speed-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Speed</span>
               <p class="mission-task" id="mission-speed-task">Complete your morning routine in under 30 minutes</p>
             </div>
-            <span class="mission-coins">+10 🪙</span>
+            <span class="mission-coins">+10 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
           </div>
 
           <div class="mission-item" id="mission-reasoning" data-pillar="reasoning">
@@ -567,10 +674,10 @@
               <div class="check-circle" id="check-reasoning"></div>
             </div>
             <div class="mission-info">
-              <span class="mission-pillar reasoning-tag">🧩 Reasoning</span>
+              <span class="mission-pillar reasoning-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg> Reasoning</span>
               <p class="mission-task" id="mission-reasoning-task">Identify one decision you regret and write why</p>
             </div>
-            <span class="mission-coins">+10 🪙</span>
+            <span class="mission-coins">+10 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
           </div>
 
           <div class="mission-item" id="mission-focus" data-pillar="focus">
@@ -578,10 +685,10 @@
               <div class="check-circle" id="check-focus"></div>
             </div>
             <div class="mission-info">
-              <span class="mission-pillar focus-tag">🎯 Focus</span>
+              <span class="mission-pillar focus-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Focus</span>
               <p class="mission-task" id="mission-focus-task">Work 90 minutes uninterrupted on your #1 task</p>
             </div>
-            <span class="mission-coins">+10 🪙</span>
+            <span class="mission-coins">+10 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
           </div>
 
           <div class="mission-item" id="mission-knowledge" data-pillar="knowledge">
@@ -589,21 +696,21 @@
               <div class="check-circle" id="check-knowledge"></div>
             </div>
             <div class="mission-info">
-              <span class="mission-pillar knowledge-tag">📖 Knowledge</span>
+              <span class="mission-pillar knowledge-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Knowledge</span>
               <p class="mission-task" id="mission-knowledge-task">Read or listen to 20 minutes of industry content</p>
             </div>
-            <span class="mission-coins">+10 🪙</span>
+            <span class="mission-coins">+10 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
           </div>
         </div>
 
         <!-- Bonus Banner -->
         <div class="bonus-banner" id="bonus-banner">
-          <span class="bonus-icon">🏆</span>
+          <span class="bonus-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
           <div>
             <p class="bonus-title">All missions complete!</p>
             <p class="bonus-sub">+50 bonus coins earned</p>
           </div>
-          <span class="bonus-coins">+50 🪙</span>
+          <span class="bonus-coins">+50 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
         </div>
 
         <!-- Coin Animation -->
@@ -621,7 +728,7 @@
           <div class="level-coin-row">
             <div class="level-badge big" id="progress-level">Lv 1</div>
             <div class="coins-badge">
-              <span>🪙</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a3.5 3.5 0 1 0 0 6H12"/><line x1="12" y1="7" x2="12" y2="17"/></svg>
               <span id="progress-coins">0</span>
             </div>
           </div>
@@ -630,17 +737,17 @@
         <!-- Stats Row -->
         <div class="progress-stats-row">
           <div class="progress-stat-card">
-            <span class="p-stat-icon">🔥</span>
+            <span class="p-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3.5-7.5C14 4 15 6 15 7.5c0 1.62-.73 2.64 0 4 .98 1.83 2 3 2 5A5 5 0 0 1 12 21a5 5 0 0 1-5-5c0-1.4.5-2.5 1.5-3.5z"/></svg></span>
             <span class="p-stat-num" id="prog-streak">0</span>
             <span class="p-stat-lbl">Streak</span>
           </div>
           <div class="progress-stat-card">
-            <span class="p-stat-icon">📊</span>
+            <span class="p-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></span>
             <span class="p-stat-num" id="prog-avg">--</span>
             <span class="p-stat-lbl">Avg Score</span>
           </div>
           <div class="progress-stat-card">
-            <span class="p-stat-icon">✅</span>
+            <span class="p-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
             <span class="p-stat-num" id="prog-missions">0</span>
             <span class="p-stat-lbl">Missions</span>
           </div>
@@ -667,22 +774,22 @@
           <h3 class="chart-title">Pillar Breakdown</h3>
           <div class="pillar-breakdown" id="pillar-breakdown-prog">
             <div class="pb-row">
-              <span>⚡ Speed</span>
+              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Speed</span>
               <div class="pb-bar-wrap"><div class="pb-bar speed-bar" id="pb-speed" style="width:0%"></div></div>
               <span class="pb-val" id="pb-speed-val">0</span>
             </div>
             <div class="pb-row">
-              <span>🧩 Reasoning</span>
+              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg> Reasoning</span>
               <div class="pb-bar-wrap"><div class="pb-bar reasoning-bar" id="pb-reasoning" style="width:0%"></div></div>
               <span class="pb-val" id="pb-reasoning-val">0</span>
             </div>
             <div class="pb-row">
-              <span>🎯 Focus</span>
+              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Focus</span>
               <div class="pb-bar-wrap"><div class="pb-bar focus-bar" id="pb-focus" style="width:0%"></div></div>
               <span class="pb-val" id="pb-focus-val">0</span>
             </div>
             <div class="pb-row">
-              <span>📖 Knowledge</span>
+              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Knowledge</span>
               <div class="pb-bar-wrap"><div class="pb-bar knowledge-bar" id="pb-knowledge" style="width:0%"></div></div>
               <span class="pb-val" id="pb-knowledge-val">0</span>
             </div>
@@ -701,7 +808,7 @@
         <!-- Profile Header -->
         <div class="profile-hero">
           <div class="profile-avatar">
-            <span id="profile-avatar-icon">🧠</span>
+            <span id="profile-avatar-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
           </div>
           <h2 class="profile-name" id="profile-user-type">Intelligence Agent</h2>
           <p class="profile-goal" id="profile-user-goal">Goal: —</p>
@@ -765,7 +872,7 @@
             <li>✦ Custom mission builder</li>
             <li>✦ Export insights as PDF</li>
           </ul>
-          <button class="btn-gold" onclick="showProModal()">Upgrade to Pro — ₹499/mo</button>
+          <button class="btn-gold" onclick="showProModal()">Upgrade to Pro — $4.99/mo</button>
         </div>
 
         <!-- App Info -->
@@ -796,23 +903,23 @@
     ════════════════════════════════════════════ -->
     <nav class="bottom-nav" id="bottom-nav">
       <button class="nav-item active" onclick="navigateTo('screen-home')" id="nav-home">
-        <span class="nav-icon">🏠</span>
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 14 15 14 15 21"/></svg></span>
         <span class="nav-label">Home</span>
       </button>
       <button class="nav-item" onclick="navigateTo('screen-missions')" id="nav-missions">
-        <span class="nav-icon">🎮</span>
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
         <span class="nav-label">Missions</span>
       </button>
       <button class="nav-item" onclick="navigateTo('screen-results')" id="nav-results">
-        <span class="nav-icon">📊</span>
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></span>
         <span class="nav-label">Results</span>
       </button>
       <button class="nav-item" onclick="navigateTo('screen-progress')" id="nav-progress">
-        <span class="nav-icon">📈</span>
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
         <span class="nav-label">Progress</span>
       </button>
       <button class="nav-item" onclick="navigateTo('screen-profile')" id="nav-profile">
-        <span class="nav-icon">👤</span>
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
         <span class="nav-label">Profile</span>
       </button>
     </nav>
@@ -829,12 +936,12 @@
         <div class="modal-plans">
           <div class="plan-card selected">
             <span class="plan-label">Monthly</span>
-            <span class="plan-price">₹499</span>
+            <span class="plan-price">$4.99</span>
             <span class="plan-period">/month</span>
           </div>
           <div class="plan-card">
             <span class="plan-label">Yearly</span>
-            <span class="plan-price">₹3,999</span>
+            <span class="plan-price">$39.99</span>
             <span class="plan-period">/year</span>
             <span class="plan-save">Save 33%</span>
           </div>

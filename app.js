@@ -184,8 +184,17 @@ function handleSocialAuth(provider) {
 // =======================================================
 
 function startLandingSequence() {
-  // Pills and CTA animate in via CSS; after 5s auto-advance hint
-  // Nothing forced — user drives the flow
+  // Animate demo score ring + pillar bars
+  animateLandingDemo();
+}
+
+/* ─── Landing pill accordion ────────────────────────── */
+function toggleLandingPill(el) {
+  const wasExpanded = el.classList.contains('expanded');
+  // Close all pills first
+  document.querySelectorAll('.landing-pill.expanded').forEach(p => p.classList.remove('expanded'));
+  // Toggle the clicked one (if it wasn't already open)
+  if (!wasExpanded) el.classList.add('expanded');
 }
 
 function skipToAuth() {
@@ -302,9 +311,14 @@ function initHomeDashboard() {
   var preview = document.getElementById('voice-day-preview');
   var icon    = document.getElementById('home-voice-icon');
   if (preview) preview.classList.add('hidden');
-  if (icon)    icon.textContent = '\uD83C\uDF99\uFE0F';
+  if (icon)    icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
   var orb = document.getElementById('home-voice-orb');
   if (orb) orb.classList.remove('recording');
+
+  // Guest mode banner
+  initGuestMode();
+  // AI insight widget
+  showInsightWidget();
 }
 
 function animateRing(score) {
@@ -359,7 +373,7 @@ function startVoiceDump() {
   var icon = document.getElementById('home-voice-icon');
 
   orb.classList.add('recording');
-  icon.textContent = '\u23F9\uFE0F';
+  icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
   homeSpeechActive = true;
 
   homeSpeechRecognition.onresult = function(e) {
@@ -383,7 +397,7 @@ function stopVoiceDump() {
   var orb  = document.getElementById('home-voice-orb');
   var icon = document.getElementById('home-voice-icon');
   if (orb)  orb.classList.remove('recording');
-  if (icon) icon.textContent = '\uD83C\uDF99\uFE0F';
+  if (icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
 }
 
 function sendVoiceDump() {
@@ -648,7 +662,7 @@ function startChatMic() {
   var textRow   = document.getElementById('chat-text-row');
 
   chatMicActive = true;
-  if (micBtn)    { micBtn.classList.add('listening'); micBtn.textContent = '\uD83D\uDD34'; }
+  if (micBtn)    { micBtn.classList.add('listening'); micBtn.textContent = '●'; }
   if (micStatus) micStatus.classList.remove('hidden');
   if (statusLbl) statusLbl.textContent = 'Listening\u2026';
 
@@ -681,7 +695,7 @@ function stopChatMic() {
   var micStatus = document.getElementById('chat-mic-status');
   var textRow   = document.getElementById('chat-text-row');
   var optionsWrap = document.getElementById('chat-options');
-  if (micBtn)    { micBtn.classList.remove('listening'); micBtn.textContent = '\uD83C\uDF99\uFE0F'; }
+  if (micBtn)    { micBtn.classList.remove('listening'); micBtn.textContent = '●'; }
   if (micStatus) micStatus.classList.add('hidden');
   var hasOptions = optionsWrap && optionsWrap.children.length > 0;
   if (!hasOptions && textRow) textRow.classList.remove('hidden');
@@ -724,7 +738,7 @@ function finishReview() {
             var btn = document.createElement('button');
             btn.className = 'chat-option-btn';
             btn.style.cssText = 'background:linear-gradient(135deg,#3b82f6,#4f46e5);border:none;color:white;font-weight:700;';
-            btn.textContent = '\uD83D\uDCCA View Full Analysis \u2192';
+            btn.textContent = 'View Full Analysis \u2192';
             btn.onclick = function() { stopAISpeech(); navigateTo('screen-results'); };
             optionsWrap.appendChild(btn);
           }, 1000);
@@ -887,7 +901,9 @@ function initResults() {
   var fixList = document.getElementById('res-fixes');
   if (fixList && r.fixes) fixList.innerHTML = r.fixes.map(function(f) { return '<li>' + f + '</li>'; }).join('');
   var trend = document.getElementById('result-trend');
-  if (trend) trend.textContent = r.score >= calcWeeklyAvg() ? '\uD83D\uDCC8' : '\uD83D\uDCC9';
+  if (trend) trend.innerHTML = r.score >= calcWeeklyAvg()
+    ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
+    : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>';
 }
 
 // =======================================================
@@ -945,7 +961,8 @@ function burstCoins() {
   for (var i = 0; i < 8; i++) {
     var p = document.createElement('div');
     p.className = 'coin-particle';
-    p.textContent = '\uD83E\uDE99';
+    p.textContent = '●';
+    p.style.color = '#d4af37';
     var angle = (i / 8) * 2 * Math.PI;
     var r = 80 + Math.random() * 60;
     p.style.left = (cx + Math.cos(angle) * 10) + 'px';
@@ -1027,15 +1044,21 @@ function chartOptions(color) {
 function initProfile() {
   var typeMap = { student: 'Student Agent', sales: 'Sales Warrior', business: 'Business Builder' };
   var goalMap = { money: 'Make Money', discipline: 'Build Discipline', focus: 'Master Focus' };
-  var iconMap = { student: '\uD83D\uDCDA', sales: '\uD83D\uDCBC', business: '\uD83D\uDE80' };
+  var iconMap = { student: 'book', sales: 'briefcase', business: 'rocket' };
+  var svgMap = {
+    book: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    briefcase: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>',
+    rocket: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>',
+    bulb: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg>',
+  };
 
   setEl('profile-user-type', STATE.userName || typeMap[STATE.userType] || 'Intelligence Agent');
   setEl('profile-user-goal', 'Goal: ' + (goalMap[STATE.userGoal] || '\u2014'));
   setEl('profile-level-badge', 'Level ' + STATE.level);
-  setEl('profile-coins-badge', STATE.coins + ' \uD83E\uDE99');
-  setEl('profile-streak-badge', STATE.streak + ' \uD83D\uDD25 Streak');
+  setEl('profile-coins-badge', STATE.coins + ' coins');
+  setEl('profile-streak-badge', STATE.streak + ' streak');
   var avatarEl = document.getElementById('profile-avatar-icon');
-  if (avatarEl) avatarEl.textContent = iconMap[STATE.userType] || '\uD83E\uDDE0';
+  if (avatarEl) avatarEl.innerHTML = svgMap[iconMap[STATE.userType] || 'bulb'] || svgMap.bulb;
 
   if (!document.getElementById('profile-footer')) {
     var sc = document.querySelector('#screen-profile .screen-content');
@@ -1082,6 +1105,229 @@ function animateNumber(id, target, start, duration) {
 }
 
 function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+/* ── Beams Canvas Animation ────────────────────────────────────── */
+(function initBeams() {
+  var canvas = document.getElementById('beams-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W, H;
+  var beams = [];
+  var BEAM_COUNT = 8;
+
+  function resize() {
+    W = canvas.width = canvas.parentElement.offsetWidth || window.innerWidth;
+    H = canvas.height = canvas.parentElement.offsetHeight || window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  var BEAM_COLORS = [
+    { r: 96, g: 165, b: 250 },   // blue
+    { r: 129, g: 140, b: 248 },  // indigo
+    { r: 168, g: 85, b: 247 },   // purple
+    { r: 212, g: 175, b: 55 },   // gold
+    { r: 99, g: 102, b: 241 },   // violet
+    { r: 59, g: 130, b: 246 },   // bright blue
+    { r: 245, g: 226, b: 122 },  // light gold
+    { r: 34, g: 197, b: 94 },    // green
+  ];
+
+  function Beam() { this.reset(); }
+
+  Beam.prototype.reset = function() {
+    this.color = BEAM_COLORS[Math.floor(Math.random() * BEAM_COLORS.length)];
+    this.width = Math.random() * 2.5 + 0.5;
+    this.speed = Math.random() * 1.2 + 0.4;
+    this.alpha = Math.random() * 0.15 + 0.04;
+    this.drift = (Math.random() - 0.5) * 0.3;
+    this.y = -20;
+    this.x = Math.random() * W;
+    this.length = Math.random() * 200 + 100;
+    this.curve = (Math.random() - 0.5) * 0.008;
+    this.angle = Math.PI / 2 + (Math.random() - 0.5) * 0.3;
+    this.glow = Math.random() * 12 + 4;
+    this.pulsePhase = Math.random() * Math.PI * 2;
+    this.pulseSpeed = Math.random() * 0.03 + 0.01;
+  };
+
+  Beam.prototype.update = function() {
+    this.x += Math.cos(this.angle) * this.speed + this.drift;
+    this.y += Math.sin(this.angle) * this.speed;
+    this.angle += this.curve;
+    this.pulsePhase += this.pulseSpeed;
+
+    if (this.y > H + 40 || this.x < -100 || this.x > W + 100) {
+      this.reset();
+    }
+  };
+
+  Beam.prototype.draw = function() {
+    var pulse = 0.6 + 0.4 * Math.sin(this.pulsePhase);
+    var a = this.alpha * pulse;
+    var c = this.color;
+
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',1)';
+    ctx.lineWidth = this.width;
+    ctx.shadowBlur = this.glow * pulse;
+    ctx.shadowColor = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',0.5)';
+    ctx.lineCap = 'round';
+
+    // Draw beam as a line
+    var tailX = this.x - Math.cos(this.angle) * this.length;
+    var tailY = this.y - Math.sin(this.angle) * this.length;
+
+    var grad = ctx.createLinearGradient(tailX, tailY, this.x, this.y);
+    grad.addColorStop(0, 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',0)');
+    grad.addColorStop(0.6, 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + (a * 0.7) + ')');
+    grad.addColorStop(1, 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')');
+    ctx.strokeStyle = grad;
+
+    ctx.beginPath();
+    ctx.moveTo(tailX, tailY);
+    ctx.lineTo(this.x, this.y);
+    ctx.stroke();
+
+    // Collision point glow at bottom
+    if (this.y > H - 80) {
+      var proximity = 1 - (H - this.y) / 80;
+      ctx.beginPath();
+      ctx.arc(this.x, H, 20 * proximity, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + (proximity * 0.15) + ')';
+      ctx.shadowBlur = 30 * proximity;
+      ctx.fill();
+    }
+    ctx.restore();
+  };
+
+  // Create beams
+  for (var i = 0; i < BEAM_COUNT; i++) {
+    var b = new Beam();
+    b.y = Math.random() * H;  // pre-position
+    beams.push(b);
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Bottom collision gradient
+    var bottomGrad = ctx.createLinearGradient(0, H - 60, 0, H);
+    bottomGrad.addColorStop(0, 'transparent');
+    bottomGrad.addColorStop(1, 'rgba(96,165,250,0.03)');
+    ctx.fillStyle = bottomGrad;
+    ctx.fillRect(0, H - 60, W, 60);
+
+    for (var i = 0; i < beams.length; i++) {
+      beams[i].update();
+      beams[i].draw();
+    }
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+})();
+
+/* ── Landing Demo Score Animation ─────────────────────────────── */
+function animateLandingDemo() {
+  var ring = document.querySelector('.demo-ring-progress');
+  var scoreEl = document.getElementById('demo-score');
+  var fills = document.querySelectorAll('.demo-p-fill');
+  if (!ring || !scoreEl) return;
+
+  var targetScore = 71;
+  var circumference = 2 * Math.PI * 42; // r=42
+
+  // Animate ring
+  setTimeout(function() {
+    var offset = circumference - (targetScore / 100) * circumference;
+    ring.style.strokeDashoffset = offset;
+  }, 400);
+
+  // Animate score number
+  var start = performance.now();
+  function tick(now) {
+    var p = Math.min((now - start) / 1800, 1);
+    var ease = 1 - Math.pow(1 - p, 3);
+    scoreEl.textContent = Math.round(targetScore * ease);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  setTimeout(function() { requestAnimationFrame(tick); }, 400);
+
+  // Animate pillar bars
+  fills.forEach(function(fill) {
+    setTimeout(function() {
+      fill.style.width = fill.style.getPropertyValue('--target');
+    }, 600);
+  });
+}
+
+/* ── Guest 3-Day Limit Logic ──────────────────────────────────── */
+function initGuestMode() {
+  if (!STATE.isGuest) return;
+
+  // Track first guest visit
+  var guestStart = localStorage.getItem('brainance_guest_start');
+  if (!guestStart) {
+    guestStart = Date.now().toString();
+    localStorage.setItem('brainance_guest_start', guestStart);
+  }
+
+  var elapsed = Date.now() - parseInt(guestStart);
+  var daysUsed = Math.floor(elapsed / (1000 * 60 * 60 * 24));
+  var daysLeft = Math.max(0, 3 - daysUsed);
+
+  // Show guest banner
+  var banner = document.getElementById('guest-banner');
+  var daysEl = document.getElementById('guest-days-left');
+  if (banner) {
+    banner.classList.remove('hidden');
+    if (daysEl) daysEl.textContent = daysLeft + (daysLeft === 1 ? ' day' : ' days');
+    if (daysLeft === 0) {
+      daysEl.textContent = 'Expired';
+      daysEl.style.color = '#ef4444';
+    }
+  }
+}
+
+/* ── AI Insight Widget ────────────────────────────────────────── */
+function showInsightWidget() {
+  var widget = document.getElementById('insight-widget');
+  var textEl = document.getElementById('insight-text');
+  if (!widget || !textEl) return;
+
+  var insights = [];
+
+  // Generate contextual insights
+  if (STATE.streak >= 3) {
+    insights.push('You\'re on a ' + STATE.streak + '-day streak! Consistency compounds — keep going.');
+  }
+  if (STATE.todayScore !== null && STATE.todayScore < 50) {
+    insights.push('Score dipped below 50. Focus on your weakest pillar tomorrow to recover.');
+  }
+  if (STATE.todayScore !== null && STATE.todayScore >= 80) {
+    insights.push('Outstanding day — score of ' + STATE.todayScore + '! Your discipline is paying off.');
+  }
+  if (STATE.coins >= 100) {
+    insights.push('You\'ve earned ' + STATE.coins + ' coins. You\'re building momentum.');
+  }
+  var p = STATE.pillars;
+  var lowest = Object.entries(p).sort(function(a,b){ return a[1]-b[1]; })[0];
+  if (lowest && lowest[1] > 0 && lowest[1] < 40) {
+    insights.push('Your ' + lowest[0] + ' pillar is at ' + lowest[1] + ' — this is your biggest growth area.');
+  }
+  if (STATE.todayScore === null) {
+    insights.push('You haven\'t completed today\'s review yet. Tap "Start Daily Review" to get your score.');
+  }
+
+  if (insights.length === 0) {
+    insights.push('Complete your daily review to unlock personalised AI insights.');
+  }
+
+  textEl.textContent = insights[Math.floor(Math.random() * insights.length)];
+  widget.classList.remove('hidden');
+}
 
 /* ── Particle System ────────────────────────────────────────────── */
 (function initParticles() {
