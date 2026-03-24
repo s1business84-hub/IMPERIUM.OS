@@ -425,16 +425,130 @@ h3 { font-size: var(--fs-lg);  font-weight: 600; line-height: 1.3; }
   background-clip: text;
 }
 .landing-sub {
-  font-size: var(--fs-lg);
-  color: var(--text-1);
-  margin-top: var(--sp-8);
-  font-weight: 500;
-  line-height: 1.4;
-}
-.landing-sub-2 {
   font-size: var(--fs-sm);
   color: var(--text-2);
+  margin-top: var(--sp-8);
+  font-weight: 400;
+  line-height: 1.55;
+}
+.landing-tagline {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .08em;
   margin-top: var(--sp-4);
+}
+
+/* Landing sections */
+.landing-section {
+  width: 100%;
+  text-align: left;
+}
+.landing-section-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: var(--sp-12);
+  text-align: center;
+}
+.landing-section-desc {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  line-height: 1.55;
+  text-align: center;
+  margin-bottom: var(--sp-16);
+}
+
+/* 4 Signal Pillars */
+.landing-signals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+}
+.landing-signal {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-12);
+  padding: var(--sp-12) var(--sp-16);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  backdrop-filter: blur(var(--glass-blur));
+}
+.signal-dot {
+  flex-shrink: 0;
+  width: 10px; height: 10px;
+  border-radius: var(--r-full);
+  margin-top: 5px;
+}
+.landing-signal strong {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-1);
+}
+.landing-signal span:last-child {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+/* Why you need it — reasons */
+.landing-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}
+.landing-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-16);
+  padding: var(--sp-16);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  backdrop-filter: blur(var(--glass-blur));
+  opacity: 0;
+  animation: fadeUp .5s var(--ease-spring) var(--d, 0s) both;
+}
+.reason-icon {
+  flex-shrink: 0;
+  font-size: 20px;
+  margin-top: 2px;
+}
+.landing-reason strong {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: var(--sp-4);
+}
+.landing-reason p {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Audience chips */
+.landing-audience {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-8);
+}
+.audience-chip {
+  padding: var(--sp-8) var(--sp-16);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-full);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-2);
+  backdrop-filter: blur(var(--glass-blur));
 }
 
 /* Steps */
@@ -482,19 +596,6 @@ h3 { font-size: var(--fs-lg);  font-weight: 600; line-height: 1.3; }
 }
 
 /* Sample Output */
-.sample-output-section {
-  width: 100%;
-  text-align: left;
-}
-.sample-output-title {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--text-2);
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  margin-bottom: var(--sp-12);
-  text-align: center;
-}
 .sample-cards {
   display: flex;
   flex-direction: column;
@@ -1411,6 +1512,94 @@ h3 { font-size: var(--fs-lg);  font-weight: 600; line-height: 1.3; }
 }
 .send-btn:active { transform: scale(.9); }
 
+/* Mic button */
+.mic-btn {
+  width: 36px; height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--text-2);
+  flex-shrink: 0;
+  transition: all var(--dur-fast);
+  position: relative;
+}
+.mic-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.mic-btn.listening {
+  background: rgba(248, 113, 113, .15);
+  border-color: var(--danger);
+  color: var(--danger);
+  animation: micPulse 1.2s ease-in-out infinite;
+}
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248,113,113,.3); }
+  50%      { box-shadow: 0 0 0 8px rgba(248,113,113,0); }
+}
+
+/* Review Guide Banner */
+.review-guide {
+  padding: var(--sp-12) var(--sp-16);
+  background: rgba(96, 165, 250, .06);
+  border-bottom: 1px solid rgba(96, 165, 250, .12);
+  overflow: hidden;
+  max-height: 300px;
+  transition: max-height .4s var(--ease-spring), opacity .3s, padding .4s;
+}
+.review-guide.dismissed {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 var(--sp-16);
+  border-bottom-color: transparent;
+  pointer-events: none;
+}
+.review-guide-inner {
+  position: relative;
+}
+.review-guide-close {
+  position: absolute;
+  top: 0; right: 0;
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+.review-guide-title {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: var(--sp-8);
+}
+.review-guide-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.review-guide-list li {
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  line-height: 1.5;
+  padding-left: 12px;
+  position: relative;
+}
+.review-guide-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--text-3);
+}
+.review-guide-list li strong {
+  color: var(--text-1);
+}
+
 .chat-privacy-note {
   font-size: var(--fs-xs);
   color: var(--text-3);
@@ -1780,6 +1969,41 @@ h3 { font-size: var(--fs-lg);  font-weight: 600; line-height: 1.3; }
 .missions-status-text {
   font-size: var(--fs-sm);
   color: var(--text-3);
+}
+
+/* Missions empty state */
+.missions-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--sp-48) var(--sp-24);
+  animation: fadeUp .5s var(--ease-spring) both;
+}
+.missions-empty.hidden {
+  display: none;
+}
+.missions-empty-icon {
+  width: 72px; height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-lg);
+  background: rgba(96, 165, 250, .08);
+  color: var(--text-3);
+  margin-bottom: var(--sp-20);
+}
+.missions-empty-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: var(--sp-8);
+}
+.missions-empty-desc {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  line-height: 1.55;
+  max-width: 320px;
 }
 
 

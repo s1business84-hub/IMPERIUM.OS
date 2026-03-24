@@ -376,31 +376,102 @@ function calcWeeklyAvg() {
 
 
 /* ═══════════════════════════════════════════════
-   VOICE DAY DUMP
+   VOICE INPUT FOR CHAT
    ═══════════════════════════════════════════════ */
 
 let voiceRecognition = null;
+let isVoiceListening = false;
 
-function startVoiceDump() {
-  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-    alert('Voice not supported in this browser');
+function toggleVoiceInput() {
+  if (isVoiceListening) {
+    stopVoiceInput();
+  } else {
+    startVoiceInput();
+  }
+}
+
+function startVoiceInput() {
+  const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechAPI) {
+    alert('Voice input is not supported in this browser. Try Chrome or Safari.');
     return;
   }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  voiceRecognition = new SR();
-  voiceRecognition.continuous = true;
+
+  voiceRecognition = new SpeechAPI();
+  voiceRecognition.continuous = false;
   voiceRecognition.interimResults = true;
   voiceRecognition.lang = 'en-US';
-  voiceRecognition.onresult = (e) => {
-    let t = '';
-    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
-    STATE.voiceDumpText = t;
+
+  const field = document.getElementById('chat-text-field');
+  const micBtn = document.getElementById('chat-mic-btn');
+
+  voiceRecognition.onstart = () => {
+    isVoiceListening = true;
+    if (micBtn) micBtn.classList.add('listening');
+    if (field) field.placeholder = 'Listening… speak now';
   };
+
+  voiceRecognition.onresult = (e) => {
+    let transcript = '';
+    for (let i = 0; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    if (field) field.value = transcript;
+  };
+
+  voiceRecognition.onend = () => {
+    isVoiceListening = false;
+    if (micBtn) micBtn.classList.remove('listening');
+    if (field) field.placeholder = 'Type or tap \ud83c\udf99\ufe0f to speak\u2026';
+    // Auto-send if we got something meaningful
+    if (field && field.value.trim().length > 0) {
+      sendTextAnswer();
+    }
+  };
+
+  voiceRecognition.onerror = (e) => {
+    isVoiceListening = false;
+    if (micBtn) micBtn.classList.remove('listening');
+    if (field) field.placeholder = 'Type or tap \ud83c\udf99\ufe0f to speak\u2026';
+    if (e.error === 'not-allowed') {
+      alert('Microphone access denied. Please allow microphone permission in your browser settings.');
+    }
+  };
+
   voiceRecognition.start();
 }
 
-function stopVoiceDump() {
-  if (voiceRecognition) voiceRecognition.stop();
+function stopVoiceInput() {
+  if (voiceRecognition) {
+    voiceRecognition.stop();
+  }
+  isVoiceListening = false;
+  const micBtn = document.getElementById('chat-mic-btn');
+  if (micBtn) micBtn.classList.remove('listening');
+}
+
+
+/* ═══════════════════════════════════════════════
+   REVIEW GUIDE
+   ═══════════════════════════════════════════════ */
+
+function dismissReviewGuide() {
+  const guide = document.getElementById('review-guide');
+  if (guide) {
+    guide.classList.add('dismissed');
+    try { localStorage.setItem('imperium_guide_dismissed', '1'); } catch(e) {}
+  }
+}
+
+function showReviewGuideIfNeeded() {
+  const guide = document.getElementById('review-guide');
+  if (!guide) return;
+  const dismissed = localStorage.getItem('imperium_guide_dismissed');
+  if (dismissed) {
+    guide.classList.add('dismissed');
+  } else {
+    guide.classList.remove('dismissed');
+  }
 }
 
 
@@ -442,6 +513,8 @@ function startReview() {
   const msgs = document.getElementById('chat-messages');
   msgs.innerHTML = '';
   updateReviewProgress();
+  showReviewGuideIfNeeded();
+  stopVoiceInput();
 
   // Initial greeting
   showTypingThenBubble("Hi! Let's review your day. I'll ask 7 quick questions — it takes about 2 minutes.", () => {
@@ -507,6 +580,7 @@ function showInputForQuestion(q) {
   const textRow = document.getElementById('chat-text-row');
   const field = document.getElementById('chat-text-field');
   opts.innerHTML = '';
+  stopVoiceInput();
 
   if (q.type === 'options' && q.options) {
     textRow.style.display = 'none';
@@ -529,6 +603,7 @@ function sendTextAnswer() {
   const val = field.value.trim();
   if (!val) return;
   field.value = '';
+  stopVoiceInput();
   submitAnswer(val);
 }
 
@@ -1093,7 +1168,25 @@ function initResults() {
 
 function initMissions() {
   const r = STATE.analysisResult;
-  if (!r || !r.missions) return;
+  const emptyEl = document.getElementById('missions-empty');
+  const listEl = document.getElementById('missions-list');
+  const statusEl = document.getElementById('missions-status');
+  const subEl = document.getElementById('missions-page-sub');
+
+  if (!r || !r.missions) {
+    // No review done yet — show empty state, hide missions
+    if (emptyEl) emptyEl.classList.remove('hidden');
+    if (listEl) listEl.classList.add('hidden');
+    if (statusEl) statusEl.style.display = 'none';
+    if (subEl) subEl.textContent = 'Complete a review to get your plan';
+    return;
+  }
+
+  // Has data — show missions, hide empty
+  if (emptyEl) emptyEl.classList.add('hidden');
+  if (listEl) listEl.classList.remove('hidden');
+  if (statusEl) statusEl.style.display = '';
+  if (subEl) subEl.textContent = 'Based on yesterday\'s weakest signals';
 
   const m = r.missions;
 
