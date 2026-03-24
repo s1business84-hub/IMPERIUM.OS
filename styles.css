@@ -1152,9 +1152,118 @@ h3 { font-size: var(--fs-lg);  font-weight: 600; line-height: 1.3; }
   color: var(--text-3);
 }
 
+/* Dash brand header */
+.dash-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+}
+.dash-brand-icon {
+  width: 40px; height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+  flex-shrink: 0;
+}
+.dash-brand-name {
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  line-height: 1.2;
+}
+
 /* First run */
 .first-run-section { margin-bottom: var(--sp-24); }
 .first-run-section.hidden { display: none; }
+
+/* First run — hero */
+.first-run-hero {
+  text-align: center;
+  margin-bottom: var(--sp-24);
+}
+.first-run-tagline {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--accent);
+  margin-bottom: var(--sp-8);
+}
+.first-run-desc {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  line-height: 1.6;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+/* First run — signal cards */
+.first-run-signals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  margin-bottom: var(--sp-24);
+}
+.first-run-signal {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  padding: var(--sp-12) var(--sp-16);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+}
+
+/* First run — steps */
+.first-run-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  margin-bottom: var(--sp-24);
+}
+.first-run-step {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  line-height: 1.4;
+}
+.first-run-step strong {
+  color: var(--text-1);
+}
+
+/* First run — auth link */
+.first-run-auth {
+  text-align: center;
+  margin-top: var(--sp-16);
+  margin-bottom: var(--sp-24);
+}
+.first-run-auth.hidden { display: none; }
+.first-run-auth-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--primary);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  padding: var(--sp-12) var(--sp-24);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.first-run-auth-btn:hover {
+  background: rgba(96, 165, 250, .08);
+  border-color: var(--primary);
+}
 .first-run-card {
   padding: var(--sp-32);
   text-align: center;

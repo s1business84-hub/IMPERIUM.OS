@@ -60,8 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
   } else if (hasAccount) {
     showScreen('screen-onboarding');
   } else {
-    showScreen('screen-landing');
-    startLandingSequence();
+    // No separate landing — home page shows first-run content
+    showMainApp();
   }
 });
 
@@ -197,10 +197,6 @@ function handleSocialAuth(provider) {
    LANDING
    ═══════════════════════════════════════════════ */
 
-function startLandingSequence() {
-  // beams canvas runs on its own IIFE
-}
-
 function skipToAuth() {
   showScreen('screen-auth');
 }
@@ -316,12 +312,17 @@ function initHomeDashboard() {
   const isFirstRun = !STATE.lastReviewDate;
   const firstRunSec = document.getElementById('first-run-section');
   const returningSec = document.getElementById('returning-section');
+  const firstRunAuth = document.getElementById('first-run-auth');
 
   if (isFirstRun) {
     firstRunSec.classList.remove('hidden');
     firstRunSec.style.display = '';
     returningSec.classList.remove('visible');
     returningSec.style.display = 'none';
+    // Hide auth link if user is already signed in
+    if (firstRunAuth) {
+      firstRunAuth.style.display = (STATE.userName && STATE.userName !== 'Guest') ? 'none' : '';
+    }
   } else {
     firstRunSec.classList.add('hidden');
     firstRunSec.style.display = 'none';
