@@ -1393,7 +1393,7 @@ function showInsightWidget() {
   let msg = '';
   if (STATE.streak >= 7) msg = `${STATE.streak}-day streak! Consistency is the most underrated superpower. Keep it going.`;
   else if (STATE.streak >= 3) msg = `${STATE.streak} days in a row. You're building real momentum.`;
-  else if (STATE.todayScore >= 80) msg = 'Strong day — ${STATE.todayScore}/100. Focus on maintaining this level.';
+  else if (STATE.todayScore >= 80) msg = `Strong day — ${STATE.todayScore}/100. Focus on maintaining this level.`;
   else if (STATE.todayScore < 40) msg = `${STATE.todayScore}/100 — rough day. Tomorrow is a reset. Focus on one win.`;
   else {
     const weak = getBottomPillar(STATE.analysisResult || { executionScore:50, reasoningScore:50, focusScore:50, financialScore:50 });
