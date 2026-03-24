@@ -535,6 +535,43 @@ function scrollChatBottom() {
   if (c) setTimeout(function() { c.scrollTop = c.scrollHeight; }, 60);
 }
 
+// ── Inject skill breakdown visual into chat ──────────────────
+function addSkillBreakdownToChat(result) {
+  var container = document.getElementById('chat-messages');
+  if (!container) return;
+
+  var card = document.createElement('div');
+  card.className = 'chat-skill-card';
+
+  var pillars = [
+    { name: 'Speed', key: 'speed', color: 'linear-gradient(90deg, #1e40af, #60a5fa)' },
+    { name: 'Reasoning', key: 'reasoning', color: 'linear-gradient(90deg, #4f46e5, #a855f7)' },
+    { name: 'Focus', key: 'focus', color: 'linear-gradient(90deg, #0f766e, #14b8a6)' },
+    { name: 'Knowledge', key: 'knowledge', color: 'linear-gradient(90deg, #b8860b, #f5e27a)' },
+  ];
+
+  var html = '<h4>Skill Breakdown</h4>';
+  pillars.forEach(function(p) {
+    html += '<div class="chat-skill-row">' +
+      '<span class="chat-skill-name">' + p.name + '</span>' +
+      '<div class="chat-skill-track"><div class="chat-skill-fill" style="width:0%;background:' + p.color + ';" data-target="' + result[p.key] + '"></div></div>' +
+      '<span class="chat-skill-val">' + result[p.key] + '</span>' +
+    '</div>';
+  });
+
+  card.innerHTML = html;
+  container.appendChild(card);
+  scrollChatBottom();
+
+  // Animate bars after render
+  setTimeout(function() {
+    var fills = card.querySelectorAll('.chat-skill-fill');
+    fills.forEach(function(fill) {
+      fill.style.width = fill.getAttribute('data-target') + '%';
+    });
+  }, 100);
+}
+
 // ── Speech Synthesis (disabled — text only) ──────────────────
 function aiSpeak() { /* disabled */ }
 function stopAISpeech() { /* disabled */ }
@@ -735,6 +772,10 @@ function finishReview() {
       saveState();
 
       addBubble('Your Intelligence Score today: ' + result.score + '/100 \u26A1', 'ai');
+
+      // ── Inject visual skill breakdown into chat ──
+      addSkillBreakdownToChat(result);
+
       setEl('chat-status-text', 'Analysis complete');
 
       setTimeout(function() {
@@ -913,6 +954,33 @@ function initResults() {
   if (trend) trend.innerHTML = r.score >= calcWeeklyAvg()
     ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
     : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>';
+
+  // ── Skill Breakdown Bars (animated) ──
+  setTimeout(function() {
+    var pillars = ['speed', 'reasoning', 'focus', 'knowledge'];
+    pillars.forEach(function(p) {
+      var bar = document.getElementById('skill-bar-' + p);
+      var val = document.getElementById('skill-val-' + p);
+      if (bar) bar.style.width = r[p] + '%';
+      if (val) animateNumber('skill-val-' + p, r[p], 0, 800);
+    });
+  }, 300);
+
+  // ── Input Summary Mini-Cards ──
+  var summaryEl = document.getElementById('input-summary');
+  if (summaryEl && STATE.reviewAnswers) {
+    var a = STATE.reviewAnswers;
+    var cards = [];
+    if (a.discipline) cards.push({ icon: '🎯', label: 'Discipline', value: a.discipline });
+    if (a.time_wasted) cards.push({ icon: '⏱', label: 'Time Wasted', value: a.time_wasted });
+    if (a.money_spent) cards.push({ icon: '💸', label: 'Spent', value: '$' + parseFloat(a.money_spent || 0).toFixed(2) });
+    if (a.money_earned) cards.push({ icon: '💰', label: 'Earned', value: '$' + parseFloat(a.money_earned || 0).toFixed(2) });
+    if (a.avoided) cards.push({ icon: '🚫', label: 'Avoided', value: a.avoided });
+    if (a.missed_opportunities) cards.push({ icon: '💡', label: 'Missed Opp', value: a.missed_opportunities });
+    summaryEl.innerHTML = cards.map(function(c) {
+      return '<div class="input-summary-card"><span class="summary-icon">' + c.icon + '</span><span class="summary-label">' + c.label + '</span><span class="summary-value">' + c.value + '</span></div>';
+    }).join('');
+  }
 }
 
 // =======================================================

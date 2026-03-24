@@ -532,6 +532,40 @@
           </div>
         </div>
 
+        <!-- How It Works — Explainer -->
+        <div class="how-it-works-section">
+          <h3 class="section-title">How Imperium Works</h3>
+          <div class="how-steps">
+            <div class="how-step">
+              <div class="how-step-icon" style="background: rgba(129,140,248,0.15); color: #818cf8;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="how-step-text">
+                <h4>1. Daily Check-in</h4>
+                <p>Answer 7 quick questions about your productivity, focus, money &amp; decisions</p>
+              </div>
+            </div>
+            <div class="how-step">
+              <div class="how-step-icon" style="background: rgba(52,211,153,0.15); color: #34d399;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
+              <div class="how-step-text">
+                <h4>2. AI Scores You</h4>
+                <p>Get scored across 4 skill pillars — Speed, Reasoning, Focus &amp; Knowledge</p>
+              </div>
+            </div>
+            <div class="how-step">
+              <div class="how-step-icon" style="background: rgba(245,158,11,0.15); color: #f59e0b;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+              <div class="how-step-text">
+                <h4>3. Level Up</h4>
+                <p>Complete missions, earn coins, build streaks &amp; watch your intelligence grow</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -589,6 +623,48 @@
             <span class="results-score-lbl">Intelligence Score</span>
           </div>
           <div class="results-score-trend" id="result-trend"></div>
+        </div>
+
+        <!-- Skill Breakdown Visual -->
+        <div class="skill-breakdown-card" id="skill-breakdown-card">
+          <h3 class="skill-breakdown-title">Your Daily Skills</h3>
+          <p class="skill-breakdown-sub">How your answers mapped to each pillar today</p>
+          <div class="skill-bars">
+            <div class="skill-bar-row">
+              <div class="skill-bar-label">
+                <span class="skill-bar-icon" style="background: rgba(96,165,250,0.15); color: #60a5fa;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+                <span>Speed</span>
+              </div>
+              <div class="skill-bar-track"><div class="skill-bar-fill speed-fill" id="skill-bar-speed" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-speed">0</span>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-label">
+                <span class="skill-bar-icon" style="background: rgba(168,85,247,0.15); color: #a855f7;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg></span>
+                <span>Reasoning</span>
+              </div>
+              <div class="skill-bar-track"><div class="skill-bar-fill reasoning-fill" id="skill-bar-reasoning" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-reasoning">0</span>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-label">
+                <span class="skill-bar-icon" style="background: rgba(20,184,166,0.15); color: #14b8a6;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+                <span>Focus</span>
+              </div>
+              <div class="skill-bar-track"><div class="skill-bar-fill focus-fill" id="skill-bar-focus" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-focus">0</span>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-label">
+                <span class="skill-bar-icon" style="background: rgba(212,175,55,0.15); color: #d4af37;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+                <span>Knowledge</span>
+              </div>
+              <div class="skill-bar-track"><div class="skill-bar-fill knowledge-fill" id="skill-bar-knowledge" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-knowledge">0</span>
+            </div>
+          </div>
+          <!-- Input summary cards -->
+          <div class="input-summary" id="input-summary"></div>
         </div>
 
         <!-- Result Cards -->
