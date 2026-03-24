@@ -16,9 +16,9 @@ const STATE = {
   level: 1,
   weeklyScores: [0, 0, 0, 0, 0, 0, 0],
   weeklyMoney: [0, 0, 0, 0, 0, 0, 0],
-  pillars: { speed: 0, reasoning: 0, focus: 0, knowledge: 0 },
+  pillars: { execution: 0, reasoning: 0, focus: 0, financial: 0 },
   todayScore: null,
-  missionsDone: { speed: false, reasoning: false, focus: false, knowledge: false },
+  missionsDone: { execution: false, reasoning: false, focus: false, financial: false },
   reviewAnswers: {},
   analysisResult: null,
   lastReviewDate: null,
@@ -292,10 +292,10 @@ function initHomeDashboard() {
   animateRing(typeof score === 'number' ? score : 0);
 
   var p = STATE.pillars;
-  animatePillar('speed',     p.speed);
+  animatePillar('execution',  p.execution);
   animatePillar('reasoning', p.reasoning);
   animatePillar('focus',     p.focus);
-  animatePillar('knowledge', p.knowledge);
+  animatePillar('financial', p.financial);
 
   document.getElementById('coin-count').textContent   = STATE.coins;
   document.getElementById('level-badge').textContent  = 'Lv ' + STATE.level;
@@ -306,7 +306,7 @@ function initHomeDashboard() {
   document.getElementById('weekly-avg').textContent = avg > 0 ? avg : '--';
 
   var title = document.querySelector('.dash-title');
-  if (title && STATE.userName) title.textContent = 'Hey, ' + STATE.userName.split(' ')[0] + ' \uD83D\uDC4B';
+  if (title && STATE.userName && STATE.userName !== 'Guest') title.textContent = 'Hey, ' + STATE.userName.split(' ')[0] + ' \uD83D\uDC4B';
 
   var preview = document.getElementById('voice-day-preview');
   var icon    = document.getElementById('home-voice-icon');
@@ -314,6 +314,24 @@ function initHomeDashboard() {
   if (icon)    icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
   var orb = document.getElementById('home-voice-orb');
   if (orb) orb.classList.remove('recording');
+
+  // First-run state handling
+  var firstRunSection = document.getElementById('first-run-section');
+  var pillarsSection = document.querySelector('.pillars-section');
+  var quickStats = document.querySelector('.quick-stats');
+  var reviewBtn = document.querySelector('.review-btn');
+
+  if (STATE.todayScore === null && STATE.streak <= 1 && !STATE.lastReviewDate) {
+    // First-time user: show guided section, hide empty data
+    if (firstRunSection) firstRunSection.style.display = 'block';
+    if (pillarsSection) pillarsSection.style.opacity = '0.4';
+    if (quickStats) quickStats.style.opacity = '0.4';
+  } else {
+    // Returning user: hide first-run, show full dashboard
+    if (firstRunSection) firstRunSection.style.display = 'none';
+    if (pillarsSection) pillarsSection.style.opacity = '1';
+    if (quickStats) quickStats.style.opacity = '1';
+  }
 
   // Guest mode banner
   initGuestMode();
@@ -490,7 +508,7 @@ function startReview() {
         setTimeout(function() { askQuestion(); }, 600);
       });
     } else {
-      showTypingThenBubble("Hey! Ready to reflect on today? I'll ask 7 quick questions, then give you a full intelligence breakdown.", function() {
+      showTypingThenBubble("Hey! I'll ask 7 quick questions about your day \u2014 what you did, avoided, spent, and how your focus was. Takes about 2 minutes. Everything stays on your device.", function() {
         setTimeout(function() { askQuestion(); }, 400);
       });
     }
@@ -544,10 +562,10 @@ function addSkillBreakdownToChat(result) {
   card.className = 'chat-skill-card';
 
   var pillars = [
-    { name: 'Speed', key: 'speed', color: 'linear-gradient(90deg, #1e40af, #60a5fa)' },
+    { name: 'Execution', key: 'execution', color: 'linear-gradient(90deg, #1e40af, #60a5fa)' },
     { name: 'Reasoning', key: 'reasoning', color: 'linear-gradient(90deg, #4f46e5, #a855f7)' },
     { name: 'Focus', key: 'focus', color: 'linear-gradient(90deg, #0f766e, #14b8a6)' },
-    { name: 'Knowledge', key: 'knowledge', color: 'linear-gradient(90deg, #b8860b, #f5e27a)' },
+    { name: 'Financial', key: 'financial', color: 'linear-gradient(90deg, #b8860b, #f5e27a)' },
   ];
 
   var html = '<h4>Skill Breakdown</h4>';
@@ -764,14 +782,14 @@ function finishReview() {
   stopAISpeech();
   setEl('chat-status-text', 'Analysing\u2026');
 
-  showTypingThenBubble("That's everything I need. Crunching your intelligence score now\u2026", function() {
+  showTypingThenBubble("That's everything I need. Crunching your operating score now\u2026", function() {
     setTimeout(function() {
       var result = analyseDay(chatAnswers);
       STATE.analysisResult = result;
       applyResultToState(result);
       saveState();
 
-      addBubble('Your Intelligence Score today: ' + result.score + '/100 \u26A1', 'ai');
+      addBubble('Your Operating Score today: ' + result.score + '/100 \u26A1', 'ai');
 
       // ── Inject visual skill breakdown into chat ──
       addSkillBreakdownToChat(result);
@@ -808,10 +826,10 @@ function getTeaserInsight(result) {
 }
 
 function getTopPillar(r) {
-  return ['speed','reasoning','focus','knowledge'].sort(function(a,b) { return r[b]-r[a]; })[0];
+  return ['execution','reasoning','focus','financial'].sort(function(a,b) { return r[b]-r[a]; })[0];
 }
 function getBottomPillar(r) {
-  return ['speed','reasoning','focus','knowledge'].sort(function(a,b) { return r[a]-r[b]; })[0];
+  return ['execution','reasoning','focus','financial'].sort(function(a,b) { return r[a]-r[b]; })[0];
 }
 
 // =======================================================
@@ -827,6 +845,7 @@ function analyseDay(a) {
   var spent      = parseFloat(a.money_spent) || 0;
   var earned     = parseFloat(a.money_earned) || 0;
 
+  // ── Overall Score ──
   var score = 50;
   if (discipline.indexOf('high') >= 0)   score += 20;
   if (discipline.indexOf('medium') >= 0) score += 10;
@@ -839,98 +858,208 @@ function analyseDay(a) {
   if (missed !== 'none' && missed.length > 3) score -= 5;
   score = Math.max(10, Math.min(100, score));
 
-  var speed     = calcPillarScore(discipline, timeWasted);
-  var reasoning = calcPillarScore(discipline, timeWasted);
-  var focus     = calcPillarScore(discipline, timeWasted);
-  var knowledge = calcPillarScore(discipline, timeWasted);
+  // ── Pillar Scores (differentiated) ──
+  var execution  = calcExecutionScore(discipline, timeWasted, actions, avoided);
+  var reasoning  = calcReasoningScore(discipline, missed, avoided);
+  var focus      = calcFocusScore(discipline, timeWasted);
+  var financial  = calcFinancialScore(spent, earned, missed);
 
   return {
     score: score,
-    speed: speed,
+    execution: execution,
     reasoning: reasoning,
     focus: focus,
-    knowledge: knowledge,
-    mistake:   generateMistake(avoided, timeWasted),
+    financial: financial,
+    mistake:   generateMistake(avoided, timeWasted, actions, discipline),
     money:     generateMoneyImpact(spent, earned, missed),
-    thinking:  generateThinkingPattern(discipline),
-    missedOpp: generateMissedOpp(missed),
-    fixes:     generateFixes(discipline),
-    missions:  generateMissions(STATE.userType || 'business'),
+    thinking:  generateThinkingPattern(discipline, timeWasted, avoided),
+    missedOpp: generateMissedOpp(missed, actions),
+    fixes:     generateFixes(discipline, timeWasted, avoided, missed, spent, earned, STATE.userType || 'founder'),
+    missions:  generateAdaptiveMissions(STATE.userType || 'founder', { execution: execution, reasoning: reasoning, focus: focus, financial: financial }),
   };
 }
 
-function calcPillarScore(discipline, timeWasted) {
+function calcExecutionScore(discipline, timeWasted, actions, avoided) {
   var base = 50;
   if (discipline.indexOf('high') >= 0)   base += 20;
-  if (discipline.indexOf('medium') >= 0) base += 10;
+  if (discipline.indexOf('medium') >= 0) base += 8;
   if (discipline.indexOf('low') >= 0)    base -= 15;
+  if (avoided !== 'nothing' && avoided.length > 3) base -= 12;
+  if (actions.length > 30) base += 8;
   if (timeWasted.indexOf('none') >= 0 || timeWasted === 'None') base += 10;
-  if (timeWasted.indexOf('3+') >= 0) base -= 20;
-  var noise = Math.floor(Math.random() * 15) - 7;
+  if (timeWasted.indexOf('3+') >= 0) base -= 15;
+  var noise = Math.floor(Math.random() * 8) - 4;
   return Math.max(5, Math.min(100, base + noise));
 }
 
-function generateMistake(avoided, timeWasted) {
-  var templates = [
-    'You avoided "' + avoided + '" while spending ' + timeWasted + ' on low-value activity. That\'s a direct discipline leak.',
-    '"' + avoided + '" keeps getting pushed. Every day it\'s delayed, the opportunity cost compounds.',
-    timeWasted + ' of wasted time is the real problem \u2014 not lack of effort, but lack of intentionality.',
-  ];
-  return templates[Math.floor(Math.random() * templates.length)];
+function calcReasoningScore(discipline, missed, avoided) {
+  var base = 55;
+  if (discipline.indexOf('high') >= 0)   base += 15;
+  if (discipline.indexOf('low') >= 0)    base -= 10;
+  if (missed !== 'none' && missed.length > 3) base -= 15;
+  if (avoided !== 'nothing' && avoided.length > 3) base -= 8;
+  var noise = Math.floor(Math.random() * 10) - 5;
+  return Math.max(5, Math.min(100, base + noise));
+}
+
+function calcFocusScore(discipline, timeWasted) {
+  var base = 50;
+  if (discipline.indexOf('high') >= 0)   base += 25;
+  if (discipline.indexOf('medium') >= 0) base += 10;
+  if (discipline.indexOf('low') >= 0)    base -= 20;
+  if (timeWasted.indexOf('none') >= 0 || timeWasted === 'None') base += 15;
+  if (timeWasted.indexOf('1 hour') >= 0) base += 5;
+  if (timeWasted.indexOf('3+') >= 0)     base -= 25;
+  var noise = Math.floor(Math.random() * 8) - 4;
+  return Math.max(5, Math.min(100, base + noise));
+}
+
+function calcFinancialScore(spent, earned, missed) {
+  var base = 50;
+  if (earned > 0) base += 15;
+  if (earned > spent) base += 10;
+  if (spent === 0) base += 10;
+  if (spent > 100) base -= 15;
+  if (spent > 50 && earned === 0) base -= 10;
+  if (missed && missed.length > 3) base -= 5;
+  var noise = Math.floor(Math.random() * 8) - 4;
+  return Math.max(5, Math.min(100, base + noise));
+}
+
+function generateMistake(avoided, timeWasted, actions, discipline) {
+  if (avoided !== 'nothing' && avoided.length > 3 && timeWasted.indexOf('3+') >= 0) {
+    return 'You avoided "' + avoided + '" while spending 3+ hours on low-value activity. That\'s not a time problem \u2014 it\'s a priority problem. The avoided task is where your leverage sits.';
+  }
+  if (avoided !== 'nothing' && avoided.length > 3) {
+    return '"' + avoided + '" keeps getting pushed. Based on your answers, this has been on your list. Every day it\'s delayed, the opportunity cost compounds. What\'s the real blocker?';
+  }
+  if (timeWasted.indexOf('3+') >= 0) {
+    return 'You reported 3+ hours of low-value time and rated discipline ' + discipline + '. That\'s a full quarter of your waking hours gone. The issue isn\'t motivation \u2014 it\'s environment design.';
+  }
+  return 'You got things done today, but look at what you actually shipped vs. what moved the needle. Busyness \u2260 progress. Tomorrow, name one outcome before you start.';
 }
 
 function generateMoneyImpact(spent, earned, missed) {
-  if (missed && missed.length > 3) {
-    return 'Missed opportunity in "' + missed + '" could outweigh today\'s $' + spent.toFixed(2) + ' spend.';
+  if (earned > 0 && spent > 0) {
+    var net = earned - spent;
+    return 'Net today: ' + (net >= 0 ? '+' : '') + '$' + net.toFixed(2) + ' (earned $' + earned.toFixed(2) + ', spent $' + spent.toFixed(2) + '). ' + (net >= 0 ? 'Positive day \u2014 identify what generated that income and do more of it.' : 'Negative day \u2014 one of those expenses was unnecessary. Which one?');
   }
-  return earned > 0
-    ? 'Net: $' + earned.toFixed(2) + ' earned, $' + spent.toFixed(2) + ' spent. Scale what generated that $' + earned.toFixed(2) + '.'
-    : '$' + spent.toFixed(2) + ' spent, no income recorded. Days like this compound into a deficit.';
+  if (earned > 0) {
+    return '$' + earned.toFixed(2) + ' earned with no spending. Clean day. The question: is this repeatable, or was it one-off?';
+  }
+  if (spent > 0) {
+    return '$' + spent.toFixed(2) + ' out, $0 in. Not every day needs income, but track this pattern. 7 days of this = $' + (spent * 7).toFixed(0) + ' gone.';
+  }
+  return 'No money moved today. That\'s neutral, but ask: was there an opportunity to generate income that you didn\'t act on?';
 }
 
-function generateThinkingPattern(discipline) {
-  var templates = [
-    'Avoidance loop \u2014 you delay difficult tasks until urgency forces action. This kills leverage.',
-    'Comfort-seeking bias \u2014 prioritising what feels manageable over what actually moves the needle.',
-    'Reactive execution \u2014 responding to the day rather than designing it. You\'re playing defence.',
-    'Perfectionism paralysis \u2014 waiting for the right moment instead of taking imperfect action now.',
-  ];
-  var idx = discipline.indexOf('low') >= 0 ? 0 : discipline.indexOf('medium') >= 0 ? 2 : 1;
-  return templates[idx];
+function generateThinkingPattern(discipline, timeWasted, avoided) {
+  if (discipline.indexOf('low') >= 0 && timeWasted.indexOf('3+') >= 0) {
+    return 'Avoidance loop detected \u2014 you rated discipline low and wasted significant time. This is a pattern where discomfort triggers escape behavior. You delay hard tasks until urgency forces action, which kills quality and leverage.';
+  }
+  if (discipline.indexOf('low') >= 0) {
+    return 'Comfort-seeking bias \u2014 your discipline was low today. You\'re prioritizing what feels manageable over what actually moves the needle. Awareness is step one. Tomorrow, do the hardest thing first.';
+  }
+  if (discipline.indexOf('medium') >= 0 && avoided !== 'nothing' && avoided.length > 3) {
+    return 'Reactive execution \u2014 medium discipline plus avoided tasks means you responded to the day instead of designing it. You\'re playing defense. Flip it: decide your top 1 outcome before opening any app.';
+  }
+  if (discipline.indexOf('high') >= 0) {
+    return 'Intentional execution \u2014 high discipline today. The risk at this level is perfectionism paralysis \u2014 waiting for perfect conditions instead of shipping. Keep the bias toward action.';
+  }
+  return 'Mixed signals today. Your discipline and time usage don\'t tell a clear story. That usually means the day happened to you, not that you happened to the day. Set your intention earlier tomorrow.';
 }
 
-function generateMissedOpp(missed) {
-  if (!missed || missed.length < 3) return 'No missed opportunity flagged \u2014 but ask: what 1 action would move your goal by 10x?';
-  return '"' + missed + '" \u2014 this is your highest-leverage untapped point. One action here compounds.';
+function generateMissedOpp(missed, actions) {
+  if (!missed || missed.length < 3 || missed.toLowerCase() === 'none') {
+    return 'No missed opportunity flagged \u2014 good. But here\'s a harder question: what\'s one action you could have taken today that would compound over the next 30 days? That\'s your real missed opportunity.';
+  }
+  return '"' + missed + '" \u2014 you identified this yourself, which means you saw the opportunity and chose not to act. That\'s not ignorance, it\'s hesitation. What\'s the smallest version of this you could do in 15 minutes?';
 }
 
-function generateFixes(discipline) {
-  var templates = [
-    ['Block 2 hours tomorrow exclusively for your avoided task.', 'Write the outcome you want from tomorrow in one sentence before you sleep.', 'Set a $0 spend limit unless it directly generates income.'],
-    ['Do your single highest-value task before 10 AM tomorrow.', 'Delete or silence 1 app that killed your focus today.', 'Convert one missed opportunity into a scheduled action with a deadline.'],
-    ['Use a 25-min timer sprint to tackle your most avoided task first thing.', 'Track every dollar tomorrow \u2014 awareness alone changes behaviour.', 'Replace 30 mins of low-value time with reading related to your goal.'],
-  ];
-  var i = discipline.indexOf('low') >= 0 ? 0 : discipline.indexOf('medium') >= 0 ? 2 : 1;
-  return templates[i];
+function generateFixes(discipline, timeWasted, avoided, missed, spent, earned, userType) {
+  var fixes = [];
+  
+  // Fix based on weakest area
+  if (timeWasted.indexOf('3+') >= 0) {
+    fixes.push('Block your top distraction app for the first 2 hours of tomorrow. Use Screen Time, Cold Turkey, or airplane mode.');
+  }
+  if (avoided !== 'nothing' && avoided.length > 3) {
+    fixes.push('Spend exactly 25 minutes on "' + avoided + '" tomorrow morning \u2014 set a timer. You don\'t need to finish it, just start.');
+  }
+  if (spent > 0 && earned === 0) {
+    fixes.push('Before any purchase tomorrow, ask: "Does this directly help me ' + (userType === 'student' ? 'study better' : 'earn more') + '?" Track every dollar.');
+  }
+  if (discipline.indexOf('low') >= 0) {
+    fixes.push('Write tomorrow\'s #1 outcome tonight and put it where you\'ll see it first thing. Decision fatigue kills morning discipline.');
+  }
+  if (missed && missed.length > 3 && missed.toLowerCase() !== 'none') {
+    fixes.push('Convert "' + missed + '" into a 15-minute action with a deadline. Put it on your calendar for before noon.');
+  }
+  
+  // Always have at least 3 fixes
+  if (fixes.length < 3) {
+    fixes.push('Do your single highest-value task before 10 AM tomorrow \u2014 no email, no messages first.');
+    fixes.push('End tomorrow by writing one sentence: "Today I moved the needle on ___." If you can\'t fill the blank, the day missed.');
+    fixes.push('Replace 30 minutes of low-value time with something that compounds: reading, building, or connecting.');
+  }
+  
+  return fixes.slice(0, 3);
 }
 
-function generateMissions(userType) {
-  var pools = {
-    student:  { speed: 'Complete top 3 study tasks before 12 PM', reasoning: 'Solve 5 problems without looking at solutions', focus: '90-min deep study session \u2014 phone in another room', knowledge: 'Read 1 chapter or watch 1 educational video' },
-    sales:    { speed: 'Send 10 outreach messages before 11 AM', reasoning: 'Analyse your last 3 lost deals \u2014 find the pattern', focus: 'Make 20 focused calls with zero multitasking', knowledge: 'Learn 1 new closing technique and test it today' },
-    business: { speed: 'Ship one deliverable or decision before lunch', reasoning: 'Identify the single bottleneck killing your growth today', focus: '2-hour no-meeting deep work block on #1 priority', knowledge: 'Read 20 mins of competitor or market intelligence' },
+function generateAdaptiveMissions(userType, pillarScores) {
+  // Sort pillars by score ascending (weakest first)
+  var sorted = Object.entries(pillarScores).sort(function(a,b) { return a[1] - b[1]; });
+  var weakest = sorted[0][0];
+  var secondWeakest = sorted[1][0];
+
+  var missionPools = {
+    student: {
+      execution: ['Complete your top 3 study tasks before noon', 'Submit one assignment or project section today', 'Finish one task you\'ve been avoiding for 3+ days'],
+      reasoning: ['Solve a problem set without looking at solutions first', 'Write a 3-sentence summary of what you learned today', 'Identify one concept you don\'t understand and research it'],
+      focus: ['Study 60 minutes with phone in another room', 'Do a single 25-min Pomodoro on your hardest subject', 'No social media until your top task is done'],
+      financial: ['Track every purchase today', 'Find one subscription to cancel or pause', 'Set a spending limit for tomorrow and stick to it'],
+    },
+    founder: {
+      execution: ['Ship one deliverable or decision before noon', 'Clear your highest-friction task within the first 2 hours', 'Send one thing to a customer or user today'],
+      reasoning: ['Identify the single biggest bottleneck in your business today', 'Write down 3 decisions you made today and rate them', 'Ask yourself: what would I do differently if I had to restart this week?'],
+      focus: ['2-hour no-meeting deep work block on your #1 priority', 'Close all tabs except the one thing you\'re working on', 'Say no to one meeting or request that doesn\'t serve your top goal'],
+      financial: ['Track every dollar spent today', 'Review your last 3 days of spending \u2014 find one unnecessary expense', 'Earn or generate at least $1 in revenue today'],
+    },
+    sales: {
+      execution: ['Send 10 outreach messages before 11 AM', 'Follow up with 3 warm leads today', 'Close or advance one deal by end of day'],
+      reasoning: ['Analyse your last 3 lost deals \u2014 find the common pattern', 'Write down why your last objection happened and prep a response', 'Review your win rate this week and identify one improvement'],
+      focus: ['Make 20 focused calls with zero multitasking', 'Block 90 minutes for pipeline work, no interruptions', 'Turn off notifications during your peak selling hours'],
+      financial: ['Calculate your commission-per-hour today', 'Set a daily spending cap and track against it', 'Find one way to increase deal size on your next pitch'],
+    },
+    creator: {
+      execution: ['Publish one piece of content today', 'Finish and ship one creative deliverable', 'Respond to 5 audience comments or messages'],
+      reasoning: ['Analyse your best-performing content \u2014 why did it work?', 'Write down 3 content ideas and pick the highest-leverage one', 'Identify one skill gap holding back your content quality'],
+      focus: ['Create for 60 minutes without checking analytics', 'Batch-create content: write/film 3 pieces in one session', 'No social scrolling until you\'ve created first'],
+      financial: ['Track your content-to-income ratio this week', 'Identify one monetization opportunity you\'re not using', 'Reach out to one potential sponsor or collaborator'],
+    },
   };
-  return pools[userType in pools ? userType : 'business'];
+
+  var pool = missionPools[userType in missionPools ? userType : 'founder'];
+  var pick = function(arr) { return arr[Math.floor(Math.random() * arr.length)]; };
+
+  return {
+    execution:  pick(pool.execution),
+    reasoning:  pick(pool.reasoning),
+    focus:      pick(pool.focus),
+    financial:  pick(pool.financial),
+    _weakest: weakest,
+    _secondWeakest: secondWeakest,
+  };
 }
 
 // ─── APPLY RESULT ─────────────────────────────────
 function applyResultToState(result) {
   STATE.todayScore = result.score;
-  STATE.pillars = { speed: result.speed, reasoning: result.reasoning, focus: result.focus, knowledge: result.knowledge };
+  STATE.pillars = { execution: result.execution, reasoning: result.reasoning, focus: result.focus, financial: result.financial };
   STATE.weeklyScores.shift();
   STATE.weeklyScores.push(result.score);
   var m = result.missions;
-  if (m) { setEl('mission-speed-task', m.speed); setEl('mission-reasoning-task', m.reasoning); setEl('mission-focus-task', m.focus); setEl('mission-knowledge-task', m.knowledge); }
+  if (m) { setEl('mission-execution-task', m.execution); setEl('mission-reasoning-task', m.reasoning); setEl('mission-focus-task', m.focus); setEl('mission-financial-task', m.financial); }
   STATE.level = Math.max(1, Math.floor(calcWeeklyAvg() / 10) + 1);
   var today = new Date().toDateString();
   if (STATE.lastReviewDate !== today) { STATE.streak = (STATE.streak || 0) + 1; STATE.lastReviewDate = today; }
@@ -957,7 +1086,7 @@ function initResults() {
 
   // ── Skill Breakdown Bars (animated) ──
   setTimeout(function() {
-    var pillars = ['speed', 'reasoning', 'focus', 'knowledge'];
+    var pillars = ['execution', 'reasoning', 'focus', 'financial'];
     pillars.forEach(function(p) {
       var bar = document.getElementById('skill-bar-' + p);
       var val = document.getElementById('skill-val-' + p);
@@ -990,8 +1119,8 @@ function initResults() {
 function initMissions() {
   document.getElementById('missions-coin-count').textContent = STATE.coins;
   var m = STATE.analysisResult && STATE.analysisResult.missions;
-  if (m) { setEl('mission-speed-task', m.speed); setEl('mission-reasoning-task', m.reasoning); setEl('mission-focus-task', m.focus); setEl('mission-knowledge-task', m.knowledge); }
-  ['speed','reasoning','focus','knowledge'].forEach(function(p) {
+  if (m) { setEl('mission-execution-task', m.execution); setEl('mission-reasoning-task', m.reasoning); setEl('mission-focus-task', m.focus); setEl('mission-financial-task', m.financial); }
+  ['execution','reasoning','focus','financial'].forEach(function(p) {
     if (STATE.missionsDone[p]) {
       var item = document.getElementById('mission-' + p); if (item) item.classList.add('done');
       var check = document.getElementById('check-' + p); if (check) check.classList.add('checked');
@@ -1006,7 +1135,9 @@ function initMissions() {
 function completeMission(pillar) {
   if (STATE.missionsDone[pillar]) return;
   STATE.missionsDone[pillar] = true;
-  STATE.coins += 10;
+  // Stretch mission (financial) earns more coins
+  var coinReward = pillar === 'financial' ? 25 : 15;
+  STATE.coins += coinReward;
   STATE.totalMissionsCompleted++;
   saveState();
   var item = document.getElementById('mission-' + pillar); if (item) item.classList.add('done');
@@ -1062,10 +1193,10 @@ function initProgress() {
   setEl('progress-level', 'Lv ' + STATE.level);
   setEl('progress-coins', STATE.coins);
   var p = STATE.pillars;
-  setPillarBreakdown('speed', p.speed);
+  setPillarBreakdown('execution', p.execution);
   setPillarBreakdown('reasoning', p.reasoning);
   setPillarBreakdown('focus', p.focus);
-  setPillarBreakdown('knowledge', p.knowledge);
+  setPillarBreakdown('financial', p.financial);
   drawCharts();
 }
 
@@ -1118,10 +1249,32 @@ function chartOptions(color) {
 //  PROFILE
 // =======================================================
 
+function exportData() {
+  var data = {
+    exportDate: new Date().toISOString(),
+    user: { name: STATE.userName, type: STATE.userType, goal: STATE.userGoal },
+    stats: { level: STATE.level, coins: STATE.coins, streak: STATE.streak, todayScore: STATE.todayScore, totalMissions: STATE.totalMissionsCompleted },
+    pillars: STATE.pillars,
+    weeklyScores: STATE.weeklyScores,
+    weeklyMoney: STATE.weeklyMoney,
+    lastReview: STATE.reviewAnswers || null,
+    lastAnalysis: STATE.analysisResult ? { score: STATE.analysisResult.score, execution: STATE.analysisResult.execution, reasoning: STATE.analysisResult.reasoning, focus: STATE.analysisResult.focus, financial: STATE.analysisResult.financial, mistake: STATE.analysisResult.mistake, money: STATE.analysisResult.money, thinking: STATE.analysisResult.thinking, missedOpp: STATE.analysisResult.missedOpp, fixes: STATE.analysisResult.fixes } : null,
+  };
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'imperium-data-' + new Date().toISOString().split('T')[0] + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function initProfile() {
-  var typeMap = { student: 'Student Agent', sales: 'Sales Warrior', business: 'Business Builder' };
-  var goalMap = { money: 'Make Money', discipline: 'Build Discipline', focus: 'Master Focus' };
-  var iconMap = { student: 'book', sales: 'briefcase', business: 'rocket' };
+  var typeMap = { student: 'Student', sales: 'Sales Pro', founder: 'Founder', creator: 'Creator', business: 'Business Builder' };
+  var goalMap = { money: 'Stop Wasting Money', discipline: 'Consistent Routine', focus: 'Deep Focus', decisions: 'Better Decisions' };
+  var iconMap = { student: 'book', sales: 'briefcase', founder: 'rocket', creator: 'bulb', business: 'rocket' };
   var svgMap = {
     book: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
     briefcase: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>',
@@ -1129,7 +1282,7 @@ function initProfile() {
     bulb: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg>',
   };
 
-  setEl('profile-user-type', STATE.userName || typeMap[STATE.userType] || 'Intelligence Agent');
+  setEl('profile-user-type', STATE.userName || typeMap[STATE.userType] || 'Imperium User');
   setEl('profile-user-goal', 'Goal: ' + (goalMap[STATE.userGoal] || '\u2014'));
   setEl('profile-level-badge', 'Level ' + STATE.level);
   setEl('profile-coins-badge', STATE.coins + ' coins');
@@ -1392,7 +1545,8 @@ function showInsightWidget() {
   var p = STATE.pillars;
   var lowest = Object.entries(p).sort(function(a,b){ return a[1]-b[1]; })[0];
   if (lowest && lowest[1] > 0 && lowest[1] < 40) {
-    insights.push('Your ' + lowest[0] + ' pillar is at ' + lowest[1] + ' — this is your biggest growth area.');
+    var pillarNames = { execution: 'Execution', reasoning: 'Reasoning', focus: 'Focus', financial: 'Financial' };
+    insights.push('Your ' + (pillarNames[lowest[0]] || lowest[0]) + ' pillar is at ' + lowest[1] + ' \u2014 this is your biggest growth area.');
   }
   if (STATE.todayScore === null) {
     insights.push('You haven\'t completed today\'s review yet. Tap "Start Daily Review" to get your score.');

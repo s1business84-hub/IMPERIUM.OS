@@ -13,11 +13,11 @@
   <meta name="apple-mobile-web-app-title" content="Imperium" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="application-name" content="Imperium" />
-  <meta name="description" content="AI-powered daily intelligence and money tracking app" />
+  <meta name="description" content="A 2-minute daily review that turns your day into AI-powered feedback and tomorrow's action plan" />
 
   <!-- Open Graph — for link previews -->
-  <meta property="og:title" content="Imperium — Daily Intelligence Engine" />
-  <meta property="og:description" content="AI-powered daily intelligence and money tracking app" />
+  <meta property="og:title" content="Imperium — Your Daily Operating System" />
+  <meta property="og:description" content="A 2-minute daily review that turns your day into AI-powered feedback and tomorrow's action plan" />
   <meta property="og:type" content="website" />
   <title>Imperium</title>
 
@@ -69,8 +69,16 @@
         <!-- Headline -->
         <div class="landing-text">
           <h1 class="landing-brand">Imperium</h1>
-          <p class="landing-sub">Track your intelligence. Upgrade your life.</p>
-          <p class="landing-sub-2">Financial. Mental. Physical. Execution.</p>
+          <p class="landing-sub">A daily review system that turns your day into AI feedback and tomorrow's action plan.</p>
+          <p class="landing-sub-2">Built for students, founders, and closers who want measurable daily gains.</p>
+        </div>
+
+        <!-- Who it's for -->
+        <div class="landing-audience">
+          <span class="audience-tag">🎓 Students</span>
+          <span class="audience-tag">🚀 Founders</span>
+          <span class="audience-tag">💼 Sales Reps</span>
+          <span class="audience-tag">🎯 Creators</span>
         </div>
 
         <!-- Live demo score animation -->
@@ -90,34 +98,53 @@
             <span class="demo-score" id="demo-score">0</span>
           </div>
           <div class="demo-pillars">
-            <div class="demo-pillar"><span class="demo-p-label">Focus</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:78%"></div></div></div>
-            <div class="demo-pillar"><span class="demo-p-label">Execution</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:65%"></div></div></div>
-            <div class="demo-pillar"><span class="demo-p-label">Financial</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:52%"></div></div></div>
-            <div class="demo-pillar"><span class="demo-p-label">Mental</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:89%"></div></div></div>
+            <div class="demo-pillar"><span class="demo-p-label">Execution</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:78%"></div></div></div>
+            <div class="demo-pillar"><span class="demo-p-label">Reasoning</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:65%"></div></div></div>
+            <div class="demo-pillar"><span class="demo-p-label">Focus</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:52%"></div></div></div>
+            <div class="demo-pillar"><span class="demo-p-label">Financial</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:89%"></div></div></div>
           </div>
         </div>
 
-        <!-- How it works — 3 steps -->
+        <!-- How it works — 3 steps showing transformation -->
         <div class="landing-steps">
           <div class="landing-step" style="--d:0.3s">
             <div class="step-num">1</div>
             <div class="step-content">
-              <h4>Check in daily</h4>
-              <p>Answer 7 quick questions about your day</p>
+              <h4>2-minute daily check-in</h4>
+              <p>Answer 7 questions about what you did, avoided, spent, and missed</p>
             </div>
           </div>
           <div class="landing-step" style="--d:0.5s">
             <div class="step-num">2</div>
             <div class="step-content">
-              <h4>AI analyses everything</h4>
-              <p>Patterns, mistakes, money leaks — all detected</p>
+              <h4>AI breaks down your day</h4>
+              <p>Get scored on 4 pillars — Execution, Reasoning, Focus, Financial — with evidence from your answers</p>
             </div>
           </div>
           <div class="landing-step" style="--d:0.7s">
             <div class="step-num">3</div>
             <div class="step-content">
-              <h4>Level up daily</h4>
-              <p>Missions, streaks, and coaching to upgrade yourself</p>
+              <h4>Wake up with a plan</h4>
+              <p>Personalised missions based on yesterday's weak spots, not generic advice</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sample Output Preview -->
+        <div class="sample-output-section">
+          <h3 class="sample-output-title">Here's what a real review looks like</h3>
+          <div class="sample-cards">
+            <div class="sample-card sample-input">
+              <span class="sample-label">📝 Your Input</span>
+              <p class="sample-text">"Spent 2 hours on social media. Avoided the pitch deck. Earned $0. Discipline was low."</p>
+            </div>
+            <div class="sample-card sample-insight">
+              <span class="sample-label">🧠 AI Insight</span>
+              <p class="sample-text">"You rated discipline low and reported 2+ hours of low-value time. That's a reactive day — responding instead of designing. Your pitch deck avoidance is compounding."</p>
+            </div>
+            <div class="sample-card sample-mission">
+              <span class="sample-label">🎯 Tomorrow's Mission</span>
+              <p class="sample-text">"Ship one section of the pitch deck before 10 AM. Block 90 minutes, phone in another room."</p>
             </div>
           </div>
         </div>
@@ -127,53 +154,60 @@
           <div class="landing-pill" style="--d:0.2s" onclick="toggleLandingPill(this)">
             <div class="pill-header">
               <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 1.1 3.4 2.7 4.2.4.2.6.6.6 1V13h1.4v-1.8c0-.4.2-.8.6-1C14.9 9.4 16 8 16 6a4 4 0 0 0-4-4z"/><line x1="10" y1="17" x2="14" y2="17"/><line x1="10" y1="21" x2="14" y2="21"/><line x1="10" y1="17" x2="10" y2="21"/><line x1="14" y1="17" x2="14" y2="21"/></svg>
-              <span>AI-Powered Analysis</span>
+              <span>Evidence-Based Analysis</span>
               <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="pill-body">
-              <p>Deep AI engine scores your focus, energy, productivity and money habits across 4 pillars every single day.</p>
+              <p>Every insight references your actual answers. "You avoided X while wasting Y hours" — not generic advice, but your real patterns.</p>
             </div>
           </div>
           <div class="landing-pill" style="--d:0.4s" onclick="toggleLandingPill(this)">
             <div class="pill-header">
               <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <span>Track Your Progress</span>
+              <span>4-Pillar Operating Score</span>
               <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="pill-body">
-              <p>Beautiful charts and streaks show how your intelligence score evolves over time. Watch yourself level up.</p>
+              <p>Scored daily across Execution, Reasoning, Focus &amp; Financial. Track trends, spot correlations, and prove you're improving.</p>
             </div>
           </div>
           <div class="landing-pill" style="--d:0.6s" onclick="toggleLandingPill(this)">
             <div class="pill-header">
               <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-              <span>Daily Missions</span>
+              <span>Adaptive Missions</span>
               <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="pill-body">
-              <p>Earn coins and XP by completing personalised micro-challenges that sharpen your mind and wallet.</p>
+              <p>Missions are generated from yesterday's weakest areas. Bad focus? Tomorrow's mission targets focus specifically. Not arbitrary challenges.</p>
             </div>
           </div>
           <div class="landing-pill" style="--d:0.8s" onclick="toggleLandingPill(this)">
             <div class="pill-header">
-              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-              <span>Money Intelligence</span>
+              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></svg>
+              <span>Your Data, Your Device</span>
               <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             <div class="pill-body">
-              <p>Track spending, get AI-driven financial insights, and build smart money habits — all in one place.</p>
+              <p>All data stored locally on your device. No cloud uploads of personal reflections. Export or delete anytime. We never sell your data.</p>
             </div>
           </div>
         </div>
 
         <!-- CTA buttons -->
         <div class="landing-cta">
-          <button class="btn-primary landing-btn-main" onclick="skipToAuth()">
+          <button class="btn-primary landing-btn-main" onclick="continueAsGuest()">
+            Try a Free Review — No signup
+          </button>
+          <button class="landing-btn-guest" onclick="skipToAuth()">
             Create Account
           </button>
-          <button class="landing-btn-guest" onclick="continueAsGuest()">
-            Start as Guest — No signup required
-          </button>
+        </div>
+
+        <!-- Trust bar -->
+        <div class="trust-bar">
+          <span class="trust-item">🔒 Data stays on your device</span>
+          <span class="trust-item">⚡ 2 min daily</span>
+          <span class="trust-item">🚫 No credit card</span>
         </div>
 
         <!-- Footer credits -->
@@ -197,7 +231,7 @@
         <div class="auth-logo">
           <span class="auth-logo-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
           <h1 class="auth-brand">Imperium</h1>
-          <p class="auth-tagline">Your Daily Intelligence Engine</p>
+          <p class="auth-tagline">Your Daily Operating System</p>
         </div>
 
         <!-- Tab Toggle -->
@@ -278,8 +312,8 @@
         <div class="auth-form" id="form-guest">
           <div class="guest-hero">
             <div class="guest-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-            <h3 class="guest-title">Explore Imperium</h3>
-            <p class="guest-desc">Try the full experience without an account. Your progress won't be saved between sessions.</p>
+            <h3 class="guest-title">Try Before You Commit</h3>
+            <p class="guest-desc">Do one full daily review, see your AI analysis, and decide if it's worth creating an account.</p>
           </div>
           <div class="guest-limit-info">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -321,28 +355,33 @@
         <div class="brand-logo">
           <span class="logo-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
           <h1 class="brand-name">Imperium</h1>
-          <p class="brand-tagline">Your Daily Intelligence Engine</p>
+          <p class="brand-tagline">Your Daily Operating System</p>
         </div>
 
         <!-- Step 1: Role -->
         <div class="onboarding-step active" id="ob-step-1">
-          <h2 class="ob-question">What do you do?</h2>
-          <p class="ob-subtitle">We personalise your analysis based on your world</p>
+          <h2 class="ob-question">What best describes you?</h2>
+          <p class="ob-subtitle">This controls the language, missions, and benchmarks you see</p>
           <div class="ob-cards">
             <button class="ob-card" data-value="student" onclick="selectRole(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
               <span class="ob-card-label">Student</span>
-              <span class="ob-card-desc">Learning & growing</span>
+              <span class="ob-card-desc">Exams, learning, grades</span>
+            </button>
+            <button class="ob-card" data-value="founder" onclick="selectRole(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span>
+              <span class="ob-card-label">Founder / Builder</span>
+              <span class="ob-card-desc">Shipping, scaling, earning</span>
             </button>
             <button class="ob-card" data-value="sales" onclick="selectRole(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></span>
-              <span class="ob-card-label">Sales</span>
-              <span class="ob-card-desc">Closing & earning</span>
+              <span class="ob-card-label">Sales / Closer</span>
+              <span class="ob-card-desc">Deals, pipeline, income</span>
             </button>
-            <button class="ob-card" data-value="business" onclick="selectRole(this)">
-              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span>
-              <span class="ob-card-label">Business</span>
-              <span class="ob-card-desc">Building & scaling</span>
+            <button class="ob-card" data-value="creator" onclick="selectRole(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></span>
+              <span class="ob-card-label">Creator</span>
+              <span class="ob-card-desc">Content, audience, craft</span>
             </button>
           </div>
           <button class="btn-primary ob-next hidden" id="ob-next-1" onclick="goToObStep2()">Continue →</button>
@@ -350,23 +389,28 @@
 
         <!-- Step 2: Goal -->
         <div class="onboarding-step" id="ob-step-2">
-          <h2 class="ob-question">What's your #1 goal?</h2>
-          <p class="ob-subtitle">This shapes every insight we give you</p>
+          <h2 class="ob-question">What outcome do you want most in the next 30 days?</h2>
+          <p class="ob-subtitle">Every insight, mission, and score is calibrated to this</p>
           <div class="ob-cards">
             <button class="ob-card" data-value="money" onclick="selectGoal(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-              <span class="ob-card-label">Make Money</span>
-              <span class="ob-card-desc">Maximise earning potential</span>
+              <span class="ob-card-label">Stop Wasting Money</span>
+              <span class="ob-card-desc">Track spending, find leaks, build capital</span>
             </button>
             <button class="ob-card" data-value="discipline" onclick="selectGoal(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-              <span class="ob-card-label">Discipline</span>
-              <span class="ob-card-desc">Build unbreakable habits</span>
+              <span class="ob-card-label">Consistent Routine</span>
+              <span class="ob-card-desc">Show up every day, no excuses</span>
             </button>
             <button class="ob-card" data-value="focus" onclick="selectGoal(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
-              <span class="ob-card-label">Focus</span>
-              <span class="ob-card-desc">Deep work & clarity</span>
+              <span class="ob-card-label">Deep Focus</span>
+              <span class="ob-card-desc">Ship real work, kill distractions</span>
+            </button>
+            <button class="ob-card" data-value="decisions" onclick="selectGoal(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg></span>
+              <span class="ob-card-label">Better Decisions</span>
+              <span class="ob-card-desc">Think clearly, act fast, fewer regrets</span>
             </button>
           </div>
           <button class="btn-primary ob-next hidden" id="ob-next-2" onclick="finishOnboarding()">Start My Journey →</button>
@@ -399,7 +443,7 @@
         <header class="dash-header">
           <div>
             <p class="greeting" id="greeting-text">Good morning</p>
-            <h2 class="dash-title">Your Intelligence</h2>
+            <h2 class="dash-title">Your Operating Score</h2>
           </div>
           <div class="header-right">
             <div class="coins-badge">
@@ -440,16 +484,16 @@
 
         <!-- 4 Pillars -->
         <div class="pillars-section">
-          <h3 class="section-title">Intelligence Pillars</h3>
+          <h3 class="section-title">Your 4 Pillars</h3>
           <div class="pillars-grid">
             <div class="pillar-card stagger-1">
               <div class="pillar-header">
                 <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-                <span class="pillar-name">Speed</span>
-                <span class="pillar-val" id="pillar-speed-val">0</span>
+                <span class="pillar-name">Execution</span>
+                <span class="pillar-val" id="pillar-execution-val">0</span>
               </div>
               <div class="progress-bar-wrap">
-                <div class="progress-bar" id="pillar-speed" style="width:0%"></div>
+                <div class="progress-bar" id="pillar-execution" style="width:0%"></div>
               </div>
             </div>
             <div class="pillar-card stagger-2">
@@ -474,14 +518,40 @@
             </div>
             <div class="pillar-card stagger-4">
               <div class="pillar-header">
-                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-                <span class="pillar-name">Knowledge</span>
-                <span class="pillar-val" id="pillar-knowledge-val">0</span>
+                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                <span class="pillar-name">Financial</span>
+                <span class="pillar-val" id="pillar-financial-val">0</span>
               </div>
               <div class="progress-bar-wrap">
-                <div class="progress-bar knowledge" id="pillar-knowledge" style="width:0%"></div>
+                <div class="progress-bar financial" id="pillar-financial" style="width:0%"></div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- First-Time User Guided Section -->
+        <div class="first-run-section" id="first-run-section">
+          <div class="first-run-card">
+            <h3 class="first-run-title">Complete your first daily review</h3>
+            <p class="first-run-sub">Takes about 2 minutes. Here's what you'll get:</p>
+            <div class="first-run-promises">
+              <div class="first-run-promise">
+                <span class="promise-icon">🎯</span>
+                <span>Your Operating Score across 4 pillars</span>
+              </div>
+              <div class="first-run-promise">
+                <span class="promise-icon">🧠</span>
+                <span>AI breakdown of your biggest mistake and thinking pattern</span>
+              </div>
+              <div class="first-run-promise">
+                <span class="promise-icon">⚡</span>
+                <span>Personalised missions for tomorrow</span>
+              </div>
+            </div>
+            <button class="btn-primary first-run-btn" onclick="navigateTo('screen-review')">
+              Start 2-Minute Review →
+            </button>
+            <p class="first-run-privacy">🔒 All data stays on this device. Nothing uploaded.</p>
           </div>
         </div>
 
@@ -512,7 +582,7 @@
 
         <!-- Review Button -->
         <button class="btn-primary review-btn" onclick="navigateTo('screen-review')">
-          <svg class="btn-icon-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg> Start Daily Review
+          <svg class="btn-icon-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg> Start Daily Review • 2 min
           <span class="btn-ripple"></span>
         </button>
 
@@ -523,8 +593,8 @@
               <span class="voice-orb-icon" id="home-voice-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></span>
             </div>
             <div>
-              <h3 class="voice-day-title">Speak your day</h3>
-              <p class="voice-day-sub">Tap anywhere — AI listens, then asks follow-ups</p>
+              <h3 class="voice-day-title">Voice Entry</h3>
+              <p class="voice-day-sub">Tap to record — speak naturally, then AI asks follow-ups. Your data stays private.</p>
             </div>
           </div>
           <div class="voice-day-preview hidden" id="voice-day-preview">
@@ -534,15 +604,15 @@
 
         <!-- How It Works — Explainer -->
         <div class="how-it-works-section">
-          <h3 class="section-title">How Imperium Works</h3>
+          <h3 class="section-title">How Your Daily Review Works</h3>
           <div class="how-steps">
             <div class="how-step">
               <div class="how-step-icon" style="background: rgba(129,140,248,0.15); color: #818cf8;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               </div>
               <div class="how-step-text">
-                <h4>1. Daily Check-in</h4>
-                <p>Answer 7 quick questions about your productivity, focus, money &amp; decisions</p>
+                <h4>1. Answer 7 Questions (voice or text)</h4>
+                <p>What you did, what you avoided, money in/out, time wasted, missed opportunities, discipline level</p>
               </div>
             </div>
             <div class="how-step">
@@ -550,8 +620,8 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
               </div>
               <div class="how-step-text">
-                <h4>2. AI Scores You</h4>
-                <p>Get scored across 4 skill pillars — Speed, Reasoning, Focus &amp; Knowledge</p>
+                <h4>2. AI Breaks Down Your Day</h4>
+                <p>Scored across Execution, Reasoning, Focus &amp; Financial — every insight cites your actual answers</p>
               </div>
             </div>
             <div class="how-step">
@@ -559,8 +629,8 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
               </div>
               <div class="how-step-text">
-                <h4>3. Level Up</h4>
-                <p>Complete missions, earn coins, build streaks &amp; watch your intelligence grow</p>
+                <h4>3. Wake Up With a Plan</h4>
+                <p>Missions generated from your weak spots, not random challenges. Track improvement over time.</p>
               </div>
             </div>
           </div>
@@ -620,23 +690,23 @@
         <div class="results-score-banner">
           <div class="results-score-inner">
             <span class="results-score-num" id="result-score-num">--</span>
-            <span class="results-score-lbl">Intelligence Score</span>
+            <span class="results-score-lbl">Operating Score</span>
           </div>
           <div class="results-score-trend" id="result-trend"></div>
         </div>
 
         <!-- Skill Breakdown Visual -->
         <div class="skill-breakdown-card" id="skill-breakdown-card">
-          <h3 class="skill-breakdown-title">Your Daily Skills</h3>
-          <p class="skill-breakdown-sub">How your answers mapped to each pillar today</p>
+          <h3 class="skill-breakdown-title">Your Daily Breakdown</h3>
+          <p class="skill-breakdown-sub">How your answers mapped to each pillar — every score is based on what you told us</p>
           <div class="skill-bars">
             <div class="skill-bar-row">
               <div class="skill-bar-label">
                 <span class="skill-bar-icon" style="background: rgba(96,165,250,0.15); color: #60a5fa;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-                <span>Speed</span>
+                <span>Execution</span>
               </div>
-              <div class="skill-bar-track"><div class="skill-bar-fill speed-fill" id="skill-bar-speed" style="width:0%"></div></div>
-              <span class="skill-bar-val" id="skill-val-speed">0</span>
+              <div class="skill-bar-track"><div class="skill-bar-fill speed-fill" id="skill-bar-execution" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-execution">0</span>
             </div>
             <div class="skill-bar-row">
               <div class="skill-bar-label">
@@ -656,11 +726,11 @@
             </div>
             <div class="skill-bar-row">
               <div class="skill-bar-label">
-                <span class="skill-bar-icon" style="background: rgba(212,175,55,0.15); color: #d4af37;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-                <span>Knowledge</span>
+                <span class="skill-bar-icon" style="background: rgba(212,175,55,0.15); color: #d4af37;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                <span>Financial</span>
               </div>
-              <div class="skill-bar-track"><div class="skill-bar-fill knowledge-fill" id="skill-bar-knowledge" style="width:0%"></div></div>
-              <span class="skill-bar-val" id="skill-val-knowledge">0</span>
+              <div class="skill-bar-track"><div class="skill-bar-fill knowledge-fill" id="skill-bar-financial" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-financial">0</span>
             </div>
           </div>
           <!-- Input summary cards -->
@@ -730,19 +800,19 @@
             <span id="missions-coin-count">0</span>
           </div>
         </header>
-        <p class="page-sub">Complete all 4 to unlock your bonus</p>
+        <p class="page-sub">Based on yesterday's weakest areas — not random challenges</p>
 
         <!-- Missions List -->
         <div class="missions-list" id="missions-list">
-          <div class="mission-item" id="mission-speed" data-pillar="speed">
-            <div class="mission-check" onclick="completeMission('speed')">
-              <div class="check-circle" id="check-speed"></div>
+          <div class="mission-item" id="mission-execution" data-pillar="execution">
+            <div class="mission-check" onclick="completeMission('execution')">
+              <div class="check-circle" id="check-execution"></div>
             </div>
             <div class="mission-info">
-              <span class="mission-pillar speed-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Speed</span>
-              <p class="mission-task" id="mission-speed-task">Complete your morning routine in under 30 minutes</p>
+              <span class="mission-pillar speed-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Execution</span>
+              <p class="mission-task" id="mission-execution-task">Ship one deliverable before noon</p>
             </div>
-            <span class="mission-coins">+10 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
+            <span class="mission-coins">+15 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
           </div>
 
           <div class="mission-item" id="mission-reasoning" data-pillar="reasoning">
@@ -751,9 +821,9 @@
             </div>
             <div class="mission-info">
               <span class="mission-pillar reasoning-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg> Reasoning</span>
-              <p class="mission-task" id="mission-reasoning-task">Identify one decision you regret and write why</p>
+              <p class="mission-task" id="mission-reasoning-task">Write down one decision you'd make differently and why</p>
             </div>
-            <span class="mission-coins">+10 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
+            <span class="mission-coins">+15 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
           </div>
 
           <div class="mission-item" id="mission-focus" data-pillar="focus">
@@ -762,20 +832,21 @@
             </div>
             <div class="mission-info">
               <span class="mission-pillar focus-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Focus</span>
-              <p class="mission-task" id="mission-focus-task">Work 90 minutes uninterrupted on your #1 task</p>
+              <p class="mission-task" id="mission-focus-task">Work 60 minutes uninterrupted on your #1 priority</p>
             </div>
-            <span class="mission-coins">+10 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
+            <span class="mission-coins">+15 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
           </div>
 
-          <div class="mission-item" id="mission-knowledge" data-pillar="knowledge">
-            <div class="mission-check" onclick="completeMission('knowledge')">
-              <div class="check-circle" id="check-knowledge"></div>
+          <div class="mission-item stretch-mission" id="mission-financial" data-pillar="financial">
+            <div class="mission-check" onclick="completeMission('financial')">
+              <div class="check-circle" id="check-financial"></div>
             </div>
             <div class="mission-info">
-              <span class="mission-pillar knowledge-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Knowledge</span>
-              <p class="mission-task" id="mission-knowledge-task">Read or listen to 20 minutes of industry content</p>
+              <span class="mission-pillar financial-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Financial</span>
+              <span class="stretch-badge">🌟 Stretch</span>
+              <p class="mission-task" id="mission-financial-task">Track every dollar spent today and find one cut</p>
             </div>
-            <span class="mission-coins">+10 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
+            <span class="mission-coins">+25 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
           </div>
         </div>
 
@@ -850,9 +921,9 @@
           <h3 class="chart-title">Pillar Breakdown</h3>
           <div class="pillar-breakdown" id="pillar-breakdown-prog">
             <div class="pb-row">
-              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Speed</span>
-              <div class="pb-bar-wrap"><div class="pb-bar speed-bar" id="pb-speed" style="width:0%"></div></div>
-              <span class="pb-val" id="pb-speed-val">0</span>
+              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Execution</span>
+              <div class="pb-bar-wrap"><div class="pb-bar speed-bar" id="pb-execution" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-execution-val">0</span>
             </div>
             <div class="pb-row">
               <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg> Reasoning</span>
@@ -865,9 +936,9 @@
               <span class="pb-val" id="pb-focus-val">0</span>
             </div>
             <div class="pb-row">
-              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Knowledge</span>
-              <div class="pb-bar-wrap"><div class="pb-bar knowledge-bar" id="pb-knowledge" style="width:0%"></div></div>
-              <span class="pb-val" id="pb-knowledge-val">0</span>
+              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Financial</span>
+              <div class="pb-bar-wrap"><div class="pb-bar financial-bar" id="pb-financial" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-financial-val">0</span>
             </div>
           </div>
         </div>
@@ -886,7 +957,7 @@
           <div class="profile-avatar">
             <span id="profile-avatar-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
           </div>
-          <h2 class="profile-name" id="profile-user-type">Intelligence Agent</h2>
+          <h2 class="profile-name" id="profile-user-type">Imperium User</h2>
           <p class="profile-goal" id="profile-user-goal">Goal: —</p>
           <div class="profile-badges">
             <span class="badge gold" id="profile-level-badge">Level 1</span>
@@ -937,18 +1008,62 @@
           <div class="pro-card-top">
             <div>
               <h3 class="pro-title">Imperium Pro</h3>
-              <p class="pro-subtitle">Unlock your full potential</p>
+              <p class="pro-subtitle">For users who want deeper analysis</p>
             </div>
             <span class="pro-badge">PRO</span>
           </div>
           <ul class="pro-features">
             <li>✦ Unlimited AI reviews per day</li>
-            <li>✦ Advanced money behaviour tracking</li>
-            <li>✦ Weekly strategy sessions</li>
+            <li>✦ Advanced spending pattern analysis</li>
+            <li>✦ Weekly strategy summary with trend insights</li>
             <li>✦ Custom mission builder</li>
-            <li>✦ Export insights as PDF</li>
+            <li>✦ Export daily reports as PDF</li>
           </ul>
-          <button class="btn-gold" onclick="showProModal()">Upgrade to Pro — $20/mo</button>
+          <div class="pro-comparison">
+            <div class="compare-col">
+              <h4>Free</h4>
+              <ul><li>✓ 1 daily review</li><li>✓ 4-pillar scoring</li><li>✓ Daily missions</li><li>✓ 7-day history</li></ul>
+            </div>
+            <div class="compare-col pro-col">
+              <h4>Pro</h4>
+              <ul><li>✓ Unlimited reviews</li><li>✓ Deep spending analysis</li><li>✓ Weekly strategy AI</li><li>✓ Full history + export</li></ul>
+            </div>
+          </div>
+          <button class="btn-gold" onclick="showProModal()">Start Free Trial — $8/mo founding rate</button>
+          <p class="pro-note">First 100 members lock in $8/mo forever. Regular price $20/mo.</p>
+        </div>
+
+        <!-- Trust & Privacy -->
+        <div class="settings-section">
+          <h3 class="settings-heading">Privacy &amp; Data</h3>
+          <div class="settings-card">
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">🔒 Data Storage</span>
+                <span class="setting-desc">All data stored locally on this device. Nothing uploaded to our servers.</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">🧠 How Scoring Works</span>
+                <span class="setting-desc">Your score is calculated from discipline, time usage, money behaviour, and task completion. Each pillar weighs your answers differently.</span>
+              </div>
+              <span class="setting-arrow">›</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">📤 Export My Data</span>
+                <span class="setting-desc">Download all your reviews, scores, and insights as JSON</span>
+              </div>
+              <span class="setting-arrow" onclick="exportData()">›</span>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">🚫 AI Data Usage</span>
+                <span class="setting-desc">Your answers are processed locally. We never train on your personal data.</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- App Info -->
@@ -1008,22 +1123,24 @@
         <div class="modal-handle"></div>
         <div class="modal-icon">✦</div>
         <h2 class="modal-title">Imperium Pro</h2>
-        <p class="modal-desc">Unlimited intelligence. No limits.</p>
+        <p class="modal-desc">Deeper analysis. Full history. Weekly strategy.</p>
         <div class="modal-plans">
           <div class="plan-card selected">
-            <span class="plan-label">Monthly</span>
-            <span class="plan-price">$20</span>
+            <span class="plan-label">Founding Monthly</span>
+            <span class="plan-price">$8</span>
             <span class="plan-period">/month</span>
+            <span class="plan-save">60% off</span>
           </div>
           <div class="plan-card">
-            <span class="plan-label">Yearly</span>
-            <span class="plan-price">$200</span>
+            <span class="plan-label">Founding Yearly</span>
+            <span class="plan-price">$72</span>
             <span class="plan-period">/year</span>
-            <span class="plan-save">Save 17%</span>
+            <span class="plan-save">Save 25%</span>
           </div>
         </div>
-        <button class="btn-gold full-width" onclick="closeProModal()">Start Free Trial</button>
-        <p class="modal-footer-text">7-day free trial • Cancel anytime</p>
+        <p class="modal-founding-note">Founding rate for first 100 members. Locks in forever.</p>
+        <button class="btn-gold full-width" onclick="closeProModal()">Start 7-Day Free Trial</button>
+        <p class="modal-footer-text">7-day free trial • Cancel anytime • Regular price $20/mo</p>
       </div>
     </div>
 
