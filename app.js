@@ -1,1721 +1,1569 @@
-/* ===================================================
-   IMPERIUM — app.js
-   Full SPA: Auth, Onboarding, Voice Chat, AI Engine
-=================================================== */
+/* ═══════════════════════════════════════════════
+   IMPERIUM v2 — app.js
+   Complete ground-up rewrite
+   ═══════════════════════════════════════════════ */
 
-'use strict';
-
-// ─── STATE ────────────────────────────────────────
+/* ── State ── */
 const STATE = {
-  userName: null,
-  userEmail: null,
-  userType: null,
-  userGoal: null,
+  userName: '',
+  userEmail: '',
+  userType: '',
+  userGoal: '',
+  userReminder: 'evening',
+  userIntensity: 'moderate',
   coins: 0,
   streak: 0,
   level: 1,
-  weeklyScores: [0, 0, 0, 0, 0, 0, 0],
-  weeklyMoney: [0, 0, 0, 0, 0, 0, 0],
-  pillars: { execution: 0, reasoning: 0, focus: 0, financial: 0 },
-  todayScore: null,
-  missionsDone: { execution: false, reasoning: false, focus: false, financial: false },
+  weeklyScores: [0,0,0,0,0,0,0],
+  weeklyMoney:  [0,0,0,0,0,0,0],
+  pillars: { execution:0, reasoning:0, focus:0, financial:0 },
+  todayScore: 0,
+  missionsDone: { execution:false, reasoning:false, focus:false },
   reviewAnswers: {},
   analysisResult: null,
-  lastReviewDate: null,
+  lastReviewDate: '',
   totalMissionsCompleted: 0,
-  voiceDumpText: '',
+  voiceDumpText: ''
 };
 
-let scoreChart = null;
-let moneyChart = null;
-
-// ─── PERSIST ──────────────────────────────────────
 function saveState() {
-  try { localStorage.setItem('imperium_state', JSON.stringify(STATE)); } catch (_) {}
+  try { localStorage.setItem('imperium_state', JSON.stringify(STATE)); } catch(e) {}
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem('imperium_state');
-    if (raw) Object.assign(STATE, JSON.parse(raw));
-  } catch (_) {}
+    const s = JSON.parse(localStorage.getItem('imperium_state'));
+    if (s) Object.assign(STATE, s);
+    // Ensure new fields exist
+    if (!STATE.userReminder) STATE.userReminder = 'evening';
+    if (!STATE.userIntensity) STATE.userIntensity = 'moderate';
+    if (!STATE.missionsDone.focus && STATE.missionsDone.financial !== undefined) {
+      // Migrate from old 4-mission to new 3-mission system
+      STATE.missionsDone = { execution: false, reasoning: false, focus: false };
+    }
+  } catch(e) {}
 }
 
-// ─── BOOT ─────────────────────────────────────────
+
+/* ── Boot ── */
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
   injectSvgGradient();
   setGreeting();
   setScoreDate();
 
-  if (STATE.userType && STATE.userGoal) {
-    // Already fully onboarded — skip landing
-    document.getElementById('screen-landing').classList.remove('active');
+  const fullyOnboarded = STATE.userType && STATE.userGoal;
+  const hasAccount = STATE.userName || STATE.userEmail;
+
+  if (fullyOnboarded) {
     showMainApp();
-  } else if (STATE.userEmail) {
-    // Has account but not onboarded
-    document.getElementById('screen-landing').classList.remove('active');
-    navigateTo('screen-onboarding');
+  } else if (hasAccount) {
+    showScreen('screen-onboarding');
   } else {
-    // Show landing intro — it's the default active screen
+    showScreen('screen-landing');
     startLandingSequence();
   }
 });
 
-// ─── SVG GRADIENT ────────────────────────────────
 function injectSvgGradient() {
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = document.querySelector('.ring-svg');
-  if (!svg) return;
-  const defs = document.createElementNS(ns, 'defs');
-  const grad = document.createElementNS(ns, 'linearGradient');
-  grad.setAttribute('id', 'ringGrad');
-  grad.setAttribute('x1', '0%'); grad.setAttribute('y1', '0%');
-  grad.setAttribute('x2', '100%'); grad.setAttribute('y2', '0%');
-  const s1 = document.createElementNS(ns, 'stop');
-  s1.setAttribute('offset', '0%'); s1.setAttribute('stop-color', '#3b82f6');
-  const s2 = document.createElementNS(ns, 'stop');
-  s2.setAttribute('offset', '100%'); s2.setAttribute('stop-color', '#d4af37');
-  grad.appendChild(s1); grad.appendChild(s2);
-  defs.appendChild(grad);
-  svg.prepend(defs);
-  const ring = document.getElementById('score-ring-circle');
-  if (ring) ring.setAttribute('stroke', 'url(#ringGrad)');
+  if (document.getElementById('imperium-svg-defs')) return;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.id = 'imperium-svg-defs';
+  svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+  svg.innerHTML = `<defs>
+    <linearGradient id="pillarGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+  </defs>`;
+  document.body.prepend(svg);
 }
 
-// ─── NAVIGATION ───────────────────────────────────
-const NAV_SCREENS = ['screen-home', 'screen-missions', 'screen-results', 'screen-progress', 'screen-profile'];
-const NAV_IDS     = ['nav-home', 'nav-missions', 'nav-results', 'nav-progress', 'nav-profile'];
-let currentScreen = 'screen-auth';
 
-function navigateTo(screenId) {
-  const prev = document.getElementById(currentScreen);
-  const next = document.getElementById(screenId);
-  if (!next || screenId === currentScreen) return;
+/* ═══════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════ */
 
-  if (prev) {
-    prev.classList.add('exit');
-    setTimeout(() => { prev.classList.remove('active', 'exit'); }, 350);
-  }
-  next.classList.add('active');
-  currentScreen = screenId;
+const NAV_SCREENS = ['screen-home','screen-missions','screen-results','screen-progress','screen-profile'];
+const NAV_IDS     = ['nav-home','nav-missions','nav-results','nav-progress','nav-profile'];
 
-  NAV_SCREENS.forEach((id, i) => {
-    const btn = document.getElementById(NAV_IDS[i]);
-    if (btn) btn.classList.toggle('active', id === screenId);
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active','exit');
   });
-
-  if (screenId === 'screen-home')     initHomeDashboard();
-  if (screenId === 'screen-missions') initMissions();
-  if (screenId === 'screen-progress') initProgress();
-  if (screenId === 'screen-profile')  initProfile();
-  if (screenId === 'screen-review')   startReview();
-  if (screenId === 'screen-results')  initResults();
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
 }
 
-// =======================================================
-//  AUTH
-// =======================================================
+function navigateTo(id) {
+  // Exit current
+  const current = document.querySelector('.screen.active');
+  if (current) {
+    current.classList.add('exit');
+    current.classList.remove('active');
+    setTimeout(() => current.classList.remove('exit'), 400);
+  }
+
+  // Activate new
+  setTimeout(() => {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active','exit'));
+    const target = document.getElementById(id);
+    if (target) target.classList.add('active');
+
+    // Update nav
+    const navIdx = NAV_SCREENS.indexOf(id);
+    document.querySelectorAll('.nav-item').forEach((n, i) => {
+      n.classList.toggle('active', i === navIdx);
+    });
+    document.getElementById('bottom-nav').style.display =
+      NAV_SCREENS.includes(id) ? '' : 'none';
+
+    // Init screens
+    if (id === 'screen-home')     initHomeDashboard();
+    if (id === 'screen-missions') initMissions();
+    if (id === 'screen-results')  initResults();
+    if (id === 'screen-progress') initProgress();
+    if (id === 'screen-profile')  initProfile();
+    if (id === 'screen-review')   startReview();
+  }, 80);
+}
+
+
+/* ═══════════════════════════════════════════════
+   AUTH
+   ═══════════════════════════════════════════════ */
 
 function switchAuthTab(tab) {
-  ['login','signup','guest'].forEach(t => {
-    const tabBtn = document.getElementById('tab-' + t);
-    const form   = document.getElementById('form-' + t);
-    if (tabBtn) tabBtn.classList.toggle('active',  t === tab);
-    if (form)   form.classList.toggle('active',   t === tab);
-  });
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('form-login').classList.toggle('active', tab === 'login');
+  document.getElementById('form-signup').classList.toggle('active', tab === 'signup');
 }
 
-function togglePassword(fieldId, btn) {
-  const field = document.getElementById(fieldId);
-  if (!field) return;
-  const isHidden = field.type === 'password';
-  field.type = isHidden ? 'text' : 'password';
-  btn.textContent = isHidden ? 'U+1F648' : 'U+1F441';
+function togglePassword(id, btn) {
+  const inp = document.getElementById(id);
+  const isPass = inp.type === 'password';
+  inp.type = isPass ? 'text' : 'password';
+  btn.style.opacity = isPass ? '1' : '.5';
 }
 
-function showAuthMessage(msg, isError) {
-  const toast = document.getElementById('auth-toast');
-  if (!toast) return;
-  toast.textContent = msg;
-  toast.style.background = isError ? 'rgba(239,68,68,0.85)' : 'rgba(30,64,175,0.85)';
-  toast.classList.remove('hidden');
-  clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => toast.classList.add('hidden'), 3000);
+function showAuthMessage(msg) {
+  const t = document.getElementById('auth-toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3000);
 }
 
 function handleLogin() {
-  const email    = document.getElementById('login-email') ? document.getElementById('login-email').value.trim() : '';
-  const password = document.getElementById('login-password') ? document.getElementById('login-password').value : '';
-  if (!email || !password) { showAuthMessage('Please enter your email and password.', true); return; }
-  if (!email.includes('@')) { showAuthMessage('Please enter a valid email.', true); return; }
-  if (password.length < 6) { showAuthMessage('Password must be at least 6 characters.', true); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  if (!email || !pass) return showAuthMessage('Please fill in all fields');
+  if (!email.includes('@')) return showAuthMessage('Enter a valid email');
+
   STATE.userEmail = email;
-  STATE.userName  = email.split('@')[0];
+  STATE.userName = email.split('@')[0];
   saveState();
-  showAuthMessage('Welcome back!');
-  setTimeout(() => {
-    if (STATE.userType && STATE.userGoal) showMainApp();
-    else navigateTo('screen-onboarding');
-  }, 900);
+
+  if (STATE.userType && STATE.userGoal) {
+    showMainApp();
+  } else {
+    showScreen('screen-onboarding');
+  }
 }
 
 function handleSignup() {
-  const name     = document.getElementById('signup-name') ? document.getElementById('signup-name').value.trim() : '';
-  const email    = document.getElementById('signup-email') ? document.getElementById('signup-email').value.trim() : '';
-  const password = document.getElementById('signup-password') ? document.getElementById('signup-password').value : '';
-  if (!name)  { showAuthMessage('Please enter your name.', true); return; }
-  if (!email || !email.includes('@')) { showAuthMessage('Please enter a valid email.', true); return; }
-  if (!password || password.length < 8) { showAuthMessage('Password must be at least 8 characters.', true); return; }
+  const name  = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pass  = document.getElementById('signup-password').value;
+  if (!name || !email || !pass) return showAuthMessage('Please fill in all fields');
+  if (!email.includes('@')) return showAuthMessage('Enter a valid email');
+  if (pass.length < 8) return showAuthMessage('Password must be at least 8 characters');
+
+  STATE.userName = name;
   STATE.userEmail = email;
-  STATE.userName  = name;
-  STATE.streak    = 1;
   saveState();
-  showAuthMessage('Welcome, ' + name + '! Setting up your profile.');
-  setTimeout(() => navigateTo('screen-onboarding'), 1000);
+  showScreen('screen-onboarding');
 }
 
 function handleSocialAuth(provider) {
-  showAuthMessage(provider + ' sign-in coming soon! Use email for now.');
+  STATE.userName = provider + ' User';
+  STATE.userEmail = provider.toLowerCase() + '@example.com';
+  saveState();
+  showScreen('screen-onboarding');
 }
 
-// =======================================================
-//  LANDING
-// =======================================================
+
+/* ═══════════════════════════════════════════════
+   LANDING
+   ═══════════════════════════════════════════════ */
 
 function startLandingSequence() {
-  // Animate demo score ring + pillar bars
-  animateLandingDemo();
-}
-
-/* ─── Landing pill accordion ────────────────────────── */
-function toggleLandingPill(el) {
-  const wasExpanded = el.classList.contains('expanded');
-  // Close all pills first
-  document.querySelectorAll('.landing-pill.expanded').forEach(p => p.classList.remove('expanded'));
-  // Toggle the clicked one (if it wasn't already open)
-  if (!wasExpanded) el.classList.add('expanded');
+  // beams canvas runs on its own IIFE
 }
 
 function skipToAuth() {
-  const landing = document.getElementById('screen-landing');
-  const auth    = document.getElementById('screen-auth');
-  if (landing) {
-    landing.classList.add('exit');
-    setTimeout(() => landing.classList.remove('active', 'exit'), 350);
-  }
-  if (auth) {
-    auth.classList.add('active');
-    currentScreen = 'screen-auth';
-  }
+  showScreen('screen-auth');
 }
 
 function continueAsGuest() {
-  STATE.userEmail = 'guest@imperium.app';
-  STATE.userName  = 'Guest';
-  STATE.userType  = 'student';
-  STATE.userGoal  = 'focus';
-  STATE.isGuest   = true;
-  // Don't persist guest state
-  const landing = document.getElementById('screen-landing');
-  const auth    = document.getElementById('screen-auth');
-  if (landing) {
-    landing.classList.add('exit');
-    setTimeout(() => landing.classList.remove('active', 'exit'), 350);
+  STATE.userName = 'Guest';
+  STATE.userType = 'founder';
+  STATE.userGoal = 'discipline';
+  STATE.userReminder = 'evening';
+  STATE.userIntensity = 'moderate';
+  if (!localStorage.getItem('imperium_guest_start')) {
+    localStorage.setItem('imperium_guest_start', Date.now().toString());
   }
-  if (auth) auth.classList.remove('active');
-  document.getElementById('bottom-nav').classList.add('visible');
-  currentScreen = 'screen-landing';
-  navigateTo('screen-home');
+  saveState();
+  showMainApp();
 }
 
-// =======================================================
-//  ONBOARDING
-// =======================================================
+
+/* ═══════════════════════════════════════════════
+   ONBOARDING — 4 steps
+   ═══════════════════════════════════════════════ */
+
+let obCurrentStep = 1;
+
+function updateObProgress() {
+  const pct = (obCurrentStep / 4) * 100;
+  document.getElementById('ob-progress-fill').style.width = pct + '%';
+  document.getElementById('ob-step-label').textContent = `Step ${obCurrentStep} of 4`;
+}
+
+function goToObStep(step) {
+  document.querySelectorAll('.onboarding-step').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('ob-step-' + step);
+  if (el) el.classList.add('active');
+  obCurrentStep = step;
+  updateObProgress();
+}
 
 function selectRole(btn) {
-  document.querySelectorAll('#ob-step-1 .ob-card').forEach(function(c) { c.classList.remove('selected'); });
+  document.querySelectorAll('#ob-step-1 .ob-card').forEach(c => c.classList.remove('selected'));
   btn.classList.add('selected');
   STATE.userType = btn.dataset.value;
-  document.getElementById('ob-next-1').classList.remove('hidden');
+  saveState();
+  setTimeout(() => goToObStep(2), 350);
 }
 
 function selectGoal(btn) {
-  document.querySelectorAll('#ob-step-2 .ob-card').forEach(function(c) { c.classList.remove('selected'); });
+  document.querySelectorAll('#ob-step-2 .ob-card').forEach(c => c.classList.remove('selected'));
   btn.classList.add('selected');
   STATE.userGoal = btn.dataset.value;
-  document.getElementById('ob-next-2').classList.remove('hidden');
+  saveState();
+  setTimeout(() => goToObStep(3), 350);
 }
 
-function goToObStep2() {
-  document.getElementById('ob-step-1').classList.remove('active');
-  document.getElementById('ob-step-2').classList.add('active');
+function selectReminder(btn) {
+  document.querySelectorAll('#ob-step-3 .ob-card').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+  STATE.userReminder = btn.dataset.value;
+  saveState();
+  setTimeout(() => goToObStep(4), 350);
+}
+
+function selectIntensity(btn) {
+  document.querySelectorAll('#ob-step-4 .ob-card').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+  STATE.userIntensity = btn.dataset.value;
+  saveState();
 }
 
 function finishOnboarding() {
-  STATE.streak = STATE.streak || 1;
+  if (!STATE.userType || !STATE.userGoal) return;
   saveState();
   showMainApp();
 }
 
 function showMainApp() {
-  var authEl = document.getElementById('screen-auth');
-  var obEl   = document.getElementById('screen-onboarding');
-  if (authEl) authEl.classList.remove('active');
-  if (obEl)   obEl.classList.remove('active');
-  document.getElementById('bottom-nav').classList.add('visible');
-  currentScreen = 'screen-onboarding';
-  navigateTo('screen-home');
+  showScreen('screen-home');
+  document.getElementById('bottom-nav').style.display = '';
+  initHomeDashboard();
+  initGuestMode();
+  showInsightWidget();
 }
 
-// =======================================================
-//  HOME DASHBOARD
-// =======================================================
+
+/* ═══════════════════════════════════════════════
+   HOME DASHBOARD
+   ═══════════════════════════════════════════════ */
 
 function setGreeting() {
-  var h = new Date().getHours();
-  var g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-  var el = document.getElementById('greeting-text');
-  if (el) el.textContent = g;
+  const h = new Date().getHours();
+  let g = 'Good evening';
+  if (h < 12) g = 'Good morning';
+  else if (h < 17) g = 'Good afternoon';
+
+  const name = STATE.userName ? `, ${STATE.userName.split(' ')[0]}` : '';
+  const el = document.getElementById('greeting-text');
+  if (el) el.textContent = g + name;
 }
 
 function setScoreDate() {
-  var el = document.getElementById('score-date');
-  if (!el) return;
-  el.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const el = document.getElementById('score-date');
+  if (el) {
+    el.textContent = new Date().toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric'
+    });
+  }
 }
 
 function initHomeDashboard() {
   setGreeting();
-  var score = STATE.todayScore !== null ? STATE.todayScore : '--';
-  document.getElementById('daily-score').textContent = score;
-  animateRing(typeof score === 'number' ? score : 0);
+  setScoreDate();
 
-  var p = STATE.pillars;
-  animatePillar('execution',  p.execution);
-  animatePillar('reasoning', p.reasoning);
-  animatePillar('focus',     p.focus);
-  animatePillar('financial', p.financial);
+  const isFirstRun = !STATE.lastReviewDate;
+  const firstRunSec = document.getElementById('first-run-section');
+  const returningSec = document.getElementById('returning-section');
 
-  document.getElementById('coin-count').textContent   = STATE.coins;
-  document.getElementById('level-badge').textContent  = 'Lv ' + STATE.level;
-  document.getElementById('streak-count').textContent = STATE.streak;
-  var done = Object.values(STATE.missionsDone).filter(Boolean).length;
-  document.getElementById('missions-done').textContent = done + '/4';
-  var avg = calcWeeklyAvg();
-  document.getElementById('weekly-avg').textContent = avg > 0 ? avg : '--';
-
-  var title = document.querySelector('.dash-title');
-  if (title && STATE.userName && STATE.userName !== 'Guest') title.textContent = 'Hey, ' + STATE.userName.split(' ')[0] + ' \uD83D\uDC4B';
-
-  var preview = document.getElementById('voice-day-preview');
-  var icon    = document.getElementById('home-voice-icon');
-  if (preview) preview.classList.add('hidden');
-  if (icon)    icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
-  var orb = document.getElementById('home-voice-orb');
-  if (orb) orb.classList.remove('recording');
-
-  // First-run state handling
-  var firstRunSection = document.getElementById('first-run-section');
-  var pillarsSection = document.querySelector('.pillars-section');
-  var quickStats = document.querySelector('.quick-stats');
-  var reviewBtn = document.querySelector('.review-btn');
-
-  if (STATE.todayScore === null && STATE.streak <= 1 && !STATE.lastReviewDate) {
-    // First-time user: show guided section, hide empty data
-    if (firstRunSection) firstRunSection.style.display = 'block';
-    if (pillarsSection) pillarsSection.style.opacity = '0.4';
-    if (quickStats) quickStats.style.opacity = '0.4';
+  if (isFirstRun) {
+    firstRunSec.classList.remove('hidden');
+    firstRunSec.style.display = '';
+    returningSec.classList.remove('visible');
+    returningSec.style.display = 'none';
   } else {
-    // Returning user: hide first-run, show full dashboard
-    if (firstRunSection) firstRunSection.style.display = 'none';
-    if (pillarsSection) pillarsSection.style.opacity = '1';
-    if (quickStats) quickStats.style.opacity = '1';
+    firstRunSec.classList.add('hidden');
+    firstRunSec.style.display = 'none';
+    returningSec.classList.add('visible');
+    returningSec.style.display = '';
+
+    // Score ring
+    const score = STATE.todayScore || 0;
+    document.getElementById('daily-score').textContent = score;
+    animateRing(score);
+
+    // Pillars
+    ['execution','reasoning','focus','financial'].forEach(p => {
+      const val = STATE.pillars[p] || 0;
+      animatePillar(p, val);
+    });
+
+    // Quick stats
+    document.getElementById('streak-count').textContent = STATE.streak;
+    const done = Object.values(STATE.missionsDone).filter(Boolean).length;
+    document.getElementById('missions-done').textContent = `${done}/3`;
+    document.getElementById('weekly-avg').textContent = calcWeeklyAvg();
   }
 
-  // Guest mode banner
+  // Guest mode
   initGuestMode();
-  // AI insight widget
   showInsightWidget();
 }
 
 function animateRing(score) {
-  var circle = document.getElementById('score-ring-circle');
+  const circle = document.getElementById('score-ring-circle');
   if (!circle) return;
-  var c = 2 * Math.PI * 52;
-  var offset = c - (score / 100) * c;
-  circle.style.strokeDasharray  = c;
-  circle.style.strokeDashoffset = c;
-  requestAnimationFrame(function() {
-    requestAnimationFrame(function() {
-      circle.style.strokeDashoffset = offset;
-    });
+  const circumference = 326.7;
+  const offset = circumference - (score / 100) * circumference;
+  requestAnimationFrame(() => {
+    circle.style.strokeDashoffset = offset;
   });
 }
 
-function animatePillar(pillar, value) {
-  var bar = document.getElementById('pillar-' + pillar);
-  var val = document.getElementById('pillar-' + pillar + '-val');
-  if (bar) { bar.style.width = '0%'; setTimeout(function() { bar.style.width = value + '%'; }, 50); }
-  if (val) val.textContent = value;
+function animatePillar(name, val) {
+  const bar = document.getElementById('pillar-' + name);
+  const valEl = document.getElementById('pillar-' + name + '-val');
+  if (bar) setTimeout(() => { bar.style.width = val + '%'; }, 200);
+  if (valEl) valEl.textContent = val;
 }
 
 function calcWeeklyAvg() {
-  var scores = STATE.weeklyScores.filter(function(s) { return s > 0; });
-  if (!scores.length) return 0;
-  return Math.round(scores.reduce(function(a, b) { return a + b; }, 0) / scores.length);
+  const valid = STATE.weeklyScores.filter(s => s > 0);
+  if (!valid.length) return '--';
+  return Math.round(valid.reduce((a,b) => a + b, 0) / valid.length);
 }
 
-// =======================================================
-//  HOME — Voice Day Dump
-// =======================================================
 
-var homeSpeechRecognition = null;
-var homeSpeechActive = false;
+/* ═══════════════════════════════════════════════
+   VOICE DAY DUMP
+   ═══════════════════════════════════════════════ */
+
+let voiceRecognition = null;
 
 function startVoiceDump() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    navigateTo('screen-review');
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    alert('Voice not supported in this browser');
     return;
   }
-
-  if (homeSpeechActive) { stopVoiceDump(); return; }
-
-  var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  homeSpeechRecognition = new SpeechRec();
-  homeSpeechRecognition.lang = 'en-GB';
-  homeSpeechRecognition.interimResults = true;
-  homeSpeechRecognition.continuous = true;
-
-  var orb  = document.getElementById('home-voice-orb');
-  var icon = document.getElementById('home-voice-icon');
-
-  orb.classList.add('recording');
-  icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
-  homeSpeechActive = true;
-
-  homeSpeechRecognition.onresult = function(e) {
-    var transcript = '';
-    for (var i = 0; i < e.results.length; i++) { transcript += e.results[i][0].transcript; }
-    STATE.voiceDumpText = transcript;
-    var preview      = document.getElementById('voice-day-preview');
-    var transcriptEl = document.getElementById('voice-day-transcript');
-    if (preview) preview.classList.remove('hidden');
-    if (transcriptEl) transcriptEl.textContent = transcript;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  voiceRecognition = new SR();
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.lang = 'en-US';
+  voiceRecognition.onresult = (e) => {
+    let t = '';
+    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+    STATE.voiceDumpText = t;
   };
-
-  homeSpeechRecognition.onerror = function() { stopVoiceDump(); };
-  homeSpeechRecognition.onend   = function() { if (homeSpeechActive) stopVoiceDump(); };
-  homeSpeechRecognition.start();
+  voiceRecognition.start();
 }
 
 function stopVoiceDump() {
-  homeSpeechActive = false;
-  if (homeSpeechRecognition) { try { homeSpeechRecognition.stop(); } catch (_) {} }
-  var orb  = document.getElementById('home-voice-orb');
-  var icon = document.getElementById('home-voice-icon');
-  if (orb)  orb.classList.remove('recording');
-  if (icon) icon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
+  if (voiceRecognition) voiceRecognition.stop();
 }
 
-function sendVoiceDump() {
-  stopVoiceDump();
-  if (STATE.voiceDumpText.trim()) chatPrefill = STATE.voiceDumpText.trim();
-  navigateTo('screen-review');
-}
 
-// =======================================================
-//  DAILY REVIEW — Conversational AI Chat
-// =======================================================
+/* ═══════════════════════════════════════════════
+   DAILY REVIEW — 7 Questions
+   ═══════════════════════════════════════════════ */
 
-var REVIEW_QUESTIONS = [
-  {
-    id: 'actions',
-    text: "Tell me about your day — what did you actually get done today?",
-    type: 'text',
-    followUps: {
-      keywords: ['nothing', 'not much', 'bit', 'little'],
-      question: "Even on slow days there's something. What was the one thing you did that moved anything forward?",
-    },
+const REVIEW_QUESTIONS = [
+  { id: 'actions', text: 'What did you actually get done today?', type: 'text',
+    followUps: [
+      { keywords: ['nothing','zero','0','nah','not much'], text: 'What stopped you from getting things done?' }
+    ]
   },
-  {
-    id: 'avoided',
-    text: "What tasks did you avoid or keep pushing back?",
-    type: 'text',
-    followUps: {
-      keywords: ['nothing', 'none', 'everything'],
-      question: "Think about the task that's been on your list for 3+ days. What is it?",
-    },
+  { id: 'avoided', text: 'What did you avoid or procrastinate on?', type: 'text',
+    followUps: [
+      { keywords: ['pitch','deck','email','call','meeting'], text: 'Why did you avoid it? Fear, boredom, or unclear next step?' }
+    ]
   },
-  {
-    id: 'money_spent',
-    text: "How much money did you spend today? Just a number is fine.",
-    type: 'text',
+  { id: 'money_spent', text: 'How much money did you spend today?', type: 'text' },
+  { id: 'money_earned', text: 'How much did you earn or move closer to earning?', type: 'text' },
+  { id: 'time_wasted', text: 'How much time did you waste on low-value activities?', type: 'options',
+    options: ['None','Under 1 hour','1–2 hours','2–4 hours','4+ hours']
   },
-  {
-    id: 'money_earned',
-    text: "How much did you earn or generate today? Sales, deals, anything.",
-    type: 'text',
-    followUps: {
-      keywords: ['0', 'zero', 'nothing', 'none'],
-      question: "No income today — what's one specific thing you could have done to change that?",
-    },
-  },
-  {
-    id: 'time_wasted',
-    text: "How much time went to low-value stuff — scrolling, pointless meetings, distractions?",
-    type: 'options',
-    options: ['None \uD83D\uDD25', '< 1 hour \u26A1', '1\u20132 hours \uD83D\uDE10', '3+ hours \uD83D\uDE14'],
-  },
-  {
-    id: 'missed_opportunities',
-    text: "Any opportunities you saw but didn't act on today?",
-    type: 'text',
-  },
-  {
-    id: 'discipline',
-    text: "Honest answer — how sharp was your discipline today?",
-    type: 'options',
-    options: ['\uD83D\uDD25 High \u2014 locked in', '\u26A1 Medium \u2014 some focus', '\uD83D\uDE14 Low \u2014 struggled'],
-  },
+  { id: 'missed_opportunities', text: 'Was there anything you should have done but didn\'t?', type: 'text' },
+  { id: 'discipline', text: 'How would you rate your discipline today?', type: 'options',
+    options: ['Very high','High','Medium','Low','Very low']
+  }
 ];
 
-var chatStep = 0;
-var chatAnswers = {};
-var chatPrefill = '';
-var waitingForFollowUp = false;
-var chatSpeechRecognition = null;
-var chatMicActive = false;
-var aiSpeechUtterance = null;
+let currentQuestion = 0;
+let reviewActive = false;
 
 function startReview() {
-  chatStep = 0;
-  chatAnswers = {};
-  waitingForFollowUp = false;
-  var container = document.getElementById('chat-messages');
-  if (container) container.innerHTML = '';
-  stopAISpeech();
-  setEl('chat-status-text', "Let's review your day");
+  if (reviewActive) return;
+  reviewActive = true;
+  currentQuestion = 0;
+  STATE.reviewAnswers = {};
 
-  setTimeout(function() {
-    var prefillText = chatPrefill;
-    chatPrefill = '';
-    if (prefillText) {
-      showTypingThenBubble("Got your voice summary! Let me ask a few follow-ups to complete your picture.", function() {
-        chatAnswers['actions'] = prefillText;
-        addBubble(prefillText, 'user');
-        chatStep = 1;
-        setTimeout(function() { askQuestion(); }, 600);
-      });
-    } else {
-      showTypingThenBubble("Hey! I'll ask 7 quick questions about your day \u2014 what you did, avoided, spent, and how your focus was. Takes about 2 minutes. Everything stays on your device.", function() {
-        setTimeout(function() { askQuestion(); }, 400);
-      });
-    }
-  }, 500);
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = '';
+  updateReviewProgress();
+
+  // Initial greeting
+  showTypingThenBubble("Hi! Let's review your day. I'll ask 7 quick questions — it takes about 2 minutes.", () => {
+    askQuestion(0);
+  });
 }
 
-function askQuestion() {
-  if (chatStep >= REVIEW_QUESTIONS.length) { finishReview(); return; }
-  var q = REVIEW_QUESTIONS[chatStep];
-  showTypingThenBubble(q.text, function() {
+function updateReviewProgress() {
+  const stepText = document.getElementById('review-step-text');
+  if (stepText) {
+    const display = Math.min(currentQuestion + 1, 7);
+    stepText.textContent = `${display}/7`;
+  }
+}
+
+function askQuestion(idx) {
+  if (idx >= REVIEW_QUESTIONS.length) {
+    finishReview();
+    return;
+  }
+  currentQuestion = idx;
+  updateReviewProgress();
+  const q = REVIEW_QUESTIONS[idx];
+  showTypingThenBubble(q.text, () => {
     showInputForQuestion(q);
   });
 }
 
-function showTypingThenBubble(text, callback) {
-  var container = document.getElementById('chat-messages');
-  var typing = document.createElement('div');
+function showTypingThenBubble(text, cb) {
+  const msgs = document.getElementById('chat-messages');
+  const typing = document.createElement('div');
   typing.className = 'typing-indicator';
-  typing.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-  container.appendChild(typing);
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  msgs.appendChild(typing);
   scrollChatBottom();
 
-  var delay = 900 + Math.min(text.length * 12, 1400);
-  setTimeout(function() {
-    if (container.contains(typing)) container.removeChild(typing);
+  const delay = Math.min(600 + text.length * 12, 1800);
+  setTimeout(() => {
+    typing.remove();
     addBubble(text, 'ai');
-    if (callback) callback();
+    if (cb) cb();
   }, delay);
 }
 
 function addBubble(text, type) {
-  var container = document.getElementById('chat-messages');
-  var bubble = document.createElement('div');
-  bubble.className = 'chat-bubble bubble-' + type;
-  bubble.textContent = text;
-  container.appendChild(bubble);
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${type}`;
+  div.textContent = text;
+  msgs.appendChild(div);
   scrollChatBottom();
 }
 
 function scrollChatBottom() {
-  var c = document.getElementById('chat-messages');
-  if (c) setTimeout(function() { c.scrollTop = c.scrollHeight; }, 60);
-}
-
-// ── Inject skill breakdown visual into chat ──────────────────
-function addSkillBreakdownToChat(result) {
-  var container = document.getElementById('chat-messages');
-  if (!container) return;
-
-  var card = document.createElement('div');
-  card.className = 'chat-skill-card';
-
-  var pillars = [
-    { name: 'Execution', key: 'execution', color: 'linear-gradient(90deg, #1e40af, #60a5fa)' },
-    { name: 'Reasoning', key: 'reasoning', color: 'linear-gradient(90deg, #4f46e5, #a855f7)' },
-    { name: 'Focus', key: 'focus', color: 'linear-gradient(90deg, #0f766e, #14b8a6)' },
-    { name: 'Financial', key: 'financial', color: 'linear-gradient(90deg, #b8860b, #f5e27a)' },
-  ];
-
-  var html = '<h4>Skill Breakdown</h4>';
-  pillars.forEach(function(p) {
-    html += '<div class="chat-skill-row">' +
-      '<span class="chat-skill-name">' + p.name + '</span>' +
-      '<div class="chat-skill-track"><div class="chat-skill-fill" style="width:0%;background:' + p.color + ';" data-target="' + result[p.key] + '"></div></div>' +
-      '<span class="chat-skill-val">' + result[p.key] + '</span>' +
-    '</div>';
+  const msgs = document.getElementById('chat-messages');
+  requestAnimationFrame(() => {
+    msgs.scrollTop = msgs.scrollHeight;
   });
-
-  card.innerHTML = html;
-  container.appendChild(card);
-  scrollChatBottom();
-
-  // Animate bars after render
-  setTimeout(function() {
-    var fills = card.querySelectorAll('.chat-skill-fill');
-    fills.forEach(function(fill) {
-      fill.style.width = fill.getAttribute('data-target') + '%';
-    });
-  }, 100);
 }
 
-// ── Speech Synthesis (disabled — text only) ──────────────────
-function aiSpeak() { /* disabled */ }
-function stopAISpeech() { /* disabled */ }
-
-// ── Show input controls ────────────────────────────
 function showInputForQuestion(q) {
-  var optionsWrap = document.getElementById('chat-options');
-  var textRow     = document.getElementById('chat-text-row');
-  var inputWrap   = document.getElementById('chat-input-wrap');
+  const opts = document.getElementById('chat-options');
+  const textRow = document.getElementById('chat-text-row');
+  const field = document.getElementById('chat-text-field');
+  opts.innerHTML = '';
 
-  // ALWAYS show text input and input wrap
-  if (inputWrap) inputWrap.classList.remove('hidden');
-  if (textRow) textRow.classList.remove('hidden');
-  var field = document.getElementById('chat-text-field');
-  if (field) {
-    field.value = '';
-    field.placeholder = q.type === 'options' ? 'Or type your own answer…' : 'Type your answer…';
-    field.onkeydown = function(e) { if (e.key === 'Enter') sendTextAnswer(); };
-    // Focus with delay — helps iOS show keyboard
-    setTimeout(function() {
-      field.focus();
-      // Scroll into view as fallback
-      if (field.scrollIntoView) {
-        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 200);
-  }
-  var sendBtn = document.getElementById('chat-send-btn');
-  if (sendBtn) sendBtn.onclick = sendTextAnswer;
-
-  if (q.type === 'options') {
-    optionsWrap.innerHTML = '';
-    optionsWrap.classList.remove('hidden');
-    q.options.forEach(function(opt) {
-      var btn = document.createElement('button');
+  if (q.type === 'options' && q.options) {
+    textRow.style.display = 'none';
+    q.options.forEach(opt => {
+      const btn = document.createElement('button');
       btn.className = 'chat-option-btn';
       btn.textContent = opt;
-      btn.onclick = function() { submitAnswer(opt); };
-      optionsWrap.appendChild(btn);
+      btn.onclick = () => submitAnswer(opt);
+      opts.appendChild(btn);
     });
   } else {
-    optionsWrap.innerHTML = '';
-    optionsWrap.classList.add('hidden');
+    textRow.style.display = '';
+    field.value = '';
+    field.focus();
   }
 }
 
 function sendTextAnswer() {
-  var field = document.getElementById('chat-text-field');
-  if (!field) return;
-  var val = field.value.trim();
+  const field = document.getElementById('chat-text-field');
+  const val = field.value.trim();
   if (!val) return;
-  stopAISpeech();
-  submitAnswer(val);
   field.value = '';
+  submitAnswer(val);
 }
 
 function submitAnswer(answer) {
-  var q = REVIEW_QUESTIONS[chatStep];
-
-  var optionsWrap = document.getElementById('chat-options');
-  if (optionsWrap) { optionsWrap.innerHTML = ''; optionsWrap.classList.add('hidden'); }
-
-  chatAnswers[q.id] = answer;
   addBubble(answer, 'user');
 
-  var fu = q.followUps;
-  if (fu && !waitingForFollowUp) {
-    var answerLow = answer.toLowerCase();
-    var triggered = fu.keywords.some(function(k) { return answerLow.indexOf(k) >= 0; });
-    if (triggered) {
-      waitingForFollowUp = true;
-      setTimeout(function() {
-        showTypingThenBubble(fu.question, function() {
-          var field = document.getElementById('chat-text-field');
-          if (field) {
-            field.value = '';
-            field.placeholder = 'Follow up…';
-            field.onkeydown = function(e) { if (e.key === 'Enter') submitFollowUp(); };
-            setTimeout(function() { field.focus(); }, 100);
-          }
-          var sendBtn = document.getElementById('chat-send-btn');
-          if (sendBtn) sendBtn.onclick = submitFollowUp;
-        });
-      }, 400);
+  const q = REVIEW_QUESTIONS[currentQuestion];
+  STATE.reviewAnswers[q.id] = answer;
+  saveState();
+
+  // Check follow-ups
+  const opts = document.getElementById('chat-options');
+  opts.innerHTML = '';
+  document.getElementById('chat-text-row').style.display = 'none';
+
+  if (q.followUps) {
+    const lower = answer.toLowerCase();
+    const fu = q.followUps.find(f => f.keywords.some(k => lower.includes(k)));
+    if (fu) {
+      showTypingThenBubble(fu.text, () => {
+        document.getElementById('chat-text-row').style.display = '';
+        const field = document.getElementById('chat-text-field');
+        field.value = '';
+        field.focus();
+        // Override send to capture follow-up
+        const sendBtn = document.getElementById('chat-send-btn');
+        const origClick = sendBtn.onclick;
+        sendBtn.onclick = () => {
+          const v = document.getElementById('chat-text-field').value.trim();
+          if (!v) return;
+          addBubble(v, 'user');
+          document.getElementById('chat-text-field').value = '';
+          STATE.reviewAnswers[q.id + '_followup'] = v;
+          saveState();
+          sendBtn.onclick = origClick;
+          askQuestion(currentQuestion + 1);
+        };
+      });
       return;
     }
   }
 
-  var sendBtn = document.getElementById('chat-send-btn');
-  if (sendBtn) sendBtn.onclick = sendTextAnswer;
-
-  waitingForFollowUp = false;
-  chatStep++;
-  setTimeout(function() { askQuestion(); }, 500);
+  askQuestion(currentQuestion + 1);
 }
 
-function submitFollowUp() {
-  var field = document.getElementById('chat-text-field');
-  var val = field ? field.value.trim() : '';
-  if (val) {
-    addBubble(val, 'user');
-    if (field) field.value = '';
-    var q = REVIEW_QUESTIONS[chatStep];
-    chatAnswers[q.id] = (chatAnswers[q.id] || '') + '. Follow-up: ' + val;
-  }
-  var sendBtn = document.getElementById('chat-send-btn');
-  if (sendBtn) sendBtn.onclick = sendTextAnswer;
-  waitingForFollowUp = false;
-  chatStep++;
-  setTimeout(function() { askQuestion(); }, 500);
-}
 
-// ── Chat Microphone ────────────────────────────────
-function toggleChatMic() {
-  if (chatMicActive) stopChatMic(); else startChatMic();
-}
+/* ═══════════════════════════════════════════════
+   FINISH REVIEW — Transcript review + Analysis
+   ═══════════════════════════════════════════════ */
 
-function startChatMic() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    showChatToast('Voice not supported in this browser. Please type.');
-    return;
-  }
-  stopAISpeech();
-  var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  chatSpeechRecognition = new SpeechRec();
-  chatSpeechRecognition.lang = 'en-GB';
-  chatSpeechRecognition.interimResults = true;
-  chatSpeechRecognition.continuous = false;
-
-  var micBtn    = document.getElementById('chat-mic-btn');
-  var micStatus = document.getElementById('chat-mic-status');
-  var statusLbl = document.getElementById('mic-status-label');
-  var field     = document.getElementById('chat-text-field');
-  var textRow   = document.getElementById('chat-text-row');
-
-  chatMicActive = true;
-  if (micBtn)    { micBtn.classList.add('listening'); micBtn.textContent = '●'; }
-  if (micStatus) micStatus.classList.remove('hidden');
-  if (statusLbl) statusLbl.textContent = 'Listening\u2026';
-
-  chatSpeechRecognition.onresult = function(e) {
-    var transcript = '';
-    for (var i = 0; i < e.results.length; i++) { transcript += e.results[i][0].transcript; }
-    if (field) field.value = transcript;
-    var short = transcript.length > 40 ? transcript.slice(0, 40) + '\u2026' : transcript;
-    if (statusLbl) statusLbl.textContent = 'Heard: "' + short + '"';
-  };
-
-  chatSpeechRecognition.onerror = function(e) {
-    stopChatMic();
-    if (e.error === 'no-speech') showChatToast("Didn't catch that. Try again!");
-  };
-
-  chatSpeechRecognition.onend = function() {
-    var val = field ? field.value.trim() : '';
-    stopChatMic();
-    if (val) setTimeout(function() { sendTextAnswer(); }, 300);
-  };
-
-  chatSpeechRecognition.start();
-}
-
-function stopChatMic() {
-  chatMicActive = false;
-  if (chatSpeechRecognition) { try { chatSpeechRecognition.stop(); } catch (_) {} }
-  var micBtn    = document.getElementById('chat-mic-btn');
-  var micStatus = document.getElementById('chat-mic-status');
-  var textRow   = document.getElementById('chat-text-row');
-  var optionsWrap = document.getElementById('chat-options');
-  if (micBtn)    { micBtn.classList.remove('listening'); micBtn.textContent = '●'; }
-  if (micStatus) micStatus.classList.add('hidden');
-  var hasOptions = optionsWrap && optionsWrap.children.length > 0;
-  if (!hasOptions && textRow) textRow.classList.remove('hidden');
-}
-
-function showChatToast(msg) {
-  var container = document.getElementById('chat-messages');
-  if (!container) return;
-  var toast = document.createElement('div');
-  toast.style.cssText = 'align-self:center;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:6px 14px;font-size:0.78rem;color:#8b96b8;';
-  toast.textContent = msg;
-  container.appendChild(toast);
-  scrollChatBottom();
-  setTimeout(function() { if (container.contains(toast)) container.removeChild(toast); }, 3000);
-}
-
-// ── Finish Review ──────────────────────────────────
 function finishReview() {
-  STATE.reviewAnswers = chatAnswers;
-  stopAISpeech();
-  setEl('chat-status-text', 'Analysing\u2026');
+  reviewActive = false;
+  const opts = document.getElementById('chat-options');
+  const textRow = document.getElementById('chat-text-row');
+  opts.innerHTML = '';
+  textRow.style.display = 'none';
 
-  showTypingThenBubble("That's everything I need. Crunching your operating score now\u2026", function() {
-    setTimeout(function() {
-      var result = analyseDay(chatAnswers);
-      STATE.analysisResult = result;
-      applyResultToState(result);
-      saveState();
+  document.getElementById('review-step-text').textContent = '✓';
 
-      addBubble('Your Operating Score today: ' + result.score + '/100 \u26A1', 'ai');
+  showTypingThenBubble("Thanks! Let me analyze your day...", () => {
+    // Run analysis
+    const result = analyseDay(STATE.reviewAnswers);
+    STATE.analysisResult = result;
+    applyResultToState(result);
+    saveState();
 
-      // ── Inject visual skill breakdown into chat ──
-      addSkillBreakdownToChat(result);
+    // Show score
+    setTimeout(() => {
+      addBubble(`Your Operating Score: ${result.overallScore}/100`, 'ai');
 
-      setEl('chat-status-text', 'Analysis complete');
+      // Add skill breakdown inline
+      setTimeout(() => {
+        addSkillBreakdownToChat(result);
 
-      setTimeout(function() {
-        var insightMsg = getTeaserInsight(result);
-        showTypingThenBubble(insightMsg, function() {
-          setTimeout(function() {
-            var optionsWrap = document.getElementById('chat-options');
-            optionsWrap.innerHTML = '';
-            optionsWrap.classList.remove('hidden');
-            var btn = document.createElement('button');
-            btn.className = 'chat-option-btn';
-            btn.style.cssText = 'background:linear-gradient(135deg,#3b82f6,#4f46e5);border:none;color:white;font-weight:700;';
-            btn.textContent = 'View Full Analysis \u2192';
-            btn.onclick = function() { stopAISpeech(); navigateTo('screen-results'); };
-            optionsWrap.appendChild(btn);
-          }, 1000);
-        });
-      }, 1400);
+        setTimeout(() => {
+          const topP = getTopPillar(result);
+          const botP = getBottomPillar(result);
+          const insight = `Your strongest signal today was ${topP.name} (${topP.score}). Your biggest opportunity for improvement is ${botP.name} (${botP.score}).`;
+          showTypingThenBubble(insight, () => {
+            // Add CTA button
+            const msgs = document.getElementById('chat-messages');
+            const btn = document.createElement('button');
+            btn.className = 'btn-primary';
+            btn.style.cssText = 'max-width:280px;margin:8px 0;align-self:flex-start;animation:bubbleIn .3s var(--ease-spring) both';
+            btn.textContent = 'View Full Analysis →';
+            btn.onclick = () => navigateTo('screen-results');
+            msgs.appendChild(btn);
+            scrollChatBottom();
+          });
+        }, 600);
+      }, 400);
     }, 800);
   });
 }
 
-function getTeaserInsight(result) {
-  var phrases = [
-    'One thing stood out: ' + result.mistake.split('.')[0] + '.',
-    result.score >= 70 ? 'Solid day. Here\u2019s your full breakdown:' : result.score >= 50 ? 'Decent day, but there\u2019s leverage you left on the table.' : 'Tough day \u2014 but the fix is simpler than you think.',
-    'Your ' + (result.score >= 65 ? 'strongest' : 'weakest') + ' area today was ' + (result.score >= 65 ? getTopPillar(result) : getBottomPillar(result)) + '. Tap below for everything.',
+function addSkillBreakdownToChat(result) {
+  const msgs = document.getElementById('chat-messages');
+  const card = document.createElement('div');
+  card.className = 'chat-skill-breakdown';
+
+  const pillars = [
+    { name: 'Execution', key: 'execution', val: result.executionScore },
+    { name: 'Reasoning', key: 'reasoning', val: result.reasoningScore },
+    { name: 'Focus',     key: 'focus',     val: result.focusScore },
+    { name: 'Financial', key: 'financial', val: result.financialScore }
   ];
-  return phrases[Math.floor(Math.random() * phrases.length)];
+
+  card.innerHTML = `<h4>Performance Signals</h4>` +
+    pillars.map(p => `
+      <div class="chat-skill-bar">
+        <span class="chat-skill-label">${p.name}</span>
+        <div class="chat-skill-track"><div class="chat-skill-fill ${p.key}" style="width:0%"></div></div>
+      </div>
+    `).join('');
+
+  msgs.appendChild(card);
+  scrollChatBottom();
+
+  // Animate bars
+  setTimeout(() => {
+    pillars.forEach(p => {
+      const fill = card.querySelector(`.chat-skill-fill.${p.key}`);
+      if (fill) fill.style.width = p.val + '%';
+    });
+  }, 100);
 }
 
 function getTopPillar(r) {
-  return ['execution','reasoning','focus','financial'].sort(function(a,b) { return r[b]-r[a]; })[0];
+  const p = [
+    { name: 'Execution', score: r.executionScore },
+    { name: 'Reasoning', score: r.reasoningScore },
+    { name: 'Focus', score: r.focusScore },
+    { name: 'Financial', score: r.financialScore }
+  ];
+  return p.reduce((a,b) => a.score >= b.score ? a : b);
 }
+
 function getBottomPillar(r) {
-  return ['execution','reasoning','focus','financial'].sort(function(a,b) { return r[a]-r[b]; })[0];
+  const p = [
+    { name: 'Execution', score: r.executionScore },
+    { name: 'Reasoning', score: r.reasoningScore },
+    { name: 'Focus', score: r.focusScore },
+    { name: 'Financial', score: r.financialScore }
+  ];
+  return p.reduce((a,b) => a.score <= b.score ? a : b);
 }
 
-// =======================================================
-//  AI ANALYSIS ENGINE
-// =======================================================
 
-function analyseDay(a) {
-  var discipline = (a.discipline || '').toLowerCase();
-  var timeWasted = a.time_wasted || 'None';
-  var avoided    = a.avoided || 'nothing';
-  var actions    = a.actions || 'nothing';
-  var missed     = a.missed_opportunities || 'none';
-  var spent      = parseFloat(a.money_spent) || 0;
-  var earned     = parseFloat(a.money_earned) || 0;
+/* ═══════════════════════════════════════════════
+   AI ANALYSIS ENGINE
+   ═══════════════════════════════════════════════ */
 
-  // ── Overall Score ──
-  var score = 50;
-  if (discipline.indexOf('high') >= 0)   score += 20;
-  if (discipline.indexOf('medium') >= 0) score += 10;
-  if (discipline.indexOf('low') >= 0)    score -= 10;
-  if (timeWasted.indexOf('none') >= 0 || timeWasted === 'None') score += 10;
-  if (timeWasted.indexOf('1 hour') >= 0) score += 5;
-  if (timeWasted.indexOf('3+') >= 0)     score -= 15;
-  if (avoided !== 'nothing' && avoided.length > 3) score -= 10;
-  if (earned > spent && earned > 0) score += 10;
-  if (missed !== 'none' && missed.length > 3) score -= 5;
-  score = Math.max(10, Math.min(100, score));
-
-  // ── Pillar Scores (differentiated) ──
-  var execution  = calcExecutionScore(discipline, timeWasted, actions, avoided);
-  var reasoning  = calcReasoningScore(discipline, missed, avoided);
-  var focus      = calcFocusScore(discipline, timeWasted);
-  var financial  = calcFinancialScore(spent, earned, missed);
+function analyseDay(answers) {
+  const executionScore  = calcExecutionScore(answers);
+  const reasoningScore  = calcReasoningScore(answers);
+  const focusScore      = calcFocusScore(answers);
+  const financialScore  = calcFinancialScore(answers);
+  const overallScore    = Math.round((executionScore + reasoningScore + focusScore + financialScore) / 4);
 
   return {
-    score: score,
-    execution: execution,
-    reasoning: reasoning,
-    focus: focus,
-    financial: financial,
-    mistake:   generateMistake(avoided, timeWasted, actions, discipline),
-    money:     generateMoneyImpact(spent, earned, missed),
-    thinking:  generateThinkingPattern(discipline, timeWasted, avoided),
-    missedOpp: generateMissedOpp(missed, actions),
-    fixes:     generateFixes(discipline, timeWasted, avoided, missed, spent, earned, STATE.userType || 'founder'),
-    missions:  generateAdaptiveMissions(STATE.userType || 'founder', { execution: execution, reasoning: reasoning, focus: focus, financial: financial }),
+    overallScore,
+    executionScore,
+    reasoningScore,
+    focusScore,
+    financialScore,
+    mistake:      generateMistake(answers),
+    moneyImpact:  generateMoneyImpact(answers),
+    thinking:     generateThinkingPattern(answers),
+    missed:       generateMissedOpp(answers),
+    fixes:        generateFixes(answers),
+    missions:     generateAdaptiveMissions(
+      { executionScore, reasoningScore, focusScore, financialScore },
+      STATE.userType
+    )
   };
 }
 
-function calcExecutionScore(discipline, timeWasted, actions, avoided) {
-  var base = 50;
-  if (discipline.indexOf('high') >= 0)   base += 20;
-  if (discipline.indexOf('medium') >= 0) base += 8;
-  if (discipline.indexOf('low') >= 0)    base -= 15;
-  if (avoided !== 'nothing' && avoided.length > 3) base -= 12;
-  if (actions.length > 30) base += 8;
-  if (timeWasted.indexOf('none') >= 0 || timeWasted === 'None') base += 10;
-  if (timeWasted.indexOf('3+') >= 0) base -= 15;
-  var noise = Math.floor(Math.random() * 8) - 4;
-  return Math.max(5, Math.min(100, base + noise));
+function calcExecutionScore(a) {
+  let s = 50;
+  const actions = (a.actions || '').toLowerCase();
+  if (actions.length > 40) s += 15;
+  if (actions.length > 100) s += 10;
+  if (/shipped|finished|completed|done|built|launched|sent|published/i.test(actions)) s += 15;
+  if (/nothing|zero|0|didn'?t|none/i.test(actions)) s -= 25;
+
+  const avoided = (a.avoided || '').toLowerCase();
+  if (avoided.length > 5 && !/nothing|none|n\/a/i.test(avoided)) s -= 10;
+
+  return clamp(s + noise(), 0, 100);
 }
 
-function calcReasoningScore(discipline, missed, avoided) {
-  var base = 55;
-  if (discipline.indexOf('high') >= 0)   base += 15;
-  if (discipline.indexOf('low') >= 0)    base -= 10;
-  if (missed !== 'none' && missed.length > 3) base -= 15;
-  if (avoided !== 'nothing' && avoided.length > 3) base -= 8;
-  var noise = Math.floor(Math.random() * 10) - 5;
-  return Math.max(5, Math.min(100, base + noise));
+function calcReasoningScore(a) {
+  let s = 50;
+  const missed = (a.missed_opportunities || '').toLowerCase();
+  if (/nothing|none|n\/a|no/i.test(missed)) s += 15;
+  else if (missed.length > 20) s -= 10;
+
+  const discipline = (a.discipline || '').toLowerCase();
+  if (/very high|high/i.test(discipline)) s += 15;
+  if (/very low|low/i.test(discipline)) s -= 15;
+
+  return clamp(s + noise(), 0, 100);
 }
 
-function calcFocusScore(discipline, timeWasted) {
-  var base = 50;
-  if (discipline.indexOf('high') >= 0)   base += 25;
-  if (discipline.indexOf('medium') >= 0) base += 10;
-  if (discipline.indexOf('low') >= 0)    base -= 20;
-  if (timeWasted.indexOf('none') >= 0 || timeWasted === 'None') base += 15;
-  if (timeWasted.indexOf('1 hour') >= 0) base += 5;
-  if (timeWasted.indexOf('3+') >= 0)     base -= 25;
-  var noise = Math.floor(Math.random() * 8) - 4;
-  return Math.max(5, Math.min(100, base + noise));
+function calcFocusScore(a) {
+  let s = 60;
+  const tw = (a.time_wasted || '').toLowerCase();
+  if (/none/i.test(tw)) s += 25;
+  if (/under 1/i.test(tw)) s += 10;
+  if (/1.*2/i.test(tw)) s -= 5;
+  if (/2.*4/i.test(tw)) s -= 15;
+  if (/4\+/i.test(tw)) s -= 30;
+
+  const discipline = (a.discipline || '').toLowerCase();
+  if (/very high/i.test(discipline)) s += 10;
+  if (/very low/i.test(discipline)) s -= 10;
+
+  return clamp(s + noise(), 0, 100);
 }
 
-function calcFinancialScore(spent, earned, missed) {
-  var base = 50;
-  if (earned > 0) base += 15;
-  if (earned > spent) base += 10;
-  if (spent === 0) base += 10;
-  if (spent > 100) base -= 15;
-  if (spent > 50 && earned === 0) base -= 10;
-  if (missed && missed.length > 3) base -= 5;
-  var noise = Math.floor(Math.random() * 8) - 4;
-  return Math.max(5, Math.min(100, base + noise));
+function calcFinancialScore(a) {
+  let s = 55;
+  const spent = parseFloat((a.money_spent || '0').replace(/[^0-9.]/g, '')) || 0;
+  const earned = parseFloat((a.money_earned || '0').replace(/[^0-9.]/g, '')) || 0;
+
+  if (spent === 0) s += 10;
+  else if (spent < 20) s += 5;
+  else if (spent > 100) s -= 15;
+  else if (spent > 50) s -= 8;
+
+  if (earned > 0) s += 15;
+  if (earned > 100) s += 10;
+
+  return clamp(s + noise(), 0, 100);
 }
 
-function generateMistake(avoided, timeWasted, actions, discipline) {
-  if (avoided !== 'nothing' && avoided.length > 3 && timeWasted.indexOf('3+') >= 0) {
-    return 'You avoided "' + avoided + '" while spending 3+ hours on low-value activity. That\'s not a time problem \u2014 it\'s a priority problem. The avoided task is where your leverage sits.';
-  }
-  if (avoided !== 'nothing' && avoided.length > 3) {
-    return '"' + avoided + '" keeps getting pushed. Based on your answers, this has been on your list. Every day it\'s delayed, the opportunity cost compounds. What\'s the real blocker?';
-  }
-  if (timeWasted.indexOf('3+') >= 0) {
-    return 'You reported 3+ hours of low-value time and rated discipline ' + discipline + '. That\'s a full quarter of your waking hours gone. The issue isn\'t motivation \u2014 it\'s environment design.';
-  }
-  return 'You got things done today, but look at what you actually shipped vs. what moved the needle. Busyness \u2260 progress. Tomorrow, name one outcome before you start.';
+function noise() { return Math.floor(Math.random() * 7) - 3; }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+/* Evidence-based insight generators */
+
+function generateMistake(a) {
+  const avoided = a.avoided || '';
+  const tw = a.time_wasted || '';
+  const disc = a.discipline || '';
+
+  if (/nothing|zero|0|didn'?t/i.test(a.actions || ''))
+    return `Observation: You reported getting nothing done today.\n\nEvidence: "${(a.actions || '').substring(0,80)}"\n\nWhy this matters: Zero-output days compound. Each one resets momentum and makes the next day harder to start.\n\nAction: Tomorrow, commit to one 30-minute work block before checking anything else.`;
+
+  if (/2.*4|4\+/i.test(tw))
+    return `Observation: You spent ${tw.toLowerCase()} on low-value activities.\n\nEvidence: That's a significant portion of your waking hours consumed by things that don't move you forward.\n\nWhy this matters: Time is the only non-renewable resource. At this rate, you're losing 15-30 hours per week.\n\nAction: Identify your top time sink and block it for the first 4 hours of tomorrow.`;
+
+  if (avoided.length > 5 && !/nothing|none/i.test(avoided))
+    return `Observation: You avoided "${avoided.substring(0,60)}"\n\nEvidence: Avoidance is usually a signal of unclear next steps or underlying fear.\n\nWhy this matters: The things you avoid are often the highest-leverage tasks.\n\nAction: Break the avoided task into a 15-minute first step and do it before anything else tomorrow.`;
+
+  return `Observation: Your day was moderate — not terrible, but with room for improvement.\n\nEvidence: Your discipline was rated "${disc}" and you reported "${tw}" of wasted time.\n\nWhy this matters: Moderate days feel productive but rarely move the needle.\n\nAction: Define your #1 outcome for tomorrow before you go to sleep.`;
 }
 
-function generateMoneyImpact(spent, earned, missed) {
-  if (earned > 0 && spent > 0) {
-    var net = earned - spent;
-    return 'Net today: ' + (net >= 0 ? '+' : '') + '$' + net.toFixed(2) + ' (earned $' + earned.toFixed(2) + ', spent $' + spent.toFixed(2) + '). ' + (net >= 0 ? 'Positive day \u2014 identify what generated that income and do more of it.' : 'Negative day \u2014 one of those expenses was unnecessary. Which one?');
-  }
-  if (earned > 0) {
-    return '$' + earned.toFixed(2) + ' earned with no spending. Clean day. The question: is this repeatable, or was it one-off?';
-  }
-  if (spent > 0) {
-    return '$' + spent.toFixed(2) + ' out, $0 in. Not every day needs income, but track this pattern. 7 days of this = $' + (spent * 7).toFixed(0) + ' gone.';
-  }
-  return 'No money moved today. That\'s neutral, but ask: was there an opportunity to generate income that you didn\'t act on?';
+function generateMoneyImpact(a) {
+  const spent = parseFloat((a.money_spent || '0').replace(/[^0-9.]/g,'')) || 0;
+  const earned = parseFloat((a.money_earned || '0').replace(/[^0-9.]/g,'')) || 0;
+
+  if (spent > 50 && earned === 0)
+    return `You spent $${spent} and earned $0 today. That's a net negative day. Over 30 days at this rate, you'd be down $${(spent*30).toLocaleString()}. Before spending tomorrow, ask: "Does this move me closer to my goal?"`;
+
+  if (earned > 0)
+    return `You earned $${earned} today. ${spent > 0 ? `After $${spent} in spending, your net is $${earned - spent}.` : 'And you kept spending at zero.'} Track whether this earning rate is consistent or a one-off.`;
+
+  if (spent === 0 && earned === 0)
+    return `No money moved today — that's not necessarily bad, but ask yourself: did you work on anything that will generate income this week? Revenue doesn't appear without upstream action.`;
+
+  return `You spent $${spent} today. Without income to offset it, ensure every dollar spent has a clear return — whether in learning, tools, or time saved.`;
 }
 
-function generateThinkingPattern(discipline, timeWasted, avoided) {
-  if (discipline.indexOf('low') >= 0 && timeWasted.indexOf('3+') >= 0) {
-    return 'Avoidance loop detected \u2014 you rated discipline low and wasted significant time. This is a pattern where discomfort triggers escape behavior. You delay hard tasks until urgency forces action, which kills quality and leverage.';
-  }
-  if (discipline.indexOf('low') >= 0) {
-    return 'Comfort-seeking bias \u2014 your discipline was low today. You\'re prioritizing what feels manageable over what actually moves the needle. Awareness is step one. Tomorrow, do the hardest thing first.';
-  }
-  if (discipline.indexOf('medium') >= 0 && avoided !== 'nothing' && avoided.length > 3) {
-    return 'Reactive execution \u2014 medium discipline plus avoided tasks means you responded to the day instead of designing it. You\'re playing defense. Flip it: decide your top 1 outcome before opening any app.';
-  }
-  if (discipline.indexOf('high') >= 0) {
-    return 'Intentional execution \u2014 high discipline today. The risk at this level is perfectionism paralysis \u2014 waiting for perfect conditions instead of shipping. Keep the bias toward action.';
-  }
-  return 'Mixed signals today. Your discipline and time usage don\'t tell a clear story. That usually means the day happened to you, not that you happened to the day. Set your intention earlier tomorrow.';
+function generateThinkingPattern(a) {
+  const disc = (a.discipline || '').toLowerCase();
+  const tw = (a.time_wasted || '').toLowerCase();
+  const avoided = (a.avoided || '').toLowerCase();
+
+  if (/very low|low/i.test(disc) && /2.*4|4\+/i.test(tw))
+    return `Pattern detected: Low discipline + high time waste. This usually means you're operating reactively — responding to whatever is in front of you instead of designing your day. The fix isn't willpower; it's structure. Set your top 3 tasks before the day starts.`;
+
+  if (/high|very high/i.test(disc) && !/none/i.test(tw))
+    return `Interesting contradiction: You rated discipline as ${disc}, but still reported ${tw} of wasted time. This often means you're disciplined about the wrong things — busy but not productive. Audit what you're being disciplined about.`;
+
+  if (avoided.length > 10 && /high/i.test(disc))
+    return `You showed high discipline but still avoided something important. This pattern suggests selective discipline — you're great at execution on comfortable tasks but avoid the uncomfortable high-leverage work.`;
+
+  return `Your thinking pattern today suggests a ${disc}-discipline approach with ${tw} of time leakage. The goal isn't perfection — it's catching these patterns early so they don't compound.`;
 }
 
-function generateMissedOpp(missed, actions) {
-  if (!missed || missed.length < 3 || missed.toLowerCase() === 'none') {
-    return 'No missed opportunity flagged \u2014 good. But here\'s a harder question: what\'s one action you could have taken today that would compound over the next 30 days? That\'s your real missed opportunity.';
-  }
-  return '"' + missed + '" \u2014 you identified this yourself, which means you saw the opportunity and chose not to act. That\'s not ignorance, it\'s hesitation. What\'s the smallest version of this you could do in 15 minutes?';
+function generateMissedOpp(a) {
+  const missed = a.missed_opportunities || '';
+  if (/nothing|none|no|n\/a/i.test(missed) || missed.length < 3)
+    return `You reported no missed opportunities. That's either great awareness or a sign you weren't looking for them. Tomorrow, actively scan for one opportunity you might otherwise overlook.`;
+
+  return `Missed opportunity: "${missed.substring(0,100)}"\n\nEvery day has windows that close. The fact that you noticed this is valuable — it means your awareness is working. Now act on it tomorrow before the window closes.`;
 }
 
-function generateFixes(discipline, timeWasted, avoided, missed, spent, earned, userType) {
-  var fixes = [];
-  
-  // Fix based on weakest area
-  if (timeWasted.indexOf('3+') >= 0) {
-    fixes.push('Block your top distraction app for the first 2 hours of tomorrow. Use Screen Time, Cold Turkey, or airplane mode.');
+function generateFixes(a) {
+  const fixes = [];
+  const disc = (a.discipline || '').toLowerCase();
+  const tw = (a.time_wasted || '').toLowerCase();
+
+  if (/low|very low/i.test(disc))
+    fixes.push('Set 3 priorities tonight and place them where you\'ll see them first thing');
+
+  if (/2.*4|4\+/i.test(tw))
+    fixes.push('Block your top distraction for the first 3 hours of the day');
+
+  const avoided = (a.avoided || '');
+  if (avoided.length > 5 && !/nothing|none/i.test(avoided))
+    fixes.push(`Start with 15 minutes on: ${avoided.substring(0,50)}`);
+
+  const earned = parseFloat((a.money_earned || '0').replace(/[^0-9.]/g,'')) || 0;
+  if (earned === 0)
+    fixes.push('Do one action that moves you closer to earning money');
+
+  if (fixes.length === 0) {
+    fixes.push('Maintain today\'s momentum — consistency compounds');
+    fixes.push('Increase your hardest task\'s time allocation by 20%');
   }
-  if (avoided !== 'nothing' && avoided.length > 3) {
-    fixes.push('Spend exactly 25 minutes on "' + avoided + '" tomorrow morning \u2014 set a timer. You don\'t need to finish it, just start.');
-  }
-  if (spent > 0 && earned === 0) {
-    fixes.push('Before any purchase tomorrow, ask: "Does this directly help me ' + (userType === 'student' ? 'study better' : 'earn more') + '?" Track every dollar.');
-  }
-  if (discipline.indexOf('low') >= 0) {
-    fixes.push('Write tomorrow\'s #1 outcome tonight and put it where you\'ll see it first thing. Decision fatigue kills morning discipline.');
-  }
-  if (missed && missed.length > 3 && missed.toLowerCase() !== 'none') {
-    fixes.push('Convert "' + missed + '" into a 15-minute action with a deadline. Put it on your calendar for before noon.');
-  }
-  
-  // Always have at least 3 fixes
-  if (fixes.length < 3) {
-    fixes.push('Do your single highest-value task before 10 AM tomorrow \u2014 no email, no messages first.');
-    fixes.push('End tomorrow by writing one sentence: "Today I moved the needle on ___." If you can\'t fill the blank, the day missed.');
-    fixes.push('Replace 30 minutes of low-value time with something that compounds: reading, building, or connecting.');
-  }
-  
-  return fixes.slice(0, 3);
+
+  return fixes;
 }
 
-function generateAdaptiveMissions(userType, pillarScores) {
-  // Sort pillars by score ascending (weakest first)
-  var sorted = Object.entries(pillarScores).sort(function(a,b) { return a[1] - b[1]; });
-  var weakest = sorted[0][0];
-  var secondWeakest = sorted[1][0];
 
-  var missionPools = {
+/* ═══════════════════════════════════════════════
+   ADAPTIVE MISSIONS
+   ═══════════════════════════════════════════════ */
+
+function generateAdaptiveMissions(scores, userType) {
+  const pools = {
     student: {
-      execution: ['Complete your top 3 study tasks before noon', 'Submit one assignment or project section today', 'Finish one task you\'ve been avoiding for 3+ days'],
-      reasoning: ['Solve a problem set without looking at solutions first', 'Write a 3-sentence summary of what you learned today', 'Identify one concept you don\'t understand and research it'],
-      focus: ['Study 60 minutes with phone in another room', 'Do a single 25-min Pomodoro on your hardest subject', 'No social media until your top task is done'],
-      financial: ['Track every purchase today', 'Find one subscription to cancel or pause', 'Set a spending limit for tomorrow and stick to it'],
+      execution:  [
+        { task: 'Complete one assignment or study session before noon', why: 'Build morning execution habit', time: '~45 min' },
+        { task: 'Submit or finish one pending deliverable', why: 'Clear your backlog', time: '~30 min' },
+        { task: 'Review notes from your last class within 24 hours', why: 'Active recall strengthens memory', time: '~20 min' }
+      ],
+      reasoning: [
+        { task: 'Write a 1-paragraph summary of what you learned today', why: 'Forces synthesis and understanding', time: '~10 min' },
+        { task: 'Identify one concept you don\'t fully understand and look it up', why: 'Close knowledge gaps early', time: '~15 min' },
+        { task: 'Explain one topic to someone (or write it as if teaching)', why: 'Teaching is the best learning', time: '~20 min' }
+      ],
+      focus: [
+        { task: 'Do a 60-minute deep study block with phone in another room', why: 'Uninterrupted focus doubles retention', time: '~60 min' },
+        { task: 'Complete one task without switching tabs or apps', why: 'Train single-task muscle', time: '~30 min' },
+        { task: 'Study for 25 minutes, break 5, repeat 3x (Pomodoro)', why: 'Structured focus builds endurance', time: '~90 min' }
+      ],
+      financial: [
+        { task: 'Track every expense today — write them all down', why: 'Awareness is the first step to control', time: '~5 min' },
+        { task: 'Find one subscription or expense you can cut', why: 'Small leaks sink big ships', time: '~10 min' },
+        { task: 'Research one way to earn money with your skills', why: 'Income awareness builds financial thinking', time: '~15 min' }
+      ]
     },
     founder: {
-      execution: ['Ship one deliverable or decision before noon', 'Clear your highest-friction task within the first 2 hours', 'Send one thing to a customer or user today'],
-      reasoning: ['Identify the single biggest bottleneck in your business today', 'Write down 3 decisions you made today and rate them', 'Ask yourself: what would I do differently if I had to restart this week?'],
-      focus: ['2-hour no-meeting deep work block on your #1 priority', 'Close all tabs except the one thing you\'re working on', 'Say no to one meeting or request that doesn\'t serve your top goal'],
-      financial: ['Track every dollar spent today', 'Review your last 3 days of spending \u2014 find one unnecessary expense', 'Earn or generate at least $1 in revenue today'],
+      execution: [
+        { task: 'Ship one feature, update, or deliverable before noon', why: 'Shipping is the only metric that matters', time: '~2 hrs' },
+        { task: 'Send one outreach message to a potential customer', why: 'Revenue comes from conversations', time: '~15 min' },
+        { task: 'Close one open loop from your task list', why: 'Open loops drain cognitive energy', time: '~30 min' }
+      ],
+      reasoning: [
+        { task: 'Write down your top 3 risks and one mitigation for each', why: 'Founders who plan for risk survive longer', time: '~15 min' },
+        { task: 'Review one competitor and identify one thing to learn', why: 'Competitive awareness sharpens strategy', time: '~20 min' },
+        { task: 'Define the one metric that matters most this week', why: 'Focus prevents scattered effort', time: '~10 min' }
+      ],
+      focus: [
+        { task: 'Block 2 hours for your highest-priority project', why: 'Deep work compounds in startups', time: '~2 hrs' },
+        { task: 'Turn off all notifications for 90 minutes and build', why: 'Notifications kill founder flow', time: '~90 min' },
+        { task: 'Delegate or eliminate one task that isn\'t core', why: 'Your time is your scarcest resource', time: '~15 min' }
+      ],
+      financial: [
+        { task: 'Track burn rate: What did the business spend today?', why: 'Cash awareness prevents surprises', time: '~10 min' },
+        { task: 'Follow up on one pending invoice or payment', why: 'Cash flow is oxygen for startups', time: '~10 min' },
+        { task: 'Calculate: at current burn, how many months of runway left?', why: 'Runway awareness drives urgency', time: '~15 min' }
+      ]
     },
     sales: {
-      execution: ['Send 10 outreach messages before 11 AM', 'Follow up with 3 warm leads today', 'Close or advance one deal by end of day'],
-      reasoning: ['Analyse your last 3 lost deals \u2014 find the common pattern', 'Write down why your last objection happened and prep a response', 'Review your win rate this week and identify one improvement'],
-      focus: ['Make 20 focused calls with zero multitasking', 'Block 90 minutes for pipeline work, no interruptions', 'Turn off notifications during your peak selling hours'],
-      financial: ['Calculate your commission-per-hour today', 'Set a daily spending cap and track against it', 'Find one way to increase deal size on your next pitch'],
+      execution: [
+        { task: 'Make 5 outbound calls or send 5 prospecting messages', why: 'Pipeline is built through volume', time: '~45 min' },
+        { task: 'Follow up with every lead from the last 48 hours', why: 'Speed-to-lead wins deals', time: '~30 min' },
+        { task: 'Book one meeting for this week', why: 'Meetings are the currency of sales', time: '~20 min' }
+      ],
+      reasoning: [
+        { task: 'Review one lost deal and identify the failure point', why: 'Losses teach more than wins', time: '~15 min' },
+        { task: 'Role-play one objection handling scenario', why: 'Preparation beats improvisation', time: '~15 min' },
+        { task: 'Write down the 3 most common objections and your best response', why: 'Scripted responses increase close rate', time: '~20 min' }
+      ],
+      focus: [
+        { task: 'Dedicate 60 minutes to pure prospecting — nothing else', why: 'Focused prospecting fills the funnel', time: '~60 min' },
+        { task: 'Close your email and CRM notifications for 2 hours', why: 'Context switching kills closing ability', time: '~2 hrs' },
+        { task: 'Work on one high-value deal without multitasking', why: 'Big deals need deep attention', time: '~45 min' }
+      ],
+      financial: [
+        { task: 'Calculate your pipeline value and expected close rate', why: 'Know your numbers to hit targets', time: '~15 min' },
+        { task: 'Track every personal expense today', why: 'Salespeople who track spend earn more', time: '~5 min' },
+        { task: 'Set a specific income goal for this month with daily targets', why: 'Clear targets drive clear action', time: '~10 min' }
+      ]
     },
     creator: {
-      execution: ['Publish one piece of content today', 'Finish and ship one creative deliverable', 'Respond to 5 audience comments or messages'],
-      reasoning: ['Analyse your best-performing content \u2014 why did it work?', 'Write down 3 content ideas and pick the highest-leverage one', 'Identify one skill gap holding back your content quality'],
-      focus: ['Create for 60 minutes without checking analytics', 'Batch-create content: write/film 3 pieces in one session', 'No social scrolling until you\'ve created first'],
-      financial: ['Track your content-to-income ratio this week', 'Identify one monetization opportunity you\'re not using', 'Reach out to one potential sponsor or collaborator'],
-    },
+      execution: [
+        { task: 'Publish or complete one piece of content today', why: 'Shipping beats perfecting', time: '~1 hr' },
+        { task: 'Spend 30 minutes on creation, not consumption', why: 'Creators create; consumers scroll', time: '~30 min' },
+        { task: 'Outline your next 3 content pieces', why: 'Planning removes start friction', time: '~20 min' }
+      ],
+      reasoning: [
+        { task: 'Analyze your best-performing content — what made it work?', why: 'Data beats gut feeling', time: '~15 min' },
+        { task: 'Study one creator you admire and note 3 techniques they use', why: 'Pattern recognition accelerates growth', time: '~20 min' },
+        { task: 'Write down your unique perspective on one trending topic', why: 'Original angles build audience', time: '~15 min' }
+      ],
+      focus: [
+        { task: 'Block 90 minutes for deep creation with no social media', why: 'Creative flow requires unbroken time', time: '~90 min' },
+        { task: 'Do one creative task before checking any platform', why: 'Create before you consume', time: '~30 min' },
+        { task: 'Work on your craft skill for 60 minutes straight', why: 'Skill compounds silently', time: '~60 min' }
+      ],
+      financial: [
+        { task: 'Explore one monetization method for your content', why: 'Creativity without income is a hobby', time: '~20 min' },
+        { task: 'Reach out to one brand or potential sponsor', why: 'Income doesn\'t come from waiting', time: '~15 min' },
+        { task: 'Track all income sources and their trends', why: 'What you measure, you manage', time: '~10 min' }
+      ]
+    }
   };
 
-  var pool = missionPools[userType in missionPools ? userType : 'founder'];
-  var pick = function(arr) { return arr[Math.floor(Math.random() * arr.length)]; };
+  const type = pools[userType] || pools.founder;
+
+  // Find weakest two pillars for core missions + weakest remaining for stretch
+  const sorted = Object.entries(scores)
+    .map(([k, v]) => ({ key: k.replace('Score',''), score: v }))
+    .sort((a,b) => a.score - b.score);
+
+  const corePillars = sorted.slice(0, 2);
+  const stretchPillar = sorted[2] || sorted[0];
+
+  const pick = (pillar) => {
+    const pool = type[pillar] || type.execution;
+    return pool[Math.floor(Math.random() * pool.length)];
+  };
 
   return {
-    execution:  pick(pool.execution),
-    reasoning:  pick(pool.reasoning),
-    focus:      pick(pool.focus),
-    financial:  pick(pool.financial),
-    _weakest: weakest,
-    _secondWeakest: secondWeakest,
+    core: [
+      { ...pick(corePillars[0].key), pillar: corePillars[0].key },
+      { ...pick(corePillars[1].key), pillar: corePillars[1].key }
+    ],
+    stretch: { ...pick(stretchPillar.key), pillar: stretchPillar.key }
   };
 }
 
-// ─── APPLY RESULT ─────────────────────────────────
+
+/* ═══════════════════════════════════════════════
+   APPLY RESULT
+   ═══════════════════════════════════════════════ */
+
 function applyResultToState(result) {
-  STATE.todayScore = result.score;
-  STATE.pillars = { execution: result.execution, reasoning: result.reasoning, focus: result.focus, financial: result.financial };
+  STATE.todayScore = result.overallScore;
+  STATE.pillars.execution = result.executionScore;
+  STATE.pillars.reasoning = result.reasoningScore;
+  STATE.pillars.focus = result.focusScore;
+  STATE.pillars.financial = result.financialScore;
+
+  // Weekly arrays — shift
   STATE.weeklyScores.shift();
-  STATE.weeklyScores.push(result.score);
-  var m = result.missions;
-  if (m) { setEl('mission-execution-task', m.execution); setEl('mission-reasoning-task', m.reasoning); setEl('mission-focus-task', m.focus); setEl('mission-financial-task', m.financial); }
-  STATE.level = Math.max(1, Math.floor(calcWeeklyAvg() / 10) + 1);
-  var today = new Date().toDateString();
-  if (STATE.lastReviewDate !== today) { STATE.streak = (STATE.streak || 0) + 1; STATE.lastReviewDate = today; }
+  STATE.weeklyScores.push(result.overallScore);
+
+  const spent = parseFloat((STATE.reviewAnswers.money_spent || '0').replace(/[^0-9.]/g,'')) || 0;
+  STATE.weeklyMoney.shift();
+  STATE.weeklyMoney.push(spent);
+
+  // Reset missions
+  STATE.missionsDone = { execution: false, reasoning: false, focus: false };
+
+  // Level
+  const totalScore = STATE.weeklyScores.reduce((a,b) => a + b, 0);
+  STATE.level = Math.max(1, Math.floor(totalScore / 200) + 1);
+
+  // Streak
+  const today = new Date().toDateString();
+  if (STATE.lastReviewDate) {
+    const last = new Date(STATE.lastReviewDate);
+    const diff = Math.floor((new Date(today) - last) / 86400000);
+    STATE.streak = diff <= 1 ? STATE.streak + 1 : 1;
+  } else {
+    STATE.streak = 1;
+  }
+  STATE.lastReviewDate = today;
+
+  saveState();
 }
 
-// =======================================================
-//  RESULTS
-// =======================================================
+
+/* ═══════════════════════════════════════════════
+   RESULTS — Intelligence Report
+   ═══════════════════════════════════════════════ */
 
 function initResults() {
-  var r = STATE.analysisResult;
-  if (!r) { setEl('result-score-num', '--'); return; }
-  animateNumber('result-score-num', r.score, 0, 1000);
+  const r = STATE.analysisResult;
+  if (!r) return;
+
+  // Score animation
+  const scoreEl = document.getElementById('result-score-num');
+  animateNumber(scoreEl, 0, r.overallScore, 800);
+
+  // Trend
+  const trendEl = document.getElementById('result-trend');
+  const prev = STATE.weeklyScores[STATE.weeklyScores.length - 2] || 0;
+  if (prev > 0) {
+    const diff = r.overallScore - prev;
+    trendEl.textContent = diff >= 0 ? `↑ ${diff} from yesterday` : `↓ ${Math.abs(diff)} from yesterday`;
+    trendEl.style.color = diff >= 0 ? 'var(--success)' : 'var(--danger)';
+  }
+
+  // Skill bars
+  ['execution','reasoning','focus','financial'].forEach(p => {
+    const bar = document.getElementById('skill-bar-' + p);
+    const val = document.getElementById('skill-val-' + p);
+    const score = r[p + 'Score'] || 0;
+    if (bar) setTimeout(() => { bar.style.width = score + '%'; }, 200);
+    if (val) val.textContent = score;
+  });
+
+  // Input summary
+  const summary = document.getElementById('input-summary');
+  if (summary) {
+    const items = [
+      { label: 'Actions', val: STATE.reviewAnswers.actions },
+      { label: 'Avoided', val: STATE.reviewAnswers.avoided },
+      { label: 'Spent', val: STATE.reviewAnswers.money_spent },
+      { label: 'Earned', val: STATE.reviewAnswers.money_earned },
+      { label: 'Time Lost', val: STATE.reviewAnswers.time_wasted },
+      { label: 'Discipline', val: STATE.reviewAnswers.discipline }
+    ];
+    summary.innerHTML = items.filter(i => i.val).map(i => `
+      <div class="input-summary-item">
+        <div class="input-summary-label">${i.label}</div>
+        <div class="input-summary-val">${i.val}</div>
+      </div>
+    `).join('');
+  }
+
+  // Dominant insight highlight
+  const hlBody = document.getElementById('insight-highlight-body');
+  if (hlBody) {
+    const bot = getBottomPillar(r);
+    hlBody.textContent = `Your ${bot.name} score (${bot.score}) was lowest today. This is where focused improvement will have the biggest impact on your overall performance.`;
+  }
+
+  // Result cards
   setEl('res-mistake', r.mistake);
-  setEl('res-money', r.money);
+  setEl('res-money', r.moneyImpact);
   setEl('res-thinking', r.thinking);
-  setEl('res-missed', r.missedOpp);
-  var fixList = document.getElementById('res-fixes');
-  if (fixList && r.fixes) fixList.innerHTML = r.fixes.map(function(f) { return '<li>' + f + '</li>'; }).join('');
-  var trend = document.getElementById('result-trend');
-  if (trend) trend.innerHTML = r.score >= calcWeeklyAvg()
-    ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>'
-    : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>';
+  setEl('res-missed', r.missed);
 
-  // ── Skill Breakdown Bars (animated) ──
-  setTimeout(function() {
-    var pillars = ['execution', 'reasoning', 'focus', 'financial'];
-    pillars.forEach(function(p) {
-      var bar = document.getElementById('skill-bar-' + p);
-      var val = document.getElementById('skill-val-' + p);
-      if (bar) bar.style.width = r[p] + '%';
-      if (val) animateNumber('skill-val-' + p, r[p], 0, 800);
-    });
-  }, 300);
-
-  // ── Input Summary Mini-Cards ──
-  var summaryEl = document.getElementById('input-summary');
-  if (summaryEl && STATE.reviewAnswers) {
-    var a = STATE.reviewAnswers;
-    var cards = [];
-    if (a.discipline) cards.push({ icon: '🎯', label: 'Discipline', value: a.discipline });
-    if (a.time_wasted) cards.push({ icon: '⏱', label: 'Time Wasted', value: a.time_wasted });
-    if (a.money_spent) cards.push({ icon: '💸', label: 'Spent', value: '$' + parseFloat(a.money_spent || 0).toFixed(2) });
-    if (a.money_earned) cards.push({ icon: '💰', label: 'Earned', value: '$' + parseFloat(a.money_earned || 0).toFixed(2) });
-    if (a.avoided) cards.push({ icon: '🚫', label: 'Avoided', value: a.avoided });
-    if (a.missed_opportunities) cards.push({ icon: '💡', label: 'Missed Opp', value: a.missed_opportunities });
-    summaryEl.innerHTML = cards.map(function(c) {
-      return '<div class="input-summary-card"><span class="summary-icon">' + c.icon + '</span><span class="summary-label">' + c.label + '</span><span class="summary-value">' + c.value + '</span></div>';
-    }).join('');
+  const fixesList = document.getElementById('res-fixes');
+  if (fixesList && r.fixes) {
+    fixesList.innerHTML = r.fixes.map(f => `<li>${f}</li>`).join('');
   }
 }
 
-// =======================================================
-//  MISSIONS
-// =======================================================
+
+/* ═══════════════════════════════════════════════
+   TODAY'S PLAN (MISSIONS)
+   ═══════════════════════════════════════════════ */
 
 function initMissions() {
-  document.getElementById('missions-coin-count').textContent = STATE.coins;
-  var m = STATE.analysisResult && STATE.analysisResult.missions;
-  if (m) { setEl('mission-execution-task', m.execution); setEl('mission-reasoning-task', m.reasoning); setEl('mission-focus-task', m.focus); setEl('mission-financial-task', m.financial); }
-  ['execution','reasoning','focus','financial'].forEach(function(p) {
-    if (STATE.missionsDone[p]) {
-      var item = document.getElementById('mission-' + p); if (item) item.classList.add('done');
-      var check = document.getElementById('check-' + p); if (check) check.classList.add('checked');
+  const r = STATE.analysisResult;
+  if (!r || !r.missions) return;
+
+  const m = r.missions;
+
+  // Core 1
+  if (m.core && m.core[0]) {
+    setEl('mission-execution-task', m.core[0].task);
+    setEl('mission-execution-why', m.core[0].why);
+    const pillarTag = document.querySelector('#mission-execution .mission-pillar');
+    if (pillarTag) {
+      pillarTag.className = 'mission-pillar ' + m.core[0].pillar + '-tag';
+      pillarTag.textContent = capitalize(m.core[0].pillar);
+    }
+    const timeEl = document.querySelector('#mission-execution .mission-time');
+    if (timeEl) timeEl.textContent = m.core[0].time || '~30 min';
+    document.getElementById('mission-execution').dataset.pillar = m.core[0].pillar;
+  }
+
+  // Core 2
+  if (m.core && m.core[1]) {
+    setEl('mission-reasoning-task', m.core[1].task);
+    setEl('mission-reasoning-why', m.core[1].why);
+    const pillarTag = document.querySelector('#mission-reasoning .mission-pillar');
+    if (pillarTag) {
+      pillarTag.className = 'mission-pillar ' + m.core[1].pillar + '-tag';
+      pillarTag.textContent = capitalize(m.core[1].pillar);
+    }
+    const timeEl = document.querySelector('#mission-reasoning .mission-time');
+    if (timeEl) timeEl.textContent = m.core[1].time || '~15 min';
+    document.getElementById('mission-reasoning').dataset.pillar = m.core[1].pillar;
+  }
+
+  // Stretch
+  if (m.stretch) {
+    setEl('mission-focus-task', m.stretch.task);
+    setEl('mission-focus-why', m.stretch.why);
+    const pillarTag = document.querySelector('#mission-focus .mission-pillar');
+    if (pillarTag) {
+      pillarTag.className = 'mission-pillar ' + m.stretch.pillar + '-tag';
+      pillarTag.textContent = capitalize(m.stretch.pillar);
+    }
+    const timeEl = document.querySelector('#mission-focus .mission-time');
+    if (timeEl) timeEl.textContent = m.stretch.time || '~60 min';
+    document.getElementById('mission-focus').dataset.pillar = m.stretch.pillar;
+  }
+
+  // Restore check states
+  ['execution','reasoning','focus'].forEach(k => {
+    const check = document.getElementById('check-' + k);
+    const item = document.getElementById('mission-' + k);
+    if (STATE.missionsDone[k]) {
+      if (check) check.classList.add('checked');
+      if (item) item.classList.add('completed');
     } else {
-      var item = document.getElementById('mission-' + p); if (item) item.classList.remove('done');
-      var check = document.getElementById('check-' + p); if (check) check.classList.remove('checked');
+      if (check) check.classList.remove('checked');
+      if (item) item.classList.remove('completed');
     }
   });
-  checkAllMissionsDone();
+
+  updateMissionsStatus();
 }
 
-function completeMission(pillar) {
-  if (STATE.missionsDone[pillar]) return;
-  STATE.missionsDone[pillar] = true;
-  // Stretch mission (financial) earns more coins
-  var coinReward = pillar === 'financial' ? 25 : 15;
-  STATE.coins += coinReward;
-  STATE.totalMissionsCompleted++;
+function completeMission(key) {
+  if (STATE.missionsDone[key]) return;
+  STATE.missionsDone[key] = true;
+  STATE.totalMissionsCompleted = (STATE.totalMissionsCompleted || 0) + 1;
   saveState();
-  var item = document.getElementById('mission-' + pillar); if (item) item.classList.add('done');
-  var check = document.getElementById('check-' + pillar); if (check) check.classList.add('checked');
-  document.getElementById('missions-coin-count').textContent = STATE.coins;
-  burstCoins();
-  checkAllMissionsDone();
+
+  const check = document.getElementById('check-' + key);
+  const item = document.getElementById('mission-' + key);
+  if (check) check.classList.add('checked');
+  if (item) item.classList.add('completed');
+
+  updateMissionsStatus();
 }
 
-function checkAllMissionsDone() {
-  var done = Object.values(STATE.missionsDone).every(Boolean);
-  var banner = document.getElementById('bonus-banner');
-  if (done && banner) {
-    banner.classList.add('visible');
-    if (!STATE._bonusAwarded) {
-      STATE._bonusAwarded = true;
-      STATE.coins += 50;
-      saveState();
-      document.getElementById('missions-coin-count').textContent = STATE.coins;
-      setTimeout(burstCoins, 300);
-    }
-  }
+function updateMissionsStatus() {
+  const done = Object.values(STATE.missionsDone).filter(Boolean).length;
+  const total = Object.keys(STATE.missionsDone).length;
+  setEl('missions-status-text', `${done} of ${total} completed`);
 }
 
-function burstCoins() {
-  var burst = document.getElementById('coin-burst');
-  if (!burst) return;
-  var cx = window.innerWidth / 2, cy = window.innerHeight / 2;
-  for (var i = 0; i < 8; i++) {
-    var p = document.createElement('div');
-    p.className = 'coin-particle';
-    p.textContent = '●';
-    p.style.color = '#d4af37';
-    var angle = (i / 8) * 2 * Math.PI;
-    var r = 80 + Math.random() * 60;
-    p.style.left = (cx + Math.cos(angle) * 10) + 'px';
-    p.style.top  = (cy + Math.sin(angle) * 10) + 'px';
-    p.style.animation = 'coin-fly 1.2s ease-out ' + (i * 0.07) + 's forwards';
-    burst.appendChild(p);
-    setTimeout(function(el) { return function() { if (burst.contains(el)) burst.removeChild(el); }; }(p), 1400);
-  }
-}
 
-// =======================================================
-//  PROGRESS
-// =======================================================
+/* ═══════════════════════════════════════════════
+   PROGRESS — Natural language insights
+   ═══════════════════════════════════════════════ */
 
 function initProgress() {
-  var avg = calcWeeklyAvg();
-  setEl('prog-streak', STATE.streak);
-  setEl('prog-avg', avg > 0 ? avg : '--');
-  setEl('prog-missions', STATE.totalMissionsCompleted);
-  setEl('progress-level', 'Lv ' + STATE.level);
-  setEl('progress-coins', STATE.coins);
-  var p = STATE.pillars;
-  setPillarBreakdown('execution', p.execution);
-  setPillarBreakdown('reasoning', p.reasoning);
-  setPillarBreakdown('focus', p.focus);
-  setPillarBreakdown('financial', p.financial);
-  drawCharts();
+  // Stats
+  document.getElementById('prog-streak').textContent = STATE.streak;
+  document.getElementById('prog-avg').textContent = calcWeeklyAvg();
+  document.getElementById('prog-missions').textContent = STATE.totalMissionsCompleted || 0;
+
+  // Natural language summary
+  generateProgressSummary();
+
+  // Pillar breakdown
+  setPillarBreakdownProgress();
+
+  // Chart
+  drawScoreChart();
 }
 
-function setPillarBreakdown(key, val) {
-  var bar   = document.getElementById('pb-' + key);
-  var valEl = document.getElementById('pb-' + key + '-val');
-  if (bar)   { bar.style.width = '0%'; setTimeout(function() { bar.style.width = val + '%'; }, 100); }
-  if (valEl) valEl.textContent = val;
-}
+function generateProgressSummary() {
+  const el = document.getElementById('progress-summary-text');
+  if (!el) return;
 
-function drawCharts() {
-  if (typeof Chart === 'undefined') { setTimeout(drawCharts, 300); return; }
-  var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  var scores = STATE.weeklyScores.slice();
+  const scores = STATE.weeklyScores;
+  const validScores = scores.filter(s => s > 0);
 
-  var scoreCtx = document.getElementById('score-chart');
-  if (scoreCtx) {
-    if (scoreChart) scoreChart.destroy();
-    scoreChart = new Chart(scoreCtx, {
-      type: 'line',
-      data: { labels: days, datasets: [{ data: scores, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#3b82f6', pointBorderColor: '#050a1a', pointBorderWidth: 2, fill: true, tension: 0.4 }] },
-      options: chartOptions('#3b82f6'),
-    });
+  if (validScores.length < 2) {
+    el.textContent = 'Complete a few reviews to see your weekly summary here.';
+    return;
   }
 
-  var moneyData = STATE.weeklyMoney.length ? STATE.weeklyMoney : [0,0,0,0,0,0,0];
-  var moneyCtx  = document.getElementById('money-chart');
-  if (moneyCtx) {
-    if (moneyChart) moneyChart.destroy();
-    moneyChart = new Chart(moneyCtx, {
-      type: 'bar',
-      data: { labels: days, datasets: [{ label: 'Behaviour Score', data: moneyData.map(function(v) { return v || Math.floor(Math.random() * 60); }), backgroundColor: 'rgba(212,175,55,0.3)', borderColor: '#d4af37', borderWidth: 2, borderRadius: 6 }] },
-      options: chartOptions('#d4af37'),
-    });
+  const avg = Math.round(validScores.reduce((a,b) => a+b, 0) / validScores.length);
+  const latest = validScores[validScores.length - 1];
+  const previous = validScores[validScores.length - 2];
+  const trend = latest - previous;
+
+  // Find best and worst pillars
+  const pillars = STATE.pillars;
+  const sorted = Object.entries(pillars).sort((a,b) => b[1] - a[1]);
+  const best = sorted[0];
+  const worst = sorted[sorted.length - 1];
+
+  let summary = '';
+
+  if (trend > 5) {
+    summary += `Your score improved by ${trend} points. `;
+  } else if (trend < -5) {
+    summary += `Your score dropped ${Math.abs(trend)} points from last session. `;
+  } else {
+    summary += `Your score has been consistent around ${avg}. `;
   }
+
+  if (best && worst && best[0] !== worst[0]) {
+    summary += `${capitalize(best[0])} is your strongest signal at ${best[1]}, while ${capitalize(worst[0])} at ${worst[1]} has the most room for growth. `;
+  }
+
+  if (STATE.streak >= 3) {
+    summary += `You're on a ${STATE.streak}-day streak — consistency is your edge.`;
+  } else if (STATE.streak === 0) {
+    summary += `Start a streak today to build momentum.`;
+  }
+
+  el.textContent = summary;
 }
 
-function chartOptions(color) {
-  return {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(5,10,26,0.95)', titleColor: '#f0f4ff', bodyColor: '#8b96b8', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 } },
-    scales: {
-      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a5578', font: { size: 10 } } },
-      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a5578', font: { size: 10 } }, min: 0, max: 100 },
+function setPillarBreakdownProgress() {
+  ['execution','reasoning','focus','financial'].forEach(p => {
+    const bar = document.getElementById('pb-' + p);
+    const val = document.getElementById('pb-' + p + '-val');
+    const score = STATE.pillars[p] || 0;
+    if (bar) setTimeout(() => { bar.style.width = score + '%'; }, 200);
+    if (val) val.textContent = score;
+  });
+}
+
+function drawScoreChart() {
+  const canvas = document.getElementById('score-chart');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  // Destroy existing
+  if (canvas._chart) canvas._chart.destroy();
+
+  const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const data = STATE.weeklyScores;
+
+  canvas._chart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Score',
+        data,
+        borderColor: '#60a5fa',
+        backgroundColor: 'rgba(96, 165, 250, .1)',
+        fill: true,
+        tension: .4,
+        pointRadius: 3,
+        pointBackgroundColor: '#60a5fa',
+        borderWidth: 2
+      }]
     },
-  };
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { color: 'rgba(148,163,184,.06)' },
+          ticks: { color: '#64748b', font: { size: 11 } }
+        },
+        y: {
+          min: 0, max: 100,
+          grid: { color: 'rgba(148,163,184,.06)' },
+          ticks: { color: '#64748b', font: { size: 11 }, stepSize: 25 }
+        }
+      }
+    }
+  });
 }
 
-// =======================================================
-//  PROFILE
-// =======================================================
+
+/* ═══════════════════════════════════════════════
+   PROFILE / SETTINGS
+   ═══════════════════════════════════════════════ */
+
+function initProfile() {
+  const typeMap = {
+    student: 'Student',
+    founder: 'Founder / Builder',
+    sales: 'Sales / Closer',
+    creator: 'Creator'
+  };
+  const goalMap = {
+    money: 'Stop Wasting Money',
+    discipline: 'Consistent Routine',
+    focus: 'Deep Focus',
+    decisions: 'Better Decisions'
+  };
+
+  setEl('profile-user-type', typeMap[STATE.userType] || 'Imperium User');
+  setEl('profile-user-goal', 'Goal: ' + (goalMap[STATE.userGoal] || '—'));
+  setEl('profile-streak-badge', STATE.streak + ' day streak');
+  setEl('setting-email', STATE.userEmail || 'Not signed in');
+}
 
 function exportData() {
-  var data = {
-    exportDate: new Date().toISOString(),
-    user: { name: STATE.userName, type: STATE.userType, goal: STATE.userGoal },
-    stats: { level: STATE.level, coins: STATE.coins, streak: STATE.streak, todayScore: STATE.todayScore, totalMissions: STATE.totalMissionsCompleted },
-    pillars: STATE.pillars,
-    weeklyScores: STATE.weeklyScores,
-    weeklyMoney: STATE.weeklyMoney,
-    lastReview: STATE.reviewAnswers || null,
-    lastAnalysis: STATE.analysisResult ? { score: STATE.analysisResult.score, execution: STATE.analysisResult.execution, reasoning: STATE.analysisResult.reasoning, focus: STATE.analysisResult.focus, financial: STATE.analysisResult.financial, mistake: STATE.analysisResult.mistake, money: STATE.analysisResult.money, thinking: STATE.analysisResult.thinking, missedOpp: STATE.analysisResult.missedOpp, fixes: STATE.analysisResult.fixes } : null,
-  };
-  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
+  const blob = new Blob([JSON.stringify(STATE, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
   a.href = url;
-  a.download = 'imperium-data-' + new Date().toISOString().split('T')[0] + '.json';
-  document.body.appendChild(a);
+  a.download = `imperium-export-${new Date().toISOString().split('T')[0]}.json`;
   a.click();
-  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-function initProfile() {
-  var typeMap = { student: 'Student', sales: 'Sales Pro', founder: 'Founder', creator: 'Creator', business: 'Business Builder' };
-  var goalMap = { money: 'Stop Wasting Money', discipline: 'Consistent Routine', focus: 'Deep Focus', decisions: 'Better Decisions' };
-  var iconMap = { student: 'book', sales: 'briefcase', founder: 'rocket', creator: 'bulb', business: 'rocket' };
-  var svgMap = {
-    book: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-    briefcase: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>',
-    rocket: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>',
-    bulb: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg>',
-  };
-
-  setEl('profile-user-type', STATE.userName || typeMap[STATE.userType] || 'Imperium User');
-  setEl('profile-user-goal', 'Goal: ' + (goalMap[STATE.userGoal] || '\u2014'));
-  setEl('profile-level-badge', 'Level ' + STATE.level);
-  setEl('profile-coins-badge', STATE.coins + ' coins');
-  setEl('profile-streak-badge', STATE.streak + ' streak');
-  var avatarEl = document.getElementById('profile-avatar-icon');
-  if (avatarEl) avatarEl.innerHTML = svgMap[iconMap[STATE.userType] || 'bulb'] || svgMap.bulb;
-
-  if (!document.getElementById('profile-footer')) {
-    var sc = document.querySelector('#screen-profile .screen-content');
-    if (sc) {
-      var footer = document.createElement('div');
-      footer.id = 'profile-footer';
-      footer.className = 'profile-footer';
-      footer.innerHTML = '<p>Founded &amp; Owned by <strong>Sanskaar</strong></p><p>Co-founded by <strong>Kashish Devnani</strong></p><p class="footer-copy">\u00A9 2026 Imperium. All rights reserved.</p>';
-      sc.appendChild(footer);
-    }
-  }
-}
-
-// =======================================================
-//  PRO MODAL + RESET
-// =======================================================
-
-function showProModal() { document.getElementById('pro-modal').classList.remove('hidden'); }
-function closeProModal() { document.getElementById('pro-modal').classList.add('hidden'); }
-
 function resetApp() {
-  if (!confirm('Reset all data? This cannot be undone.')) return;
+  if (!confirm('This will permanently delete all your data. Are you sure?')) return;
+  if (!confirm('This cannot be undone. Proceed?')) return;
   localStorage.removeItem('imperium_state');
+  localStorage.removeItem('imperium_guest_start');
   location.reload();
 }
 
-// ─── UTILITIES ────────────────────────────────────
-function setEl(id, text) {
-  var el = document.getElementById(id);
-  if (el) el.textContent = text;
+
+/* ═══════════════════════════════════════════════
+   PRO MODAL
+   ═══════════════════════════════════════════════ */
+
+function showProModal() {
+  document.getElementById('pro-modal').classList.remove('hidden');
+}
+function closeProModal() {
+  document.getElementById('pro-modal').classList.add('hidden');
 }
 
-function animateNumber(id, target, start, duration) {
-  start = start || 0; duration = duration || 800;
-  var el = document.getElementById(id);
-  if (!el) return;
-  var startTime = performance.now();
-  function tick(now) {
-    var p = Math.min((now - startTime) / duration, 1);
-    el.textContent = Math.round(start + (target - start) * easeOut(p));
-    if (p < 1) requestAnimationFrame(tick);
+
+/* ═══════════════════════════════════════════════
+   GUEST MODE
+   ═══════════════════════════════════════════════ */
+
+function initGuestMode() {
+  if (STATE.userName !== 'Guest') return;
+  const banner = document.getElementById('guest-banner');
+  if (!banner) return;
+
+  const start = parseInt(localStorage.getItem('imperium_guest_start') || Date.now());
+  const elapsed = Math.floor((Date.now() - start) / 86400000);
+  const remaining = Math.max(0, 3 - elapsed);
+
+  document.getElementById('guest-days-left').textContent = remaining + ' day' + (remaining !== 1 ? 's' : '');
+  banner.classList.remove('hidden');
+
+  if (remaining <= 0) {
+    banner.querySelector('span').textContent = 'Guest mode expired';
+    banner.querySelector('.guest-banner-btn').textContent = 'Create Free Account →';
   }
-  requestAnimationFrame(tick);
 }
 
-function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
-/* ── Beams Canvas Animation ────────────────────────────────────── */
+/* ═══════════════════════════════════════════════
+   INSIGHT WIDGET
+   ═══════════════════════════════════════════════ */
+
+function showInsightWidget() {
+  const widget = document.getElementById('insight-widget');
+  const text = document.getElementById('insight-text');
+  if (!widget || !text) return;
+
+  if (!STATE.lastReviewDate) {
+    widget.classList.add('hidden');
+    return;
+  }
+
+  let msg = '';
+  if (STATE.streak >= 7) msg = `${STATE.streak}-day streak! Consistency is the most underrated superpower. Keep it going.`;
+  else if (STATE.streak >= 3) msg = `${STATE.streak} days in a row. You're building real momentum.`;
+  else if (STATE.todayScore >= 80) msg = 'Strong day — ${STATE.todayScore}/100. Focus on maintaining this level.';
+  else if (STATE.todayScore < 40) msg = `${STATE.todayScore}/100 — rough day. Tomorrow is a reset. Focus on one win.`;
+  else {
+    const weak = getBottomPillar(STATE.analysisResult || { executionScore:50, reasoningScore:50, focusScore:50, financialScore:50 });
+    msg = `Your ${weak.name} signal (${weak.score}) could use attention. Today's plan targets this.`;
+  }
+
+  if (msg) {
+    text.textContent = msg;
+    widget.classList.remove('hidden');
+  }
+}
+
+
+/* ═══════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════ */
+
+function setEl(id, txt) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = txt || '';
+}
+
+function animateNumber(el, from, to, dur) {
+  if (!el) return;
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min((now - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(from + (to - from) * ease);
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function capitalize(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+}
+
+// Enter key for chat
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.activeElement?.id === 'chat-text-field') {
+    e.preventDefault();
+    sendTextAnswer();
+  }
+});
+
+
+/* ═══════════════════════════════════════════════
+   BEAMS CANVAS
+   ═══════════════════════════════════════════════ */
+
 (function initBeams() {
-  var canvas = document.getElementById('beams-canvas');
+  const canvas = document.getElementById('beams-canvas');
   if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var W, H;
-  var beams = [];
-  var BEAM_COUNT = 8;
+  const ctx = canvas.getContext('2d');
 
   function resize() {
-    W = canvas.width = canvas.parentElement.offsetWidth || window.innerWidth;
-    H = canvas.height = canvas.parentElement.offsetHeight || window.innerHeight;
+    canvas.width = canvas.parentElement?.offsetWidth || window.innerWidth;
+    canvas.height = canvas.parentElement?.offsetHeight || window.innerHeight;
   }
   resize();
   window.addEventListener('resize', resize);
 
-  var BEAM_COLORS = [
-    { r: 96, g: 165, b: 250 },   // blue
-    { r: 129, g: 140, b: 248 },  // indigo
-    { r: 168, g: 85, b: 247 },   // purple
-    { r: 212, g: 175, b: 55 },   // gold
-    { r: 99, g: 102, b: 241 },   // violet
-    { r: 59, g: 130, b: 246 },   // bright blue
-    { r: 245, g: 226, b: 122 },  // light gold
-    { r: 34, g: 197, b: 94 },    // green
-  ];
+  const beams = Array.from({ length: 6 }, () => ({
+    x: Math.random() * canvas.width,
+    speed: .3 + Math.random() * .5,
+    width: 1 + Math.random() * 2,
+    opacity: .03 + Math.random() * .05,
+    hue: 210 + Math.random() * 40
+  }));
 
-  function Beam() { this.reset(); }
-
-  Beam.prototype.reset = function() {
-    this.color = BEAM_COLORS[Math.floor(Math.random() * BEAM_COLORS.length)];
-    this.width = Math.random() * 2.5 + 0.5;
-    this.speed = Math.random() * 1.2 + 0.4;
-    this.alpha = Math.random() * 0.15 + 0.04;
-    this.drift = (Math.random() - 0.5) * 0.3;
-    this.y = -20;
-    this.x = Math.random() * W;
-    this.length = Math.random() * 200 + 100;
-    this.curve = (Math.random() - 0.5) * 0.008;
-    this.angle = Math.PI / 2 + (Math.random() - 0.5) * 0.3;
-    this.glow = Math.random() * 12 + 4;
-    this.pulsePhase = Math.random() * Math.PI * 2;
-    this.pulseSpeed = Math.random() * 0.03 + 0.01;
-  };
-
-  Beam.prototype.update = function() {
-    this.x += Math.cos(this.angle) * this.speed + this.drift;
-    this.y += Math.sin(this.angle) * this.speed;
-    this.angle += this.curve;
-    this.pulsePhase += this.pulseSpeed;
-
-    if (this.y > H + 40 || this.x < -100 || this.x > W + 100) {
-      this.reset();
-    }
-  };
-
-  Beam.prototype.draw = function() {
-    var pulse = 0.6 + 0.4 * Math.sin(this.pulsePhase);
-    var a = this.alpha * pulse;
-    var c = this.color;
-
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.strokeStyle = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',1)';
-    ctx.lineWidth = this.width;
-    ctx.shadowBlur = this.glow * pulse;
-    ctx.shadowColor = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',0.5)';
-    ctx.lineCap = 'round';
-
-    // Draw beam as a line
-    var tailX = this.x - Math.cos(this.angle) * this.length;
-    var tailY = this.y - Math.sin(this.angle) * this.length;
-
-    var grad = ctx.createLinearGradient(tailX, tailY, this.x, this.y);
-    grad.addColorStop(0, 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',0)');
-    grad.addColorStop(0.6, 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + (a * 0.7) + ')');
-    grad.addColorStop(1, 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')');
-    ctx.strokeStyle = grad;
-
-    ctx.beginPath();
-    ctx.moveTo(tailX, tailY);
-    ctx.lineTo(this.x, this.y);
-    ctx.stroke();
-
-    // Collision point glow at bottom
-    if (this.y > H - 80) {
-      var proximity = 1 - (H - this.y) / 80;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    beams.forEach(b => {
       ctx.beginPath();
-      ctx.arc(this.x, H, 20 * proximity, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + (proximity * 0.15) + ')';
-      ctx.shadowBlur = 30 * proximity;
-      ctx.fill();
-    }
-    ctx.restore();
-  };
-
-  // Create beams
-  for (var i = 0; i < BEAM_COUNT; i++) {
-    var b = new Beam();
-    b.y = Math.random() * H;  // pre-position
-    beams.push(b);
+      ctx.moveTo(b.x, 0);
+      ctx.lineTo(b.x + 30, canvas.height);
+      ctx.strokeStyle = `hsla(${b.hue}, 60%, 70%, ${b.opacity})`;
+      ctx.lineWidth = b.width;
+      ctx.stroke();
+      b.x += b.speed;
+      if (b.x > canvas.width + 50) b.x = -50;
+    });
+    requestAnimationFrame(draw);
   }
-
-  function animate() {
-    ctx.clearRect(0, 0, W, H);
-
-    // Bottom collision gradient
-    var bottomGrad = ctx.createLinearGradient(0, H - 60, 0, H);
-    bottomGrad.addColorStop(0, 'transparent');
-    bottomGrad.addColorStop(1, 'rgba(96,165,250,0.03)');
-    ctx.fillStyle = bottomGrad;
-    ctx.fillRect(0, H - 60, W, 60);
-
-    for (var i = 0; i < beams.length; i++) {
-      beams[i].update();
-      beams[i].draw();
-    }
-    requestAnimationFrame(animate);
-  }
-
-  animate();
+  draw();
 })();
 
-/* ── Landing Demo Score Animation ─────────────────────────────── */
-function animateLandingDemo() {
-  var ring = document.querySelector('.demo-ring-progress');
-  var scoreEl = document.getElementById('demo-score');
-  var fills = document.querySelectorAll('.demo-p-fill');
-  if (!ring || !scoreEl) return;
 
-  var targetScore = 71;
-  var circumference = 2 * Math.PI * 42; // r=42
+/* ═══════════════════════════════════════════════
+   PARTICLES
+   ═══════════════════════════════════════════════ */
 
-  // Animate ring
-  setTimeout(function() {
-    var offset = circumference - (targetScore / 100) * circumference;
-    ring.style.strokeDashoffset = offset;
-  }, 400);
-
-  // Animate score number
-  var start = performance.now();
-  function tick(now) {
-    var p = Math.min((now - start) / 1800, 1);
-    var ease = 1 - Math.pow(1 - p, 3);
-    scoreEl.textContent = Math.round(targetScore * ease);
-    if (p < 1) requestAnimationFrame(tick);
-  }
-  setTimeout(function() { requestAnimationFrame(tick); }, 400);
-
-  // Animate pillar bars
-  fills.forEach(function(fill) {
-    setTimeout(function() {
-      fill.style.width = fill.style.getPropertyValue('--target');
-    }, 600);
-  });
-}
-
-/* ── Guest 3-Day Limit Logic ──────────────────────────────────── */
-function initGuestMode() {
-  if (!STATE.isGuest) return;
-
-  // Track first guest visit
-  var guestStart = localStorage.getItem('imperium_guest_start');
-  if (!guestStart) {
-    guestStart = Date.now().toString();
-    localStorage.setItem('imperium_guest_start', guestStart);
-  }
-
-  var elapsed = Date.now() - parseInt(guestStart);
-  var daysUsed = Math.floor(elapsed / (1000 * 60 * 60 * 24));
-  var daysLeft = Math.max(0, 3 - daysUsed);
-
-  // Show guest banner
-  var banner = document.getElementById('guest-banner');
-  var daysEl = document.getElementById('guest-days-left');
-  if (banner) {
-    banner.classList.remove('hidden');
-    if (daysEl) daysEl.textContent = daysLeft + (daysLeft === 1 ? ' day' : ' days');
-    if (daysLeft === 0) {
-      daysEl.textContent = 'Expired';
-      daysEl.style.color = '#ef4444';
-    }
-  }
-}
-
-/* ── AI Insight Widget ────────────────────────────────────────── */
-function showInsightWidget() {
-  var widget = document.getElementById('insight-widget');
-  var textEl = document.getElementById('insight-text');
-  if (!widget || !textEl) return;
-
-  var insights = [];
-
-  // Generate contextual insights
-  if (STATE.streak >= 3) {
-    insights.push('You\'re on a ' + STATE.streak + '-day streak! Consistency compounds — keep going.');
-  }
-  if (STATE.todayScore !== null && STATE.todayScore < 50) {
-    insights.push('Score dipped below 50. Focus on your weakest pillar tomorrow to recover.');
-  }
-  if (STATE.todayScore !== null && STATE.todayScore >= 80) {
-    insights.push('Outstanding day — score of ' + STATE.todayScore + '! Your discipline is paying off.');
-  }
-  if (STATE.coins >= 100) {
-    insights.push('You\'ve earned ' + STATE.coins + ' coins. You\'re building momentum.');
-  }
-  var p = STATE.pillars;
-  var lowest = Object.entries(p).sort(function(a,b){ return a[1]-b[1]; })[0];
-  if (lowest && lowest[1] > 0 && lowest[1] < 40) {
-    var pillarNames = { execution: 'Execution', reasoning: 'Reasoning', focus: 'Focus', financial: 'Financial' };
-    insights.push('Your ' + (pillarNames[lowest[0]] || lowest[0]) + ' pillar is at ' + lowest[1] + ' \u2014 this is your biggest growth area.');
-  }
-  if (STATE.todayScore === null) {
-    insights.push('You haven\'t completed today\'s review yet. Tap "Start Daily Review" to get your score.');
-  }
-
-  if (insights.length === 0) {
-    insights.push('Complete your daily review to unlock personalised AI insights.');
-  }
-
-  textEl.textContent = insights[Math.floor(Math.random() * insights.length)];
-  widget.classList.remove('hidden');
-}
-
-/* ── Particle System ────────────────────────────────────────────── */
 (function initParticles() {
-  var canvas = document.getElementById('particle-canvas');
+  const canvas = document.getElementById('particle-canvas');
   if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var particles = [];
-  var W, H;
+  const ctx = canvas.getContext('2d');
 
   function resize() {
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
   resize();
   window.addEventListener('resize', resize);
 
-  var COLORS = [
-    'rgba(96,165,250,',   // blue
-    'rgba(129,140,248,',  // indigo
-    'rgba(245,226,122,',  // gold
-    'rgba(168,85,247,',   // purple
-    'rgba(34,197,94,',    // green
-  ];
+  const particles = Array.from({ length: 60 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    vx: (Math.random() - .5) * .3,
+    vy: (Math.random() - .5) * .3,
+    r: 1 + Math.random(),
+    o: .1 + Math.random() * .3
+  }));
 
-  function Particle() {
-    this.reset();
-  }
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  Particle.prototype.reset = function() {
-    this.x  = Math.random() * W;
-    this.y  = Math.random() * H;
-    this.r  = Math.random() * 1.4 + 0.4;
-    this.vx = (Math.random() - 0.5) * 0.22;
-    this.vy = (Math.random() - 0.5) * 0.22 - 0.08;
-    this.alpha = Math.random() * 0.4 + 0.08;
-    this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-    this.life  = Math.random() * 300 + 200;
-    this.age   = 0;
-    this.twinkle = Math.random() * Math.PI * 2;
-    this.twinkleSpeed = Math.random() * 0.04 + 0.01;
-  };
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
 
-  Particle.prototype.update = function() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.age++;
-    this.twinkle += this.twinkleSpeed;
-    if (this.age > this.life || this.x < -10 || this.x > W + 10 || this.y < -10) {
-      this.reset();
-    }
-  };
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(148, 163, 184, ${p.o})`;
+      ctx.fill();
+    });
 
-  Particle.prototype.draw = function() {
-    var a = this.alpha * (0.6 + 0.4 * Math.sin(this.twinkle));
-    // Fade in/out by age
-    var fadeIn  = Math.min(this.age / 40, 1);
-    var fadeOut = Math.min((this.life - this.age) / 40, 1);
-    var opacity = a * fadeIn * fadeOut;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-    ctx.fillStyle = this.color + opacity + ')';
-    ctx.fill();
-  };
-
-  // Create ~120 particles
-  for (var i = 0; i < 120; i++) {
-    var p = new Particle();
-    p.age = Math.floor(Math.random() * p.life); // pre-age them
-    particles.push(p);
-  }
-
-  // Draw connecting lines between close particles
-  function drawLines() {
-    var max = 80;
-    for (var i = 0; i < particles.length; i++) {
-      for (var j = i + 1; j < particles.length; j++) {
-        var dx = particles[i].x - particles[j].x;
-        var dy = particles[i].y - particles[j].y;
-        var dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < max) {
-          var opacity = (1 - dist / max) * 0.04;
+    // Connect nearby
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 80) {
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = 'rgba(96,165,250,' + opacity + ')';
-          ctx.lineWidth = 0.5;
+          ctx.strokeStyle = `rgba(148, 163, 184, ${.05 * (1 - dist/80)})`;
+          ctx.lineWidth = .5;
           ctx.stroke();
         }
       }
     }
-  }
 
-  function animate() {
-    ctx.clearRect(0, 0, W, H);
-    drawLines();
-    for (var i = 0; i < particles.length; i++) {
-      particles[i].update();
-      particles[i].draw();
-    }
-    requestAnimationFrame(animate);
+    requestAnimationFrame(draw);
   }
-
-  animate();
+  draw();
 })();
 
-// ─── VIRTUAL KEYBOARD HANDLER ─────────────────────
-// Moves chat-input-wrap above the virtual keyboard on iOS/iPadOS/Android
+
+/* ═══════════════════════════════════════════════
+   VIRTUAL KEYBOARD HANDLER (iOS/Android)
+   ═══════════════════════════════════════════════ */
+
 (function() {
-  var inputWrap = null;
+  if (!window.visualViewport) return;
 
-  function getEls() {
-    inputWrap = document.getElementById('chat-input-wrap');
-  }
+  const chatWrap = document.getElementById('chat-input-wrap');
+  if (!chatWrap) return;
 
-  function handleViewportResize() {
-    getEls();
-    if (!inputWrap) return;
-
-    var vv = window.visualViewport;
-    if (!vv) return;
-
-    // Calculate keyboard height
-    var keyboardHeight = window.innerHeight - vv.height;
-
-    if (keyboardHeight > 100) {
-      // Keyboard is open — move input wrap up using bottom
-      inputWrap.style.bottom = keyboardHeight + 'px';
-      // Scroll chat to bottom
-      setTimeout(function() {
-        var c = document.getElementById('chat-messages');
-        if (c) c.scrollTop = c.scrollHeight;
-      }, 100);
+  window.visualViewport.addEventListener('resize', () => {
+    const diff = window.innerHeight - window.visualViewport.height;
+    if (diff > 100) {
+      chatWrap.style.transform = `translateY(-${diff}px)`;
     } else {
-      // Keyboard is closed
-      inputWrap.style.bottom = '0';
-    }
-  }
-
-  // Handle focus on the chat text field
-  document.addEventListener('focusin', function(e) {
-    if (e.target && e.target.id === 'chat-text-field') {
-      setTimeout(function() {
-        handleViewportResize();
-      }, 300);
+      chatWrap.style.transform = '';
     }
   });
-
-  document.addEventListener('focusout', function(e) {
-    if (e.target && e.target.id === 'chat-text-field') {
-      getEls();
-      if (inputWrap) inputWrap.style.bottom = '0';
-    }
-  });
-
-  // Listen to visualViewport resize (fires when keyboard opens/closes)
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', handleViewportResize);
-    window.visualViewport.addEventListener('scroll', handleViewportResize);
-  }
 })();
