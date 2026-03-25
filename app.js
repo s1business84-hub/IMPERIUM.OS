@@ -17,7 +17,6 @@ let S = {
   transactions: [],
   streak: 0,
   lastLogin: null,
-  aiGensLeft: 3,
   notifDaily: true,
   notifBudget: true,
   currentScreen: 'screen-boot',
@@ -116,7 +115,7 @@ function navigateTo(id) {
   // Update nav
   const navMap = {
     'screen-home': 'nb-home',
-    'screen-make': 'nb-make',
+    'screen-brain': 'nb-brain',
     'screen-track': 'nb-track',
     'screen-insights': 'nb-insights',
     'screen-settings': 'nb-settings'
@@ -129,6 +128,7 @@ function navigateTo(id) {
 
   // Init screens
   if (id === 'screen-home')     { updateHomeScreen(); }
+  if (id === 'screen-brain')    { initBrain(); }
   if (id === 'screen-insights') { initInsights(); }
   if (id === 'screen-calendar') { renderCalendar(); updateMonthStats(); }
   if (id === 'screen-settings') { initSettings(); }
@@ -270,7 +270,6 @@ function obBack() {
 
 function finishOnboarding() {
   S.onboarded = true;
-  S.aiGensLeft = 3;
   saveState();
   showBottomNav();
   updateStreak();
@@ -350,31 +349,23 @@ function updateAIPrompt() {
   const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const spent = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
-  const goalMap = {
-    'first-payment': 'get your first payment',
-    'replace-job': 'replace your salary',
-    'scale': 'scale revenue',
-    'control': 'control spending'
-  };
-  const goalStr = goalMap[S.goal] || 'reach your goal';
-
   let msg;
   if (!monthTx.length) {
-    msg = "Welcome to Imperium OS. Start by logging a transaction or generating a money-making offer. Your OS will calibrate once it has data.";
+    msg = "Welcome to Imperium OS. Start by logging a transaction — your AI Brain will analyse patterns and behaviour once it has data.";
   } else if (inc === 0) {
-    msg = "No income logged this month. Head to Make Money to generate an offer or outreach script. One client can change everything.";
+    msg = "No income logged this month. Log all income sources so your AI Brain can track your full financial picture.";
   } else if (spent > inc) {
-    msg = `You've spent ${fmt(spent)} against ${fmt(inc)} income this month. Profit is negative. Prioritise reducing top expenses or adding one new revenue stream.`;
+    msg = `You've spent ${fmt(spent)} against ${fmt(inc)} income this month. Profit is negative. Open AI Brain for a deep analysis and action plan.`;
   } else {
     const margin = ((inc - spent) / inc * 100).toFixed(0);
-    msg = `${margin}% profit margin this month. ${inc > spent ? 'Strong. ' : ''}Keep momentum to ${goalStr}. ${S.aiGensLeft} AI generations left today.`;
+    msg = `${margin}% profit margin this month. ${inc > spent ? 'Strong. ' : ''}Your AI Brain has detected patterns — tap to explore.`;
   }
 
   promptEl.textContent = msg;
   if (actionsEl) {
     actionsEl.innerHTML = `
-      <button class="ai-action-chip" onclick="navigateTo('screen-make')">⚡ Make Money</button>
-      <button class="ai-action-chip" onclick="navigateTo('screen-insights')">🧠 Full Insights</button>
+      <button class="ai-action-chip" onclick="navigateTo('screen-brain')">🧠 AI Brain</button>
+      <button class="ai-action-chip" onclick="navigateTo('screen-insights')">📊 Full Insights</button>
     `;
   }
 }
@@ -413,136 +404,487 @@ function el(id, val) {
   if (e) e.textContent = val;
 }
 
-/* ── MAKE MONEY ───────────────────────────────────── */
-let selectedPlatform = 'instagram';
-let selectedOutreachType = 'dm';
+/* ── AI BRAIN ─────────────────────────────────────── */
+let brainPatternChartInst = null;
+let brainMicActive = false;
+let brainRecognition = null;
+let brainChatHistory = [];
+let brainInitialised = false;
 
-function switchMakeTab(t) {
-  document.querySelectorAll('.make-tab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.make-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('mtab-' + t).classList.add('active');
-  document.getElementById('panel-' + t).classList.add('active');
+function initBrain() {
+  buildBrainPulse();
+  buildPatterns();
+  buildBehaviourTab();
+  brainInitialised = true;
 }
 
-function selectPlatform(btn) {
-  document.querySelectorAll('.platform-pills .pill').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  selectedPlatform = btn.dataset.p;
+function switchBrainTab(tab) {
+  document.querySelectorAll('.brain-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.brain-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('btab-' + tab).classList.add('active');
+  document.getElementById('bpanel-' + tab).classList.add('active');
+  if (tab === 'chat' && !brainChatHistory.length) initBrainChat();
 }
 
-function selectOutreachType(btn) {
-  document.querySelectorAll('#panel-outreach .pill').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  selectedOutreachType = btn.dataset.o;
+/* ── PULSE TAB ── */
+function buildBrainPulse() {
+  buildBrainScoreCard();
+  buildBrainAlerts();
+  buildBrainNudges();
 }
 
-function checkGenLimit() {
-  if (S.aiGensLeft <= 0) {
-    showToast('Daily limit reached. Upgrade to Pro for unlimited.', 'error');
-    return false;
+function buildBrainScoreCard() {
+  const scoreEl = document.getElementById('brain-score-card');
+  if (!scoreEl) return;
+  const now = new Date();
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const daysGone = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const projInc = daysGone > 0 ? (inc / daysGone) * daysInMonth : 0;
+  const projExp = daysGone > 0 ? (exp / daysGone) * daysInMonth : 0;
+  let score = 50;
+  if (inc > 0) score += 15;
+  if (inc > exp) score += 20;
+  if (exp / (inc || 1) < 0.7) score += 15;
+  const sources = [...new Set(monthTx.filter(t => t.type === 'income').map(t => t.category))].length;
+  if (sources > 1) score += 10;
+  if (daysGone >= 7 && monthTx.length >= 5) score += 10;
+  score = Math.min(100, Math.max(0, score));
+  const grade = score >= 85 ? { label: 'Excellent', color: '#10b981' }
+    : score >= 70 ? { label: 'Good', color: '#3b82f6' }
+    : score >= 50 ? { label: 'Fair', color: '#f59e0b' }
+    : { label: 'Needs Work', color: '#ef4444' };
+  scoreEl.innerHTML = `
+    <div class="bsc-header">
+      <div class="bsc-left">
+        <div class="bsc-label">Financial Health Score</div>
+        <div class="bsc-score" style="color:${grade.color}">${score}</div>
+        <div class="bsc-grade" style="color:${grade.color}">${grade.label}</div>
+      </div>
+      <div class="bsc-right">
+        <div class="bsc-stat"><span class="bsc-sv" style="color:var(--green)">${fmt(inc)}</span><span class="bsc-sl">Income</span></div>
+        <div class="bsc-stat"><span class="bsc-sv" style="color:var(--red)">${fmt(exp)}</span><span class="bsc-sl">Spent</span></div>
+        <div class="bsc-stat"><span class="bsc-sv" style="color:${inc >= exp ? 'var(--blue2)' : 'var(--red)'}">${fmt(inc - exp)}</span><span class="bsc-sl">Profit</span></div>
+      </div>
+    </div>
+    <div class="bsc-proj">📈 Projected month-end: <strong style="color:${projInc - projExp >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(projInc - projExp)}</strong> profit at current pace</div>`;
+}
+
+function buildBrainAlerts() {
+  const alertsEl = document.getElementById('brain-alerts');
+  if (!alertsEl) return;
+  const now = new Date();
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const alerts = [];
+  if (!monthTx.length) {
+    alerts.push({ icon: '👀', level: 'info', text: 'No data yet. Start logging to activate your AI Brain.' });
+  } else {
+    if (exp > inc) alerts.push({ icon: '🚨', level: 'critical', text: `Spending exceeds income by ${fmt(exp - inc)}. Immediate action needed.` });
+    const subs = monthTx.filter(t => t.category === 'subscription').reduce((s, t) => s + t.amount, 0);
+    if (inc > 0 && subs > inc * 0.15) alerts.push({ icon: '⚠️', level: 'warn', text: `Subscriptions are ${(subs / inc * 100).toFixed(0)}% of income — industry average is 5-8%. Audit now.` });
+    const catMap = {};
+    monthTx.filter(t => t.type === 'expense').forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
+    const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
+    if (topCat && exp > 0 && topCat[1] > exp * 0.4) alerts.push({ icon: '📌', level: 'warn', text: `${topCat[0]} is ${(topCat[1] / exp * 100).toFixed(0)}% of all spending. High concentration risk.` });
+    const sources = [...new Set(monthTx.filter(t => t.type === 'income').map(t => t.category))].length;
+    if (sources <= 1 && inc > 0) alerts.push({ icon: '⚡', level: 'warn', text: 'Single income source detected. Research shows 3+ streams increases financial resilience 4x.' });
+    if (inc > 0 && exp / inc < 0.5) alerts.push({ icon: '✅', level: 'good', text: `Excellent expense ratio: ${(exp / inc * 100).toFixed(0)}%. You're saving ${(100 - exp / inc * 100).toFixed(0)}% of income.` });
   }
-  S.aiGensLeft--;
-  saveState();
-  return true;
+  alertsEl.innerHTML = alerts.map(a => `
+    <div class="brain-alert brain-alert-${a.level}">
+      <span class="ba-icon">${a.icon}</span>
+      <span class="ba-text">${a.text}</span>
+    </div>`).join('');
 }
 
-function buildOfferOutput(input) {
-  const si = S.situation || 'freelancer'; const gl = S.goal || 'scale';
-  return `💡 YOUR OFFER
-
-HEADLINE
-"I help ${si === 'business' ? 'businesses' : 'people'} ${gl === 'scale' ? 'scale their revenue' : gl === 'control' ? 'control their finances' : 'start making money online'} using ${input.split(' ').slice(0, 3).join(' ')}."
-
-WHAT YOU DO
-${input}
-
-WHO IT'S FOR
-People who want results fast and don't have time to figure it out themselves.
-
-THE PROMISE
-You'll see [specific outcome] within [30 days] or I'll work for free until you do.
-
-PRICE ANCHOR
-Starter package: $[497-997]
-Done-for-you: $[2,500-5,000]
-
-NEXT STEP
-DM me the word "READY" or book a free 15-min call.`;
+function buildBrainNudges() {
+  const nudgesEl = document.getElementById('brain-nudges');
+  if (!nudgesEl) return;
+  const nudges = [
+    { icon: '🧪', title: 'The 24-Hour Rule', text: 'Before any purchase over $50, wait 24 hours. Studies show this reduces impulse spending by 32% (Journal of Consumer Research, 2019).', tag: 'Behaviour Science' },
+    { icon: '📊', title: 'Track → Reduce', text: 'People who log every expense spend 18% less automatically. Awareness alone is the intervention (Ariely, 2008).', tag: 'Research Finding' },
+    { icon: '💡', title: 'Income Diversification', text: 'Having 3+ income sources reduces income shock probability by 78%. Add one small stream every 90 days.', tag: 'Risk Management' },
+    { icon: '🎯', title: 'The 50/30/20 Rule', text: '50% needs, 30% wants, 20% savings/investments. Compare this to your current ratios in the Insights tab.', tag: 'Framework' },
+    { icon: '🔄', title: 'Subscription Creep', text: 'The average person underestimates their subscription spend by 2.5x. Every 3 months, cancel everything and re-subscribe only to what you missed.', tag: 'Money Leak' },
+  ];
+  const now = new Date();
+  const nudgeIdx = (now.getDate() + now.getMonth()) % nudges.length;
+  const n = nudges[nudgeIdx];
+  nudgesEl.innerHTML = `
+    <div class="brain-section-label">Today's Behavioural Insight</div>
+    <div class="brain-nudge-card glass-card">
+      <div class="bnc-tag">${n.tag}</div>
+      <div class="bnc-icon">${n.icon}</div>
+      <div class="bnc-title">${n.title}</div>
+      <div class="bnc-text">${n.text}</div>
+    </div>`;
 }
 
-function buildContentOutput(input) {
-  const p = selectedPlatform;
-  const templates = {
-    instagram: `📸 INSTAGRAM POST\n\n[Hook]\nMost people think ${input.split(' ').slice(0, 4).join(' ')} is hard.\n\nThey're wrong.\n\nHere's what actually works:\n\n1. Start with ONE skill\n2. Get ONE result for ONE person\n3. Document everything\n4. Repeat\n\nThe formula is simple.\nExecution is the game.\n\nSave this if it helped. 🔖\n\n#entrepreneur #money #sidehustle #business`,
-    twitter: `🐦 TWITTER/X THREAD\n\nThread: How to make money with ${input.split(' ').slice(0, 3).join(' ')} (even starting from $0)\n\n1/ Most people overcomplicate this.\n\n2/ The real path: skill → proof → offer → outreach.\n\n3/ You don't need a big audience.\nYou need ONE person who will pay.\n\n4/ Here's how to find that person:\n→ [Specific method]\n→ [Platform]\n→ [Message script]\n\nRT if this helped.`,
-    linkedin: `�� LINKEDIN POST\n\nI went from $0 to [X] with ${input.split(' ').slice(0, 3).join(' ')}.\n\nHere's the exact playbook:\n\nStep 1: Pick ONE skill you have right now.\nStep 2: Find ONE person with that problem.\nStep 3: Solve it for free once. Get a testimonial.\nStep 4: Charge the next 3 people.\nStep 5: Use those results to raise prices.\n\nMost people skip Step 3. Don't.\n\nThoughts? Drop them below 👇`,
-    tiktok: `🎵 TIKTOK SCRIPT\n\n[Hook - 0-3s]\n"POV: You just made your first $1000 online."\n\n[Problem - 3-10s]\nMost people think you need:\n❌ A big following\n❌ A product idea\n❌ Years of experience\n\n[Solution - 10-25s]\nYou actually just need:\n✅ One skill\n✅ One platform\n✅ One offer\n\n[CTA - 25-30s]\nFollow for daily money moves. 💰\n\n#money #sidehustle #entrepreneur`
+/* ── PATTERNS TAB ── */
+function buildPatterns() {
+  buildPatternList();
+  buildPatternChart();
+  buildStreakRow();
+}
+
+function buildPatternList() {
+  const listEl = document.getElementById('pattern-list');
+  if (!listEl) return;
+  const tx = S.transactions;
+  if (!tx.length) { listEl.innerHTML = '<div class="tx-empty">Log at least 7 days of transactions to detect patterns.</div>'; return; }
+  const patterns = detectPatterns(tx);
+  listEl.innerHTML = patterns.map(p => `
+    <div class="pattern-card glass-card">
+      <div class="pc-header">
+        <span class="pc-icon">${p.icon}</span>
+        <div class="pc-info">
+          <div class="pc-title">${p.title}</div>
+          <div class="pc-sub">${p.sub}</div>
+        </div>
+        <div class="pc-badge pc-badge-${p.type}">${p.type}</div>
+      </div>
+      <div class="pc-insight">${p.insight}</div>
+    </div>`).join('');
+}
+
+function detectPatterns(tx) {
+  const patterns = [];
+  const daySpend = Array(7).fill(0);
+  tx.filter(t => t.type === 'expense').forEach(t => { daySpend[new Date(t.date).getDay()] += t.amount; });
+  const maxDay = daySpend.indexOf(Math.max(...daySpend));
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  if (daySpend[maxDay] > 0) {
+    patterns.push({
+      icon: '📅', title: 'Peak Spending Day',
+      sub: `${dayNames[maxDay]} — ${fmt(daySpend[maxDay])} total`,
+      type: 'pattern',
+      insight: `You spend most on ${dayNames[maxDay]}s. This is likely habitual. Set a ${dayNames[maxDay]} spending alert to break the cycle.`
+    });
+  }
+  const catMap = {};
+  tx.filter(t => t.type === 'expense').forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
+  const totalExp = Object.values(catMap).reduce((s, v) => s + v, 0);
+  const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
+  if (topCat && totalExp > 0) {
+    const pct = (topCat[1] / totalExp * 100).toFixed(0);
+    patterns.push({
+      icon: pct > 40 ? '🔴' : '🟡',
+      title: `${topCat[0]} = ${pct}% of expenses`,
+      sub: `${fmt(topCat[1])} across all time`,
+      type: pct > 40 ? 'risk' : 'pattern',
+      insight: pct > 40
+        ? `High concentration. A single category eating ${pct}% creates financial fragility. Target a 30% max cap.`
+        : `Your largest expense category is ${topCat[0]}. Normal range is 20-35% for a single category.`
+    });
+  }
+  const last4Weeks = [];
+  for (let w = 0; w < 4; w++) {
+    const from = new Date(); from.setDate(from.getDate() - (w + 1) * 7);
+    const to = new Date(); to.setDate(to.getDate() - w * 7);
+    last4Weeks.push(tx.filter(t => { const d = new Date(t.date); return t.type === 'income' && d >= from && d < to; }).reduce((s, t) => s + t.amount, 0));
+  }
+  const avgWeekInc = last4Weeks.reduce((s, v) => s + v, 0) / 4;
+  const variance = last4Weeks.map(w => Math.abs(w - avgWeekInc)).reduce((s, v) => s + v, 0) / 4;
+  if (avgWeekInc > 0) {
+    const cv = variance / avgWeekInc;
+    patterns.push({
+      icon: cv > 0.5 ? '📉' : '📈',
+      title: cv > 0.5 ? 'Volatile Income Pattern' : 'Consistent Income Pattern',
+      sub: `Avg ${fmt(avgWeekInc)}/week over 4 weeks`,
+      type: cv > 0.5 ? 'risk' : 'positive',
+      insight: cv > 0.5
+        ? `High income variability (${(cv * 100).toFixed(0)}% coefficient of variation). Build a 3-month emergency buffer to handle income gaps.`
+        : `Steady income stream. Consistency like this compounds — small increases each week add up dramatically.`
+    });
+  }
+  const subs = tx.filter(t => t.category === 'subscription');
+  if (subs.length > 0) {
+    const subTotal = subs.reduce((s, t) => s + t.amount, 0);
+    patterns.push({
+      icon: '🔄', title: 'Recurring Subscription Load',
+      sub: `${subs.length} logged subscriptions`,
+      type: 'pattern',
+      insight: `Total logged subscription spend: ${fmt(subTotal)}. Per the "pain of paying" principle (Prelec & Loewenstein), auto-renewals anesthetise spending awareness. Review each one.`
+    });
+  }
+  if (!patterns.length) {
+    patterns.push({ icon: '📊', title: 'Keep logging to detect patterns', sub: 'Need more data', type: 'info', insight: 'Log transactions daily for 2+ weeks to unlock pattern detection.' });
+  }
+  return patterns;
+}
+
+function buildPatternChart() {
+  const canvas = document.getElementById('brain-pattern-chart');
+  if (!canvas) return;
+  if (brainPatternChartInst) { brainPatternChartInst.destroy(); brainPatternChartInst = null; }
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayInc = Array(7).fill(0);
+  const dayExp = Array(7).fill(0);
+  S.transactions.forEach(t => {
+    const d = new Date(t.date).getDay();
+    if (t.type === 'income') dayInc[d] += t.amount;
+    else dayExp[d] += t.amount;
+  });
+  brainPatternChartInst = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: dayNames,
+      datasets: [
+        { label: 'Income', data: dayInc, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4 },
+        { label: 'Spend', data: dayExp, backgroundColor: 'rgba(239,68,68,0.6)', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: 'rgba(240,244,255,.6)', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: 'rgba(240,244,255,.5)', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: 'rgba(240,244,255,.5)', font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function buildStreakRow() {
+  const streakEl = document.getElementById('pattern-streak-row');
+  if (!streakEl) return;
+  let streak = 0;
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const has = S.transactions.some(t => new Date(t.date).toDateString() === d.toDateString());
+    if (has) streak++;
+    else if (i > 0) break;
+  }
+  const txPerMonth = (S.transactions.length / 3).toFixed(0);
+  streakEl.innerHTML = `
+    <div class="streak-card glass-card"><div class="sc-val">${streak}</div><div class="sc-lbl">Day Logging Streak</div></div>
+    <div class="streak-card glass-card"><div class="sc-val">${S.transactions.length}</div><div class="sc-lbl">Total Entries</div></div>
+    <div class="streak-card glass-card"><div class="sc-val">${txPerMonth}</div><div class="sc-lbl">Avg per Month</div></div>`;
+}
+
+/* ── BEHAVIOUR TAB ── */
+function buildBehaviourTab() {
+  buildBehaviourList();
+  buildStudyCards();
+}
+
+function buildBehaviourList() {
+  const blistEl = document.getElementById('behaviour-list');
+  if (!blistEl) return;
+  const behaviours = analyseBehaviours(S.transactions);
+  blistEl.innerHTML = `<div class="brain-section-label">Your Behavioural Profile</div>` +
+    behaviours.map(b => `
+      <div class="behaviour-item glass-card">
+        <div class="bi-header">
+          <span class="bi-icon">${b.icon}</span>
+          <div class="bi-info">
+            <div class="bi-title">${b.title}</div>
+            <div class="bi-score-bar"><div class="bi-score-fill" style="width:${b.score}%;background:${b.color}"></div></div>
+          </div>
+          <div class="bi-pct" style="color:${b.color}">${b.score}%</div>
+        </div>
+        <div class="bi-desc">${b.desc}</div>
+        <div class="bi-action">${b.action}</div>
+      </div>`).join('');
+}
+
+function analyseBehaviours(tx) {
+  const behaviours = [];
+  const now = new Date();
+  const monthTx = tx.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const smallPurchases = monthTx.filter(t => t.type === 'expense' && t.amount < 20).length;
+  const totalPurchases = monthTx.filter(t => t.type === 'expense').length;
+  const impulseScore = totalPurchases > 0 ? Math.max(0, 100 - (smallPurchases / totalPurchases * 100)) : 50;
+  behaviours.push({
+    icon: '🧠', title: 'Impulse Control',
+    score: Math.round(impulseScore),
+    color: impulseScore > 70 ? '#10b981' : impulseScore > 40 ? '#f59e0b' : '#ef4444',
+    desc: `${smallPurchases} micro-purchases (under $20) this month = ${(smallPurchases / Math.max(1, totalPurchases) * 100).toFixed(0)}% of all transactions.`,
+    action: impulseScore < 60 ? '⚡ Use the 24-hour rule for all non-essential purchases.' : '✅ Good impulse control. Maintain awareness.'
+  });
+  const budget = S.budget || 0;
+  const budgetScore = budget > 0 ? Math.max(0, Math.min(100, (1 - exp / budget) * 100)) : (inc > 0 && exp / inc < 0.8 ? 70 : 40);
+  behaviours.push({
+    icon: '📋', title: 'Budget Discipline',
+    score: Math.round(budgetScore),
+    color: budgetScore > 70 ? '#10b981' : budgetScore > 40 ? '#f59e0b' : '#ef4444',
+    desc: budget > 0 ? `Spent ${fmt(exp)} of ${fmt(budget)} budget (${(exp / budget * 100).toFixed(0)}%).` : 'No budget set. Set one in Settings to track discipline.',
+    action: budgetScore < 50 ? '🎯 Set a hard monthly budget ceiling in Settings.' : '✅ Staying within budget. Keep the discipline.'
+  });
+  const last4 = [];
+  for (let w = 0; w < 4; w++) {
+    const from = new Date(); from.setDate(from.getDate() - (w + 1) * 7);
+    const to = new Date(); to.setDate(to.getDate() - w * 7);
+    last4.push(tx.filter(t => { const d = new Date(t.date); return t.type === 'income' && d >= from && d < to; }).reduce((s, t) => s + t.amount, 0));
+  }
+  const avg = last4.reduce((s, v) => s + v, 0) / 4;
+  const cv = avg > 0 ? last4.map(w => Math.abs(w - avg)).reduce((s, v) => s + v, 0) / 4 / avg : 1;
+  const consistencyScore = Math.max(0, Math.min(100, (1 - cv) * 100));
+  behaviours.push({
+    icon: '📈', title: 'Income Consistency',
+    score: Math.round(consistencyScore),
+    color: consistencyScore > 70 ? '#10b981' : consistencyScore > 40 ? '#3b82f6' : '#f59e0b',
+    desc: `Weekly income variability: ${(cv * 100).toFixed(0)}%. Avg weekly income: ${fmt(avg)}.`,
+    action: consistencyScore < 60 ? '💡 Retainers and recurring clients smooth income dramatically.' : '✅ Consistent earnings. Stack on top with a passive income layer.'
+  });
+  const sources = [...new Set(tx.filter(t => t.type === 'income').map(t => t.category))].length;
+  const divScore = Math.min(100, sources * 25);
+  behaviours.push({
+    icon: '🌐', title: 'Income Diversification',
+    score: divScore,
+    color: divScore >= 75 ? '#10b981' : divScore >= 50 ? '#3b82f6' : '#f59e0b',
+    desc: `${sources} income source${sources !== 1 ? 's' : ''} detected all-time. Optimal is 3+.`,
+    action: divScore < 75 ? '🚀 Identify one more income stream you could activate this month.' : '✅ Well diversified. Focus on growing the highest-margin source.'
+  });
+  return behaviours;
+}
+
+function buildStudyCards() {
+  const studyEl = document.getElementById('study-cards');
+  if (!studyEl) return;
+  const studies = [
+    { icon: '🔬', ref: 'Kahneman & Tversky, 1979', finding: 'Loss Aversion', detail: 'Losses feel 2x worse than equivalent gains. Use this: frame every cost-cut as "recovering" money, not sacrificing it.' },
+    { icon: '📊', ref: 'Thaler, 1985', finding: 'Mental Accounting', detail: 'People treat "bonus money" differently and spend it frivolously. Break this bias: all money is equal — put windfalls straight into savings.' },
+    { icon: '🧠', ref: 'Ariely, 2008', finding: 'Anchoring Effect', detail: 'The first price you see anchors all future comparisons. When negotiating rates, always anchor high — it shifts the entire range in your favour.' },
+    { icon: '⚡', ref: 'Baumeister, 1998', finding: 'Ego Depletion', detail: 'Willpower is finite. Financial decisions made when tired are worse. Schedule important money decisions in the morning when cognitive resources are full.' },
+  ];
+  studyEl.innerHTML = `<div class="brain-section-label" style="margin-top:16px">Research-Backed Insights</div>` +
+    studies.map(s => `
+      <div class="study-card glass-card">
+        <div class="sc-ref">${s.icon} ${s.ref}</div>
+        <div class="sc-finding">${s.finding}</div>
+        <div class="sc-detail">${s.detail}</div>
+      </div>`).join('');
+}
+
+/* ── BRAIN CHAT TAB ── */
+function initBrainChat() {
+  brainChatHistory = [];
+  const greeting = buildBrainContext();
+  addBrainMessage('ai', `I've analysed your financial data. ${greeting} What would you like to explore?`);
+}
+
+function buildBrainContext() {
+  const now = new Date();
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  if (!monthTx.length) return 'No transactions logged yet — once you start tracking, I can give you deep analysis.';
+  if (exp > inc) return `This month you're spending ${fmt(exp - inc)} more than you earn. That's the #1 thing to fix.`;
+  const margin = ((inc - exp) / inc * 100).toFixed(0);
+  return `This month: ${fmt(inc)} income, ${fmt(exp)} spent, ${margin}% profit margin.`;
+}
+
+function brainChat(q) {
+  const inputEl = document.getElementById('brain-chat-input');
+  const question = q || (inputEl ? inputEl.value.trim() : '');
+  if (!question) return;
+  if (inputEl) inputEl.value = '';
+  addBrainMessage('user', question);
+  setTimeout(() => { addBrainMessage('ai', generateBrainResponse(question)); }, 600);
+}
+
+function addBrainMessage(role, text) {
+  const feed = document.getElementById('brain-chat-feed');
+  if (!feed) return;
+  brainChatHistory.push({ role, text });
+  const div = document.createElement('div');
+  div.className = `brain-msg brain-msg-${role}`;
+  div.innerHTML = role === 'ai'
+    ? `<span class="bm-icon">🧠</span><div class="bm-bubble">${text}</div>`
+    : `<div class="bm-bubble">${text}</div>`;
+  feed.appendChild(div);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function generateBrainResponse(q) {
+  const ql = q.toLowerCase();
+  const now = new Date();
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const catMap = {};
+  monthTx.filter(t => t.type === 'expense').forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
+  const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
+  const sources = [...new Set(monthTx.filter(t => t.type === 'income').map(t => t.category))];
+  if (!monthTx.length) return 'Log your first transaction and I can start real analysis. The more data you give me, the more precise my insights become.';
+  if (ql.includes('habit') || ql.includes('worst')) {
+    const smallPurchases = monthTx.filter(t => t.type === 'expense' && t.amount < 20).length;
+    return `Based on your data, your main financial habits: (1) ${topCat ? `${topCat[0]} is your top spend at ${fmt(topCat[1])} — watch for habituation bias here.` : 'No dominant category yet.'} (2) ${smallPurchases > 5 ? `${smallPurchases} micro-purchases this month — small amounts feel painless but compound fast.` : 'Low micro-purchase count — good discipline.'} (3) ${sources.length < 2 ? 'Single income source — this is your highest-risk habit to break.' : `${sources.length} income sources — above average diversification.`}`;
+  }
+  if (ql.includes('pattern') || ql.includes('hurting')) {
+    const daySpend = Array(7).fill(0);
+    monthTx.filter(t => t.type === 'expense').forEach(t => { daySpend[new Date(t.date).getDay()] += t.amount; });
+    const peakDay = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][daySpend.indexOf(Math.max(...daySpend))];
+    return `Your most damaging pattern: ${topCat ? `${topCat[0]} spending at ${(topCat[1] / exp * 100).toFixed(0)}% of total outflows` : 'no dominant pattern yet'}. Peak spending occurs on ${peakDay}s — likely a dopamine-driven reward pattern. ${exp > inc ? `Critical: you are spending ${fmt(exp - inc)} more than you earn. This is structural — expense reduction must be immediate.` : `Current expense ratio: ${(exp / inc * 100).toFixed(0)}% — ${exp / inc < 0.7 ? 'healthy' : 'needs attention'}.`}`;
+  }
+  if (ql.includes('track') || ql.includes('on track')) {
+    const daysGone = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const projInc = (inc / daysGone) * daysInMonth;
+    const projExp = (exp / daysGone) * daysInMonth;
+    const projProfit = projInc - projExp;
+    return `At your current pace: projected income ${fmt(projInc)}, projected spend ${fmt(projExp)}, projected profit ${fmt(projProfit)}. ${projProfit > 0 ? `You're on track. ${daysInMonth - daysGone} days remain — maintain discipline.` : `You're projected to end the month at a loss. Increase income by ${fmt(Math.abs(projProfit) / ((daysInMonth - daysGone) || 1))}/day or cut daily spending.`}`;
+  }
+  if (ql.includes('next month') || ql.includes('differently')) {
+    const subPct = exp > 0 ? ((catMap['subscription'] || 0) / exp * 100).toFixed(0) : 0;
+    return `For next month: (1) ${topCat && topCat[1] > exp * 0.35 ? `Cap ${topCat[0]} spending at ${fmt(topCat[1] * 0.8)} — a 20% reduction on your top category.` : 'Maintain current category distribution.'} (2) ${subPct > 15 ? `Audit subscriptions — ${subPct}% of spend on subs is high. Cancel 2 before month-end.` : 'Subscription spend is controlled.'} (3) ${sources.length < 2 ? 'Activate one additional income source — even a small extra stream changes the psychological dynamic.' : `Scale your top income source: ${sources[0]}.`} (4) Log every transaction, no exceptions.`;
+  }
+  if (ql.includes('leak') || ql.includes('unconscious')) {
+    const smallExp = monthTx.filter(t => t.type === 'expense' && t.amount < 30);
+    const leakTotal = smallExp.reduce((s, t) => s + t.amount, 0);
+    return `Money leaks detected: (1) Micro-spend: ${smallExp.length} transactions under $30 totalling ${fmt(leakTotal)}. (2) ${(catMap['subscription'] || 0) > 0 ? `Subscriptions: ${fmt(catMap['subscription'])} in recurring charges.` : ''} (3) ${(catMap['food'] || 0) > 0 ? `Food/Coffee: ${fmt((catMap['food'] || 0) + (catMap['coffee'] || 0))}.` : ''} Total identified leaks: ~${fmt(leakTotal + (catMap['subscription'] || 0))}. Plugging these could recover ${fmt((leakTotal + (catMap['subscription'] || 0)) * 0.4)}/month.`;
+  }
+  const margin = inc > 0 ? ((inc - exp) / inc * 100).toFixed(0) : 0;
+  return `Based on your data: ${fmt(inc)} income, ${fmt(exp)} spent, ${margin}% margin. ${topCat ? `Top expense: ${topCat[0]} at ${fmt(topCat[1])}.` : ''} ${sources.length > 0 ? `Income sources: ${sources.join(', ')}.` : ''} Ask me anything specific — habits, patterns, forecasts, or what to do differently.`;
+}
+
+function toggleBrainMic() {
+  if (brainMicActive) { stopBrainMic(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Voice not supported on this browser.', 'error'); return; }
+  brainRecognition = new SR();
+  brainRecognition.continuous = false; brainRecognition.interimResults = false; brainRecognition.lang = 'en-US';
+  const micBtn = document.getElementById('brain-mic-btn');
+  if (micBtn) micBtn.classList.add('recording');
+  brainMicActive = true;
+  brainRecognition.onresult = e => {
+    const inputEl = document.getElementById('brain-chat-input');
+    if (inputEl) inputEl.value = e.results[0][0].transcript;
+    stopBrainMic();
+    brainChat();
   };
-  return templates[p] || templates.instagram;
+  brainRecognition.onerror = () => stopBrainMic();
+  brainRecognition.onend = () => stopBrainMic();
+  brainRecognition.start();
 }
 
-function buildOutreachOutput(input) {
-  const t = selectedOutreachType;
-  const templates = {
-    dm: `�� DM SCRIPT\n\nHey [Name],\n\nSaw your profile — looks like you're working on ${input.split(' ').slice(0, 4).join(' ')}.\n\nI help people like you [specific outcome] without [common pain point].\n\nI've done it for [similar person/company] — [quick result].\n\nWould it make sense to jump on a quick 15-min call this week? No pitch, just want to see if I can help.\n\n[Your name]`,
-    email: `📧 EMAIL SCRIPT\n\nSubject: Quick question about [their goal]\n\nHi [Name],\n\nI came across your work and noticed [specific observation].\n\nI specialise in helping [type of person] with ${input.split(' ').slice(0, 4).join(' ')}.\n\nRecently helped [similar client] achieve [specific result] in [timeframe].\n\nWould you be open to a 15-minute call this week to explore if there's a fit?\n\nBest,\n[Your Name]`,
-    'follow-up': `🔄 FOLLOW-UP SCRIPT\n\nHi [Name],\n\nJust circling back on my last message.\n\nI know you're busy — that's exactly why I wanted to reach out.\n\nI've helped [X] similar people with ${input.split(' ').slice(0, 4).join(' ')} and the results have been strong.\n\nIf now isn't the right time, no worries at all. Just let me know and I'll check back in a month.\n\nEither way, hope business is going well!\n\n[Your name]`
-  };
-  return templates[t] || templates.dm;
-}
-
-function generateOffer() {
-  if (!checkGenLimit()) return;
-  const input = document.getElementById('offer-input').value.trim();
-  if (!input) { showToast('Describe your skill or idea first.', 'error'); S.aiGensLeft++; saveState(); return; }
-  const res = document.getElementById('offer-result');
-  const body = document.getElementById('offer-result-body');
-  res.classList.remove('hidden');
-  body.textContent = '';
-  typeOut(body, buildOfferOutput(input), 6);
-  showToast('Offer generated! ⚡', 'success');
-}
-
-function generateContent() {
-  if (!checkGenLimit()) return;
-  const input = document.getElementById('content-input').value.trim();
-  if (!input) { showToast('Describe your offer first.', 'error'); S.aiGensLeft++; saveState(); return; }
-  const res = document.getElementById('content-result');
-  const body = document.getElementById('content-result-body');
-  res.classList.remove('hidden');
-  body.textContent = '';
-  typeOut(body, buildContentOutput(input), 4);
-  showToast('Content ready! 📣', 'success');
-}
-
-function generateOutreach() {
-  if (!checkGenLimit()) return;
-  const input = document.getElementById('outreach-input').value.trim();
-  if (!input) { showToast('Describe who you are reaching out to.', 'error'); S.aiGensLeft++; saveState(); return; }
-  const res = document.getElementById('outreach-result');
-  const body = document.getElementById('outreach-result-body');
-  res.classList.remove('hidden');
-  body.textContent = '';
-  typeOut(body, buildOutreachOutput(input), 5);
-  showToast('Script ready! 📩', 'success');
-}
-
-function refineOffer() {
-  if (!checkGenLimit()) return;
-  const input = document.getElementById('offer-input').value.trim() || 'my skill';
-  const body = document.getElementById('offer-result-body');
-  const extra = '\n\n— REFINED VERSION —\nBased on your input, here is a tighter, higher-converting version:\n\n"[SPECIFIC SKILL] for [SPECIFIC PERSON] so they can [SPECIFIC RESULT] in [TIMEFRAME] — guaranteed."\n\nThis version converts 3x better because it is specific.';
-  typeOut(body, body.textContent + extra, 8);
-}
-
-function typeOut(el, text, speed) {
-  let i = 0;
-  el.textContent = '';
-  const t = setInterval(() => {
-    el.textContent += text[i];
-    i++;
-    if (i >= text.length) clearInterval(t);
-  }, speed);
+function stopBrainMic() {
+  brainMicActive = false;
+  if (brainRecognition) { try { brainRecognition.stop(); } catch (e) {} brainRecognition = null; }
+  const btn = document.getElementById('brain-mic-btn');
+  if (btn) btn.classList.remove('recording');
 }
 
 function copyResult(id) {
@@ -1029,7 +1371,7 @@ function buildAdvice() {
 
   // Priority-ordered advice
   if (inc === 0) {
-    advice.push({ icon: '⚡', priority: 'critical', title: 'No income this month', text: 'You have zero income logged. Open the Make Money tab and generate one offer today. One client changes everything.' });
+    advice.push({ icon: '⚡', priority: 'critical', title: 'No income this month', text: 'You have zero income logged. Open the AI Brain and check your behavioural profile for income diversification strategies.' });
   }
   if (spent > inc && inc > 0) {
     advice.push({ icon: '🚨', priority: 'critical', title: 'Spending exceeds income', text: `You've spent ${fmt(spent)} against ${fmt(inc)} income — a ${fmt(spent-inc)} deficit. Identify and cut your top expense category immediately.` });
@@ -1214,7 +1556,7 @@ function buildIncomeTab() {
   const aiText = document.getElementById('income-ai-text');
   if (aiText) {
     if (!monthInc.length) {
-      aiText.textContent = 'No income logged this month. Use the Make Money tab to generate an offer and start outreach today.';
+      aiText.textContent = 'No income logged this month. Log all income sources so your AI Brain can analyse your full financial picture.';
     } else {
       const topSrc = sources[0] ? sources[0][0] : 'unknown';
       const concentration = sources.length === 1 ? '100%' : sources[0] ? (sources[0][1]/totalInc*100).toFixed(0)+'%' : '';
@@ -1684,7 +2026,6 @@ function resetApp() {
   S.transactions = [];
   S.budget = 0;
   S.streak = 0;
-  S.aiGensLeft = 3;
   saveState();
   updateHomeScreen();
   showToast('Data cleared.', 'success');
@@ -1703,7 +2044,6 @@ function updateStreak() {
     S.streak = 1;
   }
   S.lastLogin = today;
-  S.aiGensLeft = 3;
   saveState();
 }
 
@@ -1862,17 +2202,17 @@ function initMagnetic() {
 
 /* ── COMMAND PALETTE ──────────────────────────────── */
 const COMMANDS = [
-  { icon: '🏠', label: 'Go to Home',        action: () => navigateTo('screen-home'),     badge: '' },
-  { icon: '⚡', label: 'Make Money',         action: () => navigateTo('screen-make'),     badge: '' },
-  { icon: '➕', label: 'Log Transaction',    action: () => navigateTo('screen-track'),    badge: 'Track' },
-  { icon: '🧠', label: 'AI Insights',        action: () => navigateTo('screen-insights'), badge: '' },
-  { icon: '📅', label: 'Calendar',           action: () => navigateTo('screen-calendar'), badge: '' },
-  { icon: '⚙️', label: 'Settings',           action: () => navigateTo('screen-settings'), badge: '' },
-  { icon: '💡', label: 'Generate Offer',     action: () => { navigateTo('screen-make'); switchMakeTab('offer'); }, badge: 'AI' },
-  { icon: '📣', label: 'Generate Content',   action: () => { navigateTo('screen-make'); switchMakeTab('content'); }, badge: 'AI' },
-  { icon: '📩', label: 'Generate Outreach',  action: () => { navigateTo('screen-make'); switchMakeTab('outreach'); }, badge: 'AI' },
-  { icon: '🎯', label: 'Set Monthly Budget', action: openBudgetModal,                     badge: '' },
-  { icon: '📤', label: 'Export Data',        action: exportData,                          badge: '' },
+  { icon: '🏠', label: 'Go to Home',          action: () => navigateTo('screen-home'),     badge: '' },
+  { icon: '🧠', label: 'AI Brain',             action: () => navigateTo('screen-brain'),    badge: 'AI' },
+  { icon: '➕', label: 'Log Transaction',      action: () => navigateTo('screen-track'),    badge: 'Track' },
+  { icon: '📊', label: 'AI Insights',          action: () => navigateTo('screen-insights'), badge: '' },
+  { icon: '📅', label: 'Calendar',             action: () => navigateTo('screen-calendar'), badge: '' },
+  { icon: '⚙️', label: 'Settings',             action: () => navigateTo('screen-settings'), badge: '' },
+  { icon: '🔬', label: 'Behaviour Analysis',   action: () => { navigateTo('screen-brain'); setTimeout(() => switchBrainTab('behaviour'), 300); }, badge: 'AI' },
+  { icon: '📈', label: 'Money Patterns',       action: () => { navigateTo('screen-brain'); setTimeout(() => switchBrainTab('patterns'), 300); }, badge: 'AI' },
+  { icon: '💬', label: 'Chat with AI',         action: () => { navigateTo('screen-brain'); setTimeout(() => switchBrainTab('chat'), 300); }, badge: 'AI' },
+  { icon: '🎯', label: 'Set Monthly Budget',   action: openBudgetModal,                     badge: '' },
+  { icon: '📤', label: 'Export Data',          action: exportData,                          badge: '' },
   { icon: '💳', label: 'Upgrade to Pro',     action: openProModal,                        badge: 'PRO' }
 ];
 

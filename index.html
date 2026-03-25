@@ -277,14 +277,14 @@
 
       <div class="section-label">Quick Actions</div>
       <div class="quick-actions">
-        <button class="qa-btn glass-card magnetic" onclick="navigateTo('screen-make')">
-          <span class="qa-icon">⚡</span><span class="qa-text">Make Money</span>
+        <button class="qa-btn glass-card magnetic" onclick="navigateTo('screen-brain')">
+          <span class="qa-icon">🧠</span><span class="qa-text">AI Brain</span>
         </button>
         <button class="qa-btn glass-card magnetic" onclick="navigateTo('screen-track')">
           <span class="qa-icon">➕</span><span class="qa-text">Log Transaction</span>
         </button>
         <button class="qa-btn glass-card magnetic" onclick="navigateTo('screen-insights')">
-          <span class="qa-icon">🧠</span><span class="qa-text">AI Insights</span>
+          <span class="qa-icon">📊</span><span class="qa-text">Insights</span>
         </button>
         <button class="qa-btn glass-card magnetic" onclick="navigateTo('screen-calendar')">
           <span class="qa-icon">📅</span><span class="qa-text">Calendar</span>
@@ -302,82 +302,59 @@
   </div>
 
   <!-- ══════════════════════════════════════════
-       MAKE MONEY
+       AI BRAIN
   ══════════════════════════════════════════ -->
-  <div class="screen" id="screen-make">
+  <div class="screen" id="screen-brain">
     <div class="screen-content has-nav">
       <header class="page-header">
-        <h2 class="page-title">Make Money</h2>
-        <p class="page-sub">AI-powered tools to generate income</p>
+        <h2 class="page-title">AI Brain</h2>
+        <p class="page-sub">Behavioural intelligence · Pattern detection · Forecasting</p>
       </header>
-      <div class="make-tabs">
-        <button class="make-tab active" id="mtab-offer" onclick="switchMakeTab('offer')">💡 Offer</button>
-        <button class="make-tab" id="mtab-content" onclick="switchMakeTab('content')">📣 Content</button>
-        <button class="make-tab" id="mtab-outreach" onclick="switchMakeTab('outreach')">📩 Outreach</button>
+
+      <div class="brain-tabs">
+        <button class="brain-tab active" id="btab-pulse" onclick="switchBrainTab('pulse')">🧠 Pulse</button>
+        <button class="brain-tab" id="btab-patterns" onclick="switchBrainTab('patterns')">📊 Patterns</button>
+        <button class="brain-tab" id="btab-behaviour" onclick="switchBrainTab('behaviour')">🔬 Behaviour</button>
+        <button class="brain-tab" id="btab-chat" onclick="switchBrainTab('chat')">💬 Chat</button>
       </div>
-      <div class="make-panel active" id="panel-offer">
-        <div class="ai-tool-card glass-card">
-          <h3 class="tool-title">💡 Idea → Offer</h3>
-          <p class="tool-desc">Turn your skill or idea into a clear, sellable offer in seconds.</p>
-          <textarea class="ai-textarea" id="offer-input" placeholder="Describe your skill, idea, or service…"></textarea>
-          <button class="btn-primary magnetic" onclick="generateOffer()">Generate My Offer →</button>
-        </div>
-        <div class="ai-result hidden" id="offer-result">
-          <div class="result-label">Your Offer</div>
-          <div class="result-body" id="offer-result-body"></div>
-          <div class="result-actions">
-            <button class="btn-secondary" onclick="copyResult('offer-result-body')">Copy</button>
-            <button class="btn-primary" onclick="refineOffer()">Refine →</button>
-          </div>
-        </div>
+
+      <!-- PULSE PANEL -->
+      <div class="brain-panel active" id="bpanel-pulse">
+        <div class="brain-score-card glass-card" id="brain-score-card"></div>
+        <div class="brain-alerts" id="brain-alerts"></div>
+        <div class="brain-nudges" id="brain-nudges"></div>
       </div>
-      <div class="make-panel" id="panel-content">
-        <div class="ai-tool-card glass-card">
-          <h3 class="tool-title">�� Content Generator</h3>
-          <p class="tool-desc">Posts, hooks, and captions that drive attention to your offer.</p>
-          <div class="tool-row">
-            <label class="tool-label">Platform</label>
-            <div class="platform-pills">
-              <button class="pill selected" data-p="instagram" onclick="selectPlatform(this)">Instagram</button>
-              <button class="pill" data-p="twitter" onclick="selectPlatform(this)">Twitter/X</button>
-              <button class="pill" data-p="linkedin" onclick="selectPlatform(this)">LinkedIn</button>
-              <button class="pill" data-p="tiktok" onclick="selectPlatform(this)">TikTok</button>
-            </div>
-          </div>
-          <textarea class="ai-textarea" id="content-input" placeholder="What is your offer / what do you want to promote?"></textarea>
-          <button class="btn-primary magnetic" onclick="generateContent()">Generate Content →</button>
+
+      <!-- PATTERNS PANEL -->
+      <div class="brain-panel" id="bpanel-patterns">
+        <div class="pattern-list" id="pattern-list"></div>
+        <div class="chart-card glass-card">
+          <div class="chart-title">Weekly Money Pattern</div>
+          <div class="chart-wrap"><canvas id="brain-pattern-chart"></canvas></div>
         </div>
-        <div class="ai-result hidden" id="content-result">
-          <div class="result-label">Your Content</div>
-          <div class="result-body" id="content-result-body"></div>
-          <div class="result-actions">
-            <button class="btn-secondary" onclick="copyResult('content-result-body')">Copy</button>
-            <button class="btn-ghost" onclick="generateContent()">Regenerate</button>
-          </div>
-        </div>
+        <div class="pattern-streak-row" id="pattern-streak-row"></div>
       </div>
-      <div class="make-panel" id="panel-outreach">
-        <div class="ai-tool-card glass-card">
-          <h3 class="tool-title">📩 Outreach Scripts</h3>
-          <p class="tool-desc">DMs, emails, and pitches to get your first clients.</p>
-          <div class="tool-row">
-            <label class="tool-label">Type</label>
-            <div class="platform-pills">
-              <button class="pill selected" data-o="dm" onclick="selectOutreachType(this)">DM</button>
-              <button class="pill" data-o="email" onclick="selectOutreachType(this)">Email</button>
-              <button class="pill" data-o="follow-up" onclick="selectOutreachType(this)">Follow-up</button>
-            </div>
-          </div>
-          <textarea class="ai-textarea" id="outreach-input" placeholder="Who are you reaching out to and why?"></textarea>
-          <button class="btn-primary magnetic" onclick="generateOutreach()">Generate Script →</button>
+
+      <!-- BEHAVIOUR PANEL -->
+      <div class="brain-panel" id="bpanel-behaviour">
+        <div class="behaviour-list" id="behaviour-list"></div>
+        <div class="study-cards" id="study-cards"></div>
+      </div>
+
+      <!-- CHAT PANEL -->
+      <div class="brain-panel" id="bpanel-chat">
+        <div class="brain-chat-feed" id="brain-chat-feed"></div>
+        <div class="brain-quick-qs" id="brain-quick-qs">
+          <button class="brain-q-chip" onclick="brainChat('What are my worst money habits?')">Worst habits</button>
+          <button class="brain-q-chip" onclick="brainChat('What pattern is hurting me most?')">Biggest pattern</button>
+          <button class="brain-q-chip" onclick="brainChat('Am I on track this month?')">On track?</button>
+          <button class="brain-q-chip" onclick="brainChat('What should I do differently next month?')">Next month</button>
+          <button class="brain-q-chip" onclick="brainChat('Where am I leaking money unconsciously?')">Money leaks</button>
         </div>
-        <div class="ai-result hidden" id="outreach-result">
-          <div class="result-label">Your Script</div>
-          <div class="result-body" id="outreach-result-body"></div>
-          <div class="result-actions">
-            <button class="btn-secondary" onclick="copyResult('outreach-result-body')">Copy</button>
-            <button class="btn-ghost" onclick="generateOutreach()">Regenerate</button>
-          </div>
+        <div class="brain-chat-input-row">
+          <input class="brain-chat-input" id="brain-chat-input" placeholder="Ask the AI anything…" onkeydown="if(event.key==='Enter') brainChat()"/>
+          <button class="brain-mic-btn" id="brain-mic-btn" onclick="toggleBrainMic()">🎙</button>
+          <button class="brain-send-btn" onclick="brainChat()">→</button>
         </div>
       </div>
     </div>
@@ -744,9 +721,9 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 14 15 14 15 21"/></svg>
       <span>Home</span>
     </button>
-    <button class="nav-btn" id="nb-make" onclick="navigateTo('screen-make')">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      <span>Make</span>
+    <button class="nav-btn" id="nb-brain" onclick="navigateTo('screen-brain')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2C8 2 5 5 5 8c0 1.5.5 2.8 1.4 3.8C5.6 12.5 5 13.7 5 15c0 2.2 1.8 4 4 4h6c2.2 0 4-1.8 4-4 0-1.3-.6-2.5-1.4-3.2C18.5 10.8 19 9.5 19 8c0-3-2.7-6-7-6z"/><line x1="12" y1="11" x2="12" y2="19"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+      <span>Brain</span>
     </button>
     <button class="nav-btn nav-btn-add" id="nb-track" onclick="navigateTo('screen-track')">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
