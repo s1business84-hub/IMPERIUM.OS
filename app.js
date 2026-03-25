@@ -1,309 +1,540 @@
-/* ═══════════════════════════════════════════════════════════
-   IMPERIUM v4 — Make & Manage Money with AI
-   System: "Make money quickly from simple ideas. Manage money intelligently."
-═══════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════
+   IMPERIUM OS — v4.0.0 — app.js
+   Complete rewrite: Boot · Auth · Onboarding · All Screens
+   Command Palette · Cursor Glow · Particles · Magnetic
+════════════════════════════════════════════════════ */
+'use strict';
 
-/* ─── STATE ──────────────────────────────────────────────── */
-let STATE = {
-  user:         null,          // { name, email }
-  isGuest:      false,
-  onboarded:    false,
-  situation:    '',            // idea / side-hustle / business / job
-  goal:         '',            // first-payment / replace-job / scale / control
-  approxIncome: 5000,
-  monthlyBudget: 0,
-  transactions:  [],           // { id, type, amount, category, note, date, receiptB64 }
-  streak:        0,
-  lastOpenDate:  null,
-  currency:      '$',
-  genCount:      0,            // free tier generations used
+/* ── STATE ────────────────────────────────────────── */
+let S = {
+  user: null,
+  onboarded: false,
+  situation: '',
+  goal: '',
+  income: 5000,
+  budget: 0,
+  currency: '$',
+  transactions: [],
+  streak: 0,
+  lastLogin: null,
+  aiGensLeft: 3,
+  notifDaily: true,
+  notifBudget: true,
+  currentScreen: 'screen-boot'
 };
 
-const FREE_GEN_LIMIT = 3;
-const STORE_KEY = 'imperium_v4';
+/* ── PERSIST ──────────────────────────────────────── */
+function saveState() {
+  try { localStorage.setItem('imperium_state', JSON.stringify(S)); } catch(e) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem('imperium_state');
+    if (raw) S = Object.assign({}, S, JSON.parse(raw));
+  } catch(e) {}
+}
 
-/* ─── CATEGORY ICONS ─────────────────────────────────────── */
-const CAT_ICONS = {
-  food:'🍔', coffee:'☕', transport:'🚗', shopping:'🛍️', groceries:'🛒',
-  bills:'📄', entertainment:'🎬', health:'💊', subscription:'🔄', tools:'🛠️',
-  ads:'📢', other:'📌', freelance:'💻', client:'🤝', product:'📦',
-  salary:'🏦', investment:'📈',
-};
+/* ── BOOT SEQUENCE ────────────────────────────────── */
+const BOOT_LOGS = [
+  'Initialising kernel modules…',
+  'Loading financial data layer…',
+  'Connecting AI inference engine…',
+  'Mounting secure vault…',
+  'Calibrating portfolio algorithms…',
+  'Syncing market signals…',
+  'Verifying identity protocol…',
+  'System ready.'
+];
 
-/* ═══════════════════════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════════════════════ */
-window.addEventListener('DOMContentLoaded', () => {
+function runBoot() {
+  const bar = document.getElementById('boot-bar');
+  const logEl = document.getElementById('boot-log');
+  let pct = 0;
+  let logIdx = 0;
+  const TOTAL = 2400;
+  const INT = TOTAL / 100;
+
+  const timer = setInterval(() => {
+    pct++;
+    bar.style.width = pct + '%';
+    const lIdx = Math.floor((pct / 100) * BOOT_LOGS.length);
+    if (lIdx > logIdx && logIdx < BOOT_LOGS.length) {
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.style.animationDelay = '0ms';
+      line.textContent = '▸ ' + BOOT_LOGS[logIdx];
+      logEl.appendChild(line);
+      logIdx++;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    if (pct >= 100) {
+      clearInterval(timer);
+      setTimeout(bootDone, 400);
+    }
+  }, INT);
+}
+
+function bootDone() {
   loadState();
-  initParticles();
-  initBeams();
-  updateStreak();
+  const boot = document.getElementById('screen-boot');
+  boot.style.transition = 'opacity 0.6s ease';
+  boot.style.opacity = '0';
+  setTimeout(() => {
+    boot.classList.remove('active');
+    boot.style.display = 'none';
+    checkAuth();
+  }, 650);
+}
 
-  if (STATE.onboarded) {
-    showApp();
+function checkAuth() {
+  if (S.user && S.onboarded) {
+    showBottomNav();
+    updateStreak();
+    navigateTo('screen-home');
+    initHomeData();
+  } else if (S.user) {
+    navigateTo('screen-onboarding');
+  } else {
+    navigateTo('screen-auth');
   }
-});
-
-function showApp() {
-  showScreen('screen-home');
-  document.getElementById('bottom-nav').classList.remove('hidden');
-  initHome();
+  initGlobalEffects();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   AUTH
-═══════════════════════════════════════════════════════════ */
-function switchTab(tab) {
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-  document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
-  document.getElementById('form-signup').classList.toggle('hidden', tab !== 'signup');
+/* ── NAVIGATION ───────────────────────────────────── */
+function navigateTo(id) {
+  const prev = document.querySelector('.screen.active');
+  const next = document.getElementById(id);
+  if (!next || prev === next) return;
+  if (prev) {
+    prev.classList.add('exit');
+    setTimeout(() => prev.classList.remove('active', 'exit'), 300);
+  }
+  next.classList.add('active');
+  S.currentScreen = id;
+
+  // Update nav
+  const navMap = {
+    'screen-home': 'nb-home',
+    'screen-make': 'nb-make',
+    'screen-track': 'nb-track',
+    'screen-insights': 'nb-insights',
+    'screen-settings': 'nb-settings'
+  };
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (navMap[id]) {
+    const nb = document.getElementById(navMap[id]);
+    if (nb) nb.classList.add('active');
+  }
+
+  // Init screens
+  if (id === 'screen-home')     { updateHomeScreen(); }
+  if (id === 'screen-insights') { initInsights(); }
+  if (id === 'screen-calendar') { renderCalendar(); updateMonthStats(); }
+  if (id === 'screen-settings') { initSettings(); }
+  if (id === 'screen-track')    { updateTxFeed(); }
 }
-function togglePw(id) {
-  const el = document.getElementById(id);
-  el.type = el.type === 'password' ? 'text' : 'password';
+
+function showBottomNav() {
+  const bn = document.getElementById('bottom-nav');
+  if (bn) bn.classList.remove('hidden');
 }
+
+/* ── AUTH ─────────────────────────────────────────── */
+function switchTab(t) {
+  document.getElementById('form-login').classList.toggle('hidden', t !== 'login');
+  document.getElementById('form-signup').classList.toggle('hidden', t !== 'signup');
+  document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + t).classList.add('active');
+}
+
 function handleLogin(e) {
   e.preventDefault();
   const email = document.getElementById('login-email').value.trim();
-  STATE.user = { name: email.split('@')[0], email };
-  STATE.isGuest = false;
+  const pass = document.getElementById('login-password').value;
+  if (!email || pass.length < 6) { showAuthMsg('Enter valid email and password (min 6 chars)'); return; }
+  const key = 'user_' + email.replace(/[^a-z0-9]/gi, '_');
+  const stored = localStorage.getItem(key);
+  if (!stored) { showAuthMsg('No account found. Sign up first.'); return; }
+  const userData = JSON.parse(stored);
+  if (userData.pass !== btoa(pass)) { showAuthMsg('Wrong password.'); return; }
+  S.user = { name: userData.name, email };
   saveState();
-  goOnboardingOrHome();
+  postAuth();
 }
+
 function handleSignup(e) {
   e.preventDefault();
-  const name  = document.getElementById('signup-name').value.trim();
+  const name = document.getElementById('signup-name').value.trim();
   const email = document.getElementById('signup-email').value.trim();
-  STATE.user = { name, email };
-  STATE.isGuest = false;
+  const pass = document.getElementById('signup-password').value;
+  if (!name || !email || pass.length < 6) { showAuthMsg('Please fill all fields (min 6 char password)'); return; }
+  const key = 'user_' + email.replace(/[^a-z0-9]/gi, '_');
+  localStorage.setItem(key, JSON.stringify({ name, pass: btoa(pass) }));
+  S.user = { name, email };
+  S.onboarded = false;
   saveState();
-  goOnboardingOrHome();
+  postAuth();
 }
+
 function continueAsGuest() {
-  STATE.user = { name: 'Guest', email: '' };
-  STATE.isGuest = true;
+  S.user = { name: 'Guest', email: 'guest@imperium.os' };
+  S.onboarded = false;
   saveState();
-  goOnboardingOrHome();
+  postAuth();
 }
-function goOnboardingOrHome() {
-  if (STATE.onboarded) {
-    showApp();
+
+function postAuth() {
+  if (S.onboarded) {
+    showBottomNav();
+    updateStreak();
+    navigateTo('screen-home');
+    initHomeData();
   } else {
-    showScreen('screen-onboarding');
+    navigateTo('screen-onboarding');
   }
+  initGlobalEffects();
 }
-function setAuthMsg(msg, isErr = true) {
+
+function showAuthMsg(m) {
   const el = document.getElementById('auth-msg');
-  el.textContent = msg;
-  el.style.color = isErr ? 'var(--red)' : 'var(--green2)';
+  if (el) { el.textContent = m; setTimeout(() => { el.textContent = ''; }, 4000); }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ONBOARDING
-═══════════════════════════════════════════════════════════ */
-let _obStep = 1;
+function togglePw(id) {
+  const el = document.getElementById(id);
+  if (el) el.type = el.type === 'password' ? 'text' : 'password';
+}
 
+/* ── ONBOARDING ───────────────────────────────────── */
+let obStep = 1;
 function pickSituation(btn) {
   document.querySelectorAll('#ob-1 .ob-opt').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  STATE.situation = btn.dataset.v;
-  setTimeout(() => goObStep(2), 320);
+  S.situation = btn.dataset.v;
+  setTimeout(() => goObStep(2), 300);
 }
 function pickGoal(btn) {
   document.querySelectorAll('#ob-2 .ob-opt').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  STATE.goal = btn.dataset.v;
-  setTimeout(() => goObStep(3), 320);
+  S.goal = btn.dataset.v;
+  setTimeout(() => goObStep(3), 300);
 }
 function pickIncome(btn) {
   document.querySelectorAll('#ob-3 .ob-opt').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  STATE.approxIncome = parseInt(btn.dataset.v) || 0;
+  S.income = parseInt(btn.dataset.v) || 0;
 }
 function goObStep(n) {
-  _obStep = n;
-  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('ob-' + obStep).classList.remove('active');
+  obStep = n;
   document.getElementById('ob-' + n).classList.add('active');
-  document.getElementById('ob-fill').style.width = (n * 33.3) + '%';
+  document.getElementById('ob-fill').style.width = (n / 3 * 100) + '%';
 }
 function finishOnboarding() {
-  STATE.onboarded = true;
+  S.onboarded = true;
+  S.aiGensLeft = 3;
   saveState();
-  showApp();
+  showBottomNav();
+  updateStreak();
+  navigateTo('screen-home');
+  initHomeData();
+  initGlobalEffects();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   NAVIGATION
-═══════════════════════════════════════════════════════════ */
-const NAV_MAP = {
-  'screen-home':     'nb-home',
-  'screen-make':     'nb-make',
-  'screen-track':    'nb-track',
-  'screen-insights': 'nb-insights',
-  'screen-calendar': null,
-  'screen-settings': 'nb-settings',
-};
-
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const s = document.getElementById(id);
-  if (s) s.classList.add('active');
+/* ── HOME ─────────────────────────────────────────── */
+function initHomeData() {
+  updateHomeScreen();
+  initParticles();
+  initBeams();
 }
 
-function navigateTo(id) {
-  showScreen(id);
-  // update nav
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const nb = NAV_MAP[id];
-  if (nb) document.getElementById(nb).classList.add('active');
-  // screen-specific init
-  if (id === 'screen-home')     initHome();
-  if (id === 'screen-insights') initInsights();
-  if (id === 'screen-calendar') initCalendar();
-  if (id === 'screen-settings') initSettings();
-  if (id === 'screen-track')    renderTxFull();
-}
-
-/* ═══════════════════════════════════════════════════════════
-   HOME
-═══════════════════════════════════════════════════════════ */
-function initHome() {
-  setGreeting();
-  setDate();
-  renderSnapshotCards();
-  renderAIPrompt();
-  renderTxHome();
-}
-
-function setGreeting() {
+function updateHomeScreen() {
+  // Greeting
   const h = new Date().getHours();
-  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-  const name = STATE.user?.name || 'there';
-  document.getElementById('greeting').textContent = g + ', ' + name.split(' ')[0] + ' 👋';
-}
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const name = S.user ? S.user.name.split(' ')[0] : 'there';
+  const greetEl = document.getElementById('greeting');
+  if (greetEl) greetEl.textContent = greet + ', ' + name + ' 👋';
 
-function setDate() {
-  const d = new Date();
-  document.getElementById('top-date').innerHTML =
-    d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' }) +
-    '<br>' + d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
-}
-
-function renderSnapshotCards() {
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth();
-  let income = 0, spent = 0;
-  STATE.transactions.forEach(tx => {
-    const d = new Date(tx.date);
-    if (d.getFullYear() === y && d.getMonth() === m) {
-      if (tx.type === 'income')  income += tx.amount;
-      if (tx.type === 'expense') spent  += tx.amount;
-    }
-  });
-  const profit = income - spent;
-  const runway = spent > 0 && income > 0 ? (income / (spent / 30)) : null;
-
-  document.getElementById('snap-income').textContent = fmt(income);
-  document.getElementById('snap-spent').textContent  = fmt(spent);
-  document.getElementById('snap-profit').textContent = fmt(profit);
-  document.getElementById('snap-runway').textContent = runway ? Math.round(runway) + ' days' : '—';
-}
-
-function renderAIPrompt() {
-  const txCount = STATE.transactions.length;
-  const messages = buildAIBriefing();
-  const msg = messages[Math.floor(Math.random() * messages.length)];
-  document.getElementById('ai-prompt-text').textContent = msg.text;
-  const actionsEl = document.getElementById('ai-prompt-actions');
-  actionsEl.innerHTML = '';
-  msg.actions.forEach(a => {
-    const btn = document.createElement('button');
-    btn.className = 'ai-prompt-action';
-    btn.textContent = a.label;
-    btn.onclick = a.fn;
-    actionsEl.appendChild(btn);
-  });
-}
-
-function buildAIBriefing() {
-  const { situation, goal, approxIncome, transactions } = STATE;
-  const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth();
-  let income = 0, spent = 0;
-  transactions.forEach(tx => {
-    const d = new Date(tx.date);
-    if (d.getFullYear()===y && d.getMonth()===m) {
-      if (tx.type==='income')  income += tx.amount;
-      if (tx.type==='expense') spent  += tx.amount;
-    }
-  });
-
-  const msgs = [];
-
-  if (transactions.length === 0) {
-    msgs.push({ text: "Welcome to Imperium. Start by logging your first transaction or generating an offer. The AI learns from your money data.", actions: [{ label: '⚡ Make Money', fn: () => navigateTo('screen-make') }, { label: '➕ Log Transaction', fn: () => navigateTo('screen-track') }] });
-    msgs.push({ text: "Let's build your money system. First: log what you earn and spend. I'll show you where to focus.", actions: [{ label: '➕ Log Income', fn: () => navigateTo('screen-track') }] });
-  } else if (spent > income && income > 0) {
-    msgs.push({ text: `⚠️ You're spending ${fmt(spent - income)} more than you're earning this month. Time to make more or cut costs.`, actions: [{ label: '⚡ Generate an offer', fn: () => navigateTo('screen-make') }, { label: '🧠 Get advice', fn: () => navigateTo('screen-insights') }] });
-  } else if (income > 0) {
-    const margin = Math.round(((income - spent) / income) * 100);
-    msgs.push({ text: `Profit margin this month: ${margin}%. ${margin > 30 ? 'Strong. Keep it up.' : 'Room to improve — cut one expense today.'}`, actions: [{ label: '📈 See breakdown', fn: () => navigateTo('screen-insights') }] });
+  // Date
+  const dateEl = document.getElementById('top-date');
+  if (dateEl) {
+    const now = new Date();
+    dateEl.textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  if (goal === 'first-payment' && income === 0) {
-    msgs.push({ text: "Your goal is to get your first payment. Generate an offer now and send 10 outreach messages today.", actions: [{ label: '💡 Generate Offer', fn: () => { navigateTo('screen-make'); switchMakeTab('offer'); } }, { label: '📩 Get Scripts', fn: () => { navigateTo('screen-make'); switchMakeTab('outreach'); } }] });
-  }
-  if (goal === 'scale') {
-    msgs.push({ text: "To scale, create content consistently. One post per day is enough. Use the Content Generator.", actions: [{ label: '📣 Generate Content', fn: () => { navigateTo('screen-make'); switchMakeTab('content'); } }] });
-  }
-  if (situation === 'idea') {
-    msgs.push({ text: "You have an idea — that's step one. Step two: turn it into a clear offer. Takes 2 minutes.", actions: [{ label: '💡 Build My Offer', fn: () => navigateTo('screen-make') }] });
-  }
+  // Snapshot
+  updateSnapshot();
 
-  // always have at least one
-  if (msgs.length === 0) {
-    msgs.push({ text: "Money is a skill. You're building it. Log every pound, generate income, cut the fat.", actions: [{ label: '➕ Log', fn: () => navigateTo('screen-track') }, { label: '🧠 Insights', fn: () => navigateTo('screen-insights') }] });
-  }
-  return msgs;
-}
-
-function renderTxHome() {
+  // Tx feed (last 5)
   const feed = document.getElementById('tx-feed-home');
-  const recent = [...STATE.transactions].reverse().slice(0, 5);
-  if (recent.length === 0) {
-    feed.innerHTML = '<div class="tx-empty">No transactions yet. Tap <strong>Log Transaction</strong> to start.</div>';
-    return;
+  if (feed) {
+    if (!S.transactions.length) {
+      feed.innerHTML = '<div class="tx-empty">No transactions yet. Tap <strong>Log Transaction</strong> to start.</div>';
+    } else {
+      const recent = [...S.transactions].reverse().slice(0, 5);
+      feed.innerHTML = recent.map(tx => txHTML(tx)).join('');
+    }
   }
-  feed.innerHTML = recent.map(tx => buildTxHTML(tx)).join('');
+
+  // AI prompt
+  updateAIPrompt();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   TRACK — TRANSACTIONS
-═══════════════════════════════════════════════════════════ */
-let _logType = 'expense';
-let _logCat  = 'food';
-let _receiptB64 = null;
+function updateSnapshot() {
+  const now = new Date();
+  const mo = now.getMonth(); const yr = now.getFullYear();
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === mo && d.getFullYear() === yr;
+  });
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const spent = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const profit = inc - spent;
+  const runway = S.budget > 0 ? (S.budget - spent <= 0 ? 'Over!' : '$' + (S.budget - spent).toFixed(0)) : '—';
+
+  el('snap-income',  fmt(inc));
+  el('snap-spent',   fmt(spent));
+  el('snap-profit',  fmt(profit));
+  el('snap-runway',  runway);
+}
+
+function updateAIPrompt() {
+  const promptEl = document.getElementById('ai-prompt-text');
+  const actionsEl = document.getElementById('ai-prompt-actions');
+  if (!promptEl) return;
+
+  const now = new Date();
+  const mo = now.getMonth(); const yr = now.getFullYear();
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date); return d.getMonth() === mo && d.getFullYear() === yr;
+  });
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const spent = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
+  const goalMap = {
+    'first-payment': 'get your first payment',
+    'replace-job': 'replace your salary',
+    'scale': 'scale revenue',
+    'control': 'control spending'
+  };
+  const goalStr = goalMap[S.goal] || 'reach your goal';
+
+  let msg;
+  if (!monthTx.length) {
+    msg = "Welcome to Imperium OS. Start by logging a transaction or generating a money-making offer. Your OS will calibrate once it has data.";
+  } else if (inc === 0) {
+    msg = "No income logged this month. Head to Make Money to generate an offer or outreach script. One client can change everything.";
+  } else if (spent > inc) {
+    msg = `You've spent ${fmt(spent)} against ${fmt(inc)} income this month. Profit is negative. Prioritise reducing top expenses or adding one new revenue stream.`;
+  } else {
+    const margin = ((inc - spent) / inc * 100).toFixed(0);
+    msg = `${margin}% profit margin this month. ${inc > spent ? 'Strong. ' : ''}Keep momentum to ${goalStr}. ${S.aiGensLeft} AI generations left today.`;
+  }
+
+  promptEl.textContent = msg;
+  if (actionsEl) {
+    actionsEl.innerHTML = `
+      <button class="ai-action-chip" onclick="navigateTo('screen-make')">⚡ Make Money</button>
+      <button class="ai-action-chip" onclick="navigateTo('screen-insights')">🧠 Full Insights</button>
+    `;
+  }
+}
+
+/* ── TRANSACTION HELPERS ──────────────────────────── */
+function fmt(n) {
+  const abs = Math.abs(n);
+  const str = abs >= 1000 ? (abs / 1000).toFixed(1) + 'K' : abs.toFixed(2);
+  return (n < 0 ? '-' : '') + S.currency + str;
+}
+
+function txHTML(tx) {
+  const icons = {
+    food:'🍔', coffee:'☕', transport:'🚗', shopping:'🛍️', groceries:'🛒',
+    bills:'📄', entertainment:'🎬', health:'💊', subscription:'🔄',
+    tools:'��️', ads:'📢', other:'📌', freelance:'💻', client:'🤝',
+    product:'📦', salary:'🏦', investment:'��'
+  };
+  const icon = icons[tx.category] || '💰';
+  const d = new Date(tx.date);
+  const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `<div class="tx-item ${tx.type}" onclick="event.stopPropagation()">
+    <span class="tx-icon">${icon}</span>
+    <div class="tx-details">
+      <div class="tx-cat">${tx.category}</div>
+      ${tx.note ? `<div class="tx-note">${tx.note}</div>` : ''}
+    </div>
+    <div class="tx-date">${dateStr}</div>
+    <div class="tx-amt ${tx.type}">${tx.type === 'income' ? '+' : '-'}${fmt(tx.amount)}</div>
+    <button class="tx-del" onclick="deleteTx('${tx.id}')">✕</button>
+  </div>`;
+}
+
+function el(id, val) {
+  const e = document.getElementById(id);
+  if (e) e.textContent = val;
+}
+
+/* ── MAKE MONEY ───────────────────────────────────── */
+let selectedPlatform = 'instagram';
+let selectedOutreachType = 'dm';
+
+function switchMakeTab(t) {
+  document.querySelectorAll('.make-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.make-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('mtab-' + t).classList.add('active');
+  document.getElementById('panel-' + t).classList.add('active');
+}
+
+function selectPlatform(btn) {
+  document.querySelectorAll('.platform-pills .pill').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedPlatform = btn.dataset.p;
+}
+
+function selectOutreachType(btn) {
+  document.querySelectorAll('#panel-outreach .pill').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedOutreachType = btn.dataset.o;
+}
+
+function checkGenLimit() {
+  if (S.aiGensLeft <= 0) {
+    showToast('Daily limit reached. Upgrade to Pro for unlimited.', 'error');
+    return false;
+  }
+  S.aiGensLeft--;
+  saveState();
+  return true;
+}
+
+function buildOfferOutput(input) {
+  const si = S.situation || 'freelancer'; const gl = S.goal || 'scale';
+  return `💡 YOUR OFFER
+
+HEADLINE
+"I help ${si === 'business' ? 'businesses' : 'people'} ${gl === 'scale' ? 'scale their revenue' : gl === 'control' ? 'control their finances' : 'start making money online'} using ${input.split(' ').slice(0, 3).join(' ')}."
+
+WHAT YOU DO
+${input}
+
+WHO IT'S FOR
+People who want results fast and don't have time to figure it out themselves.
+
+THE PROMISE
+You'll see [specific outcome] within [30 days] or I'll work for free until you do.
+
+PRICE ANCHOR
+Starter package: $[497-997]
+Done-for-you: $[2,500-5,000]
+
+NEXT STEP
+DM me the word "READY" or book a free 15-min call.`;
+}
+
+function buildContentOutput(input) {
+  const p = selectedPlatform;
+  const templates = {
+    instagram: `📸 INSTAGRAM POST\n\n[Hook]\nMost people think ${input.split(' ').slice(0, 4).join(' ')} is hard.\n\nThey're wrong.\n\nHere's what actually works:\n\n1. Start with ONE skill\n2. Get ONE result for ONE person\n3. Document everything\n4. Repeat\n\nThe formula is simple.\nExecution is the game.\n\nSave this if it helped. 🔖\n\n#entrepreneur #money #sidehustle #business`,
+    twitter: `🐦 TWITTER/X THREAD\n\nThread: How to make money with ${input.split(' ').slice(0, 3).join(' ')} (even starting from $0)\n\n1/ Most people overcomplicate this.\n\n2/ The real path: skill → proof → offer → outreach.\n\n3/ You don't need a big audience.\nYou need ONE person who will pay.\n\n4/ Here's how to find that person:\n→ [Specific method]\n→ [Platform]\n→ [Message script]\n\nRT if this helped.`,
+    linkedin: `�� LINKEDIN POST\n\nI went from $0 to [X] with ${input.split(' ').slice(0, 3).join(' ')}.\n\nHere's the exact playbook:\n\nStep 1: Pick ONE skill you have right now.\nStep 2: Find ONE person with that problem.\nStep 3: Solve it for free once. Get a testimonial.\nStep 4: Charge the next 3 people.\nStep 5: Use those results to raise prices.\n\nMost people skip Step 3. Don't.\n\nThoughts? Drop them below 👇`,
+    tiktok: `🎵 TIKTOK SCRIPT\n\n[Hook - 0-3s]\n"POV: You just made your first $1000 online."\n\n[Problem - 3-10s]\nMost people think you need:\n❌ A big following\n❌ A product idea\n❌ Years of experience\n\n[Solution - 10-25s]\nYou actually just need:\n✅ One skill\n✅ One platform\n✅ One offer\n\n[CTA - 25-30s]\nFollow for daily money moves. 💰\n\n#money #sidehustle #entrepreneur`
+  };
+  return templates[p] || templates.instagram;
+}
+
+function buildOutreachOutput(input) {
+  const t = selectedOutreachType;
+  const templates = {
+    dm: `�� DM SCRIPT\n\nHey [Name],\n\nSaw your profile — looks like you're working on ${input.split(' ').slice(0, 4).join(' ')}.\n\nI help people like you [specific outcome] without [common pain point].\n\nI've done it for [similar person/company] — [quick result].\n\nWould it make sense to jump on a quick 15-min call this week? No pitch, just want to see if I can help.\n\n[Your name]`,
+    email: `📧 EMAIL SCRIPT\n\nSubject: Quick question about [their goal]\n\nHi [Name],\n\nI came across your work and noticed [specific observation].\n\nI specialise in helping [type of person] with ${input.split(' ').slice(0, 4).join(' ')}.\n\nRecently helped [similar client] achieve [specific result] in [timeframe].\n\nWould you be open to a 15-minute call this week to explore if there's a fit?\n\nBest,\n[Your Name]`,
+    'follow-up': `🔄 FOLLOW-UP SCRIPT\n\nHi [Name],\n\nJust circling back on my last message.\n\nI know you're busy — that's exactly why I wanted to reach out.\n\nI've helped [X] similar people with ${input.split(' ').slice(0, 4).join(' ')} and the results have been strong.\n\nIf now isn't the right time, no worries at all. Just let me know and I'll check back in a month.\n\nEither way, hope business is going well!\n\n[Your name]`
+  };
+  return templates[t] || templates.dm;
+}
+
+function generateOffer() {
+  if (!checkGenLimit()) return;
+  const input = document.getElementById('offer-input').value.trim();
+  if (!input) { showToast('Describe your skill or idea first.', 'error'); S.aiGensLeft++; saveState(); return; }
+  const res = document.getElementById('offer-result');
+  const body = document.getElementById('offer-result-body');
+  res.classList.remove('hidden');
+  body.textContent = '';
+  typeOut(body, buildOfferOutput(input), 6);
+  showToast('Offer generated! ⚡', 'success');
+}
+
+function generateContent() {
+  if (!checkGenLimit()) return;
+  const input = document.getElementById('content-input').value.trim();
+  if (!input) { showToast('Describe your offer first.', 'error'); S.aiGensLeft++; saveState(); return; }
+  const res = document.getElementById('content-result');
+  const body = document.getElementById('content-result-body');
+  res.classList.remove('hidden');
+  body.textContent = '';
+  typeOut(body, buildContentOutput(input), 4);
+  showToast('Content ready! 📣', 'success');
+}
+
+function generateOutreach() {
+  if (!checkGenLimit()) return;
+  const input = document.getElementById('outreach-input').value.trim();
+  if (!input) { showToast('Describe who you are reaching out to.', 'error'); S.aiGensLeft++; saveState(); return; }
+  const res = document.getElementById('outreach-result');
+  const body = document.getElementById('outreach-result-body');
+  res.classList.remove('hidden');
+  body.textContent = '';
+  typeOut(body, buildOutreachOutput(input), 5);
+  showToast('Script ready! 📩', 'success');
+}
+
+function refineOffer() {
+  if (!checkGenLimit()) return;
+  const input = document.getElementById('offer-input').value.trim() || 'my skill';
+  const body = document.getElementById('offer-result-body');
+  const extra = '\n\n— REFINED VERSION —\nBased on your input, here is a tighter, higher-converting version:\n\n"[SPECIFIC SKILL] for [SPECIFIC PERSON] so they can [SPECIFIC RESULT] in [TIMEFRAME] — guaranteed."\n\nThis version converts 3x better because it is specific.';
+  typeOut(body, body.textContent + extra, 8);
+}
+
+function typeOut(el, text, speed) {
+  let i = 0;
+  el.textContent = '';
+  const t = setInterval(() => {
+    el.textContent += text[i];
+    i++;
+    if (i >= text.length) clearInterval(t);
+  }, speed);
+}
+
+function copyResult(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied to clipboard!', 'success'));
+}
+
+/* ── TRACK ────────────────────────────────────────── */
+let currentLogType = 'expense';
+let currentCategory = 'food';
+let receiptData = null;
 
 function switchLogType(btn) {
-  _logType = btn.dataset.t;
   document.querySelectorAll('.log-type-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('cat-grid-wrap').classList.toggle('hidden', _logType !== 'expense');
-  document.getElementById('income-source-wrap').classList.toggle('hidden', _logType !== 'income');
-  _logCat = _logType === 'expense' ? 'food' : 'freelance';
-  // reset selection
-  const grid = _logType === 'expense'
-    ? document.querySelectorAll('#cat-grid-wrap .cat-btn')
-    : document.querySelectorAll('#income-source-wrap .cat-btn');
-  grid.forEach((b, i) => b.classList.toggle('selected', i === 0));
+  currentLogType = btn.dataset.t;
+  currentCategory = currentLogType === 'income' ? 'freelance' : 'food';
+  document.getElementById('cat-grid-wrap').classList.toggle('hidden', currentLogType === 'income');
+  document.getElementById('income-source-wrap').classList.toggle('hidden', currentLogType === 'expense');
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.c === currentCategory);
+  });
 }
 
 function pickCat(btn) {
-  const parent = btn.closest('.cat-grid');
-  parent.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  const grid = btn.closest('.cat-grid');
+  if (grid) grid.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
-  _logCat = btn.dataset.c;
+  currentCategory = btn.dataset.c;
 }
 
 function handleReceipt(e) {
@@ -311,14 +542,17 @@ function handleReceipt(e) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    _receiptB64 = ev.target.result;
-    document.getElementById('receipt-img').src = _receiptB64;
-    document.getElementById('receipt-thumb').classList.remove('hidden');
+    receiptData = ev.target.result;
+    const thumb = document.getElementById('receipt-thumb');
+    const img = document.getElementById('receipt-img');
+    img.src = receiptData;
+    thumb.classList.remove('hidden');
   };
   reader.readAsDataURL(file);
 }
+
 function rmReceipt() {
-  _receiptB64 = null;
+  receiptData = null;
   document.getElementById('receipt-thumb').classList.add('hidden');
   document.getElementById('receipt-file').value = '';
 }
@@ -326,641 +560,404 @@ function rmReceipt() {
 function saveTransaction() {
   const amtEl = document.getElementById('tx-amount');
   const amt = parseFloat(amtEl.value);
-  if (!amt || amt <= 0) { showToast('Enter a valid amount', 'error'); return; }
+  if (!amt || amt <= 0) { showToast('Enter a valid amount.', 'error'); return; }
+  const note = document.getElementById('tx-note').value.trim();
   const tx = {
-    id:         Date.now(),
-    type:       _logType,
-    amount:     amt,
-    category:   _logCat,
-    note:       document.getElementById('tx-note').value.trim(),
-    date:       new Date().toISOString(),
-    receiptB64: _receiptB64,
+    id: 'tx_' + Date.now(),
+    type: currentLogType,
+    amount: amt,
+    category: currentCategory,
+    note,
+    date: new Date().toISOString(),
+    receipt: receiptData || null
   };
-  STATE.transactions.push(tx);
+  S.transactions.push(tx);
   saveState();
-  // reset
   amtEl.value = '';
   document.getElementById('tx-note').value = '';
   rmReceipt();
-  showToast('Saved! ' + (tx.type === 'income' ? '+' + fmt(amt) : '-' + fmt(amt)), 'success');
-  renderTxFull();
+  showToast(currentLogType === 'income' ? '💰 Income logged!' : '💸 Expense logged!', 'success');
+  updateTxFeed();
+  updateHomeScreen();
 }
 
-function renderTxFull() {
+function updateTxFeed() {
   const feed = document.getElementById('tx-feed-full');
-  const sorted = [...STATE.transactions].reverse();
-  document.getElementById('tx-count').textContent = sorted.length;
-  if (sorted.length === 0) {
+  const count = document.getElementById('tx-count');
+  if (!feed) return;
+  if (count) count.textContent = S.transactions.length;
+  if (!S.transactions.length) {
     feed.innerHTML = '<div class="tx-empty">No transactions yet.</div>';
     return;
   }
-  feed.innerHTML = sorted.map(tx => buildTxHTML(tx)).join('');
+  feed.innerHTML = [...S.transactions].reverse().map(tx => txHTML(tx)).join('');
 }
 
-function buildTxHTML(tx) {
-  const icon = CAT_ICONS[tx.category] || '📌';
-  const d = new Date(tx.date);
-  const dateStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-  const sign = tx.type === 'income' ? '+' : '-';
-  return `<div class="tx-item">
-    <div class="tx-icon">${icon}</div>
-    <div class="tx-info">
-      <div class="tx-cat">${tx.category}</div>
-      ${tx.note ? `<div class="tx-note">${tx.note}</div>` : ''}
-      <div class="tx-date">${dateStr}</div>
-    </div>
-    <div class="tx-amount ${tx.type}">${sign}${fmt(tx.amount)}</div>
-  </div>`;
+function deleteTx(id) {
+  S.transactions = S.transactions.filter(t => t.id !== id);
+  saveState();
+  updateTxFeed();
+  updateHomeScreen();
+  showToast('Deleted.', 'success');
 }
 
-/* ═══════════════════════════════════════════════════════════
-   INSIGHTS
-═══════════════════════════════════════════════════════════ */
-let _lineChart = null;
-let _pieChart  = null;
+/* ── INSIGHTS ─────────────────────────────────────── */
+let incomeChartInst = null;
+let catChartInst = null;
 
 function initInsights() {
-  renderHealthScore();
-  renderAdviceFeed();
-  renderCharts();
+  calcHealth();
+  buildAdvice();
+  buildCharts();
 }
 
-function getMonthTotals() {
+function calcHealth() {
   const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth();
-  let income = 0, spent = 0;
-  const catTotals = {};
-  STATE.transactions.forEach(tx => {
-    const d = new Date(tx.date);
-    if (d.getFullYear()===y && d.getMonth()===m) {
-      if (tx.type==='income')  income += tx.amount;
-      if (tx.type==='expense') { spent += tx.amount; catTotals[tx.category] = (catTotals[tx.category]||0) + tx.amount; }
-    }
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  return { income, spent, catTotals };
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const spent = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const profit = inc - spent;
+  const margin = inc > 0 ? profit / inc : 0;
+  const savingsRate = inc > 0 ? Math.max(0, profit / inc) : 0;
+  const burnRate = spent / 30;
+  const runwayMonths = burnRate > 0 && inc > 0 ? (inc / burnRate).toFixed(1) : '—';
+
+  let score = 0;
+  if (margin > 0.5) score += 35; else if (margin > 0.2) score += 20; else if (margin > 0) score += 10;
+  if (inc > 0) score += 25;
+  if (S.budget > 0 && spent < S.budget) score += 20; else if (!S.budget) score += 10;
+  if (S.transactions.length > 5) score += 10;
+  if (runwayMonths !== '—' && parseFloat(runwayMonths) > 3) score += 10;
+  score = Math.min(100, score);
+
+  const ringFill = document.getElementById('health-ring-fill');
+  if (ringFill) {
+    const circ = 263.9;
+    const offset = circ - (score / 100) * circ;
+    setTimeout(() => { ringFill.style.strokeDashoffset = offset; }, 100);
+  }
+  el('health-score', score);
+  el('hb-margin', inc > 0 ? (margin * 100).toFixed(0) + '%' : '—');
+  el('hb-runway', runwayMonths !== '—' ? runwayMonths + ' mo' : '—');
+  el('hb-burn', fmt(burnRate) + '/day');
+  el('hb-savings', inc > 0 ? (savingsRate * 100).toFixed(0) + '%' : '—');
+
+  // Add gradient to SVG
+  const svg = document.querySelector('.health-ring');
+  if (svg && !svg.querySelector('defs')) {
+    svg.insertAdjacentHTML('afterbegin', '<defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs>');
+  }
 }
 
-function renderHealthScore() {
-  const { income, spent } = getMonthTotals();
-  if (income === 0 && spent === 0) return;
-
-  const margin = income > 0 ? Math.round(((income - spent) / income) * 100) : 0;
-  const savingsRate = income > 0 ? Math.round(((income - spent) / income) * 100) : 0;
-  const burnRate = spent > 0 ? Math.round(spent / 30) : 0;
-  const runwayDays = burnRate > 0 && income > 0 ? Math.round(income / burnRate) : null;
-
-  // score: 0-100
-  let score = 50;
-  if (margin > 0)  score += 20;
-  if (margin > 30) score += 10;
-  if (margin > 50) score += 10;
-  if (burnRate < 50) score += 5;
-  if (income > STATE.approxIncome * 0.8) score += 5;
-  score = Math.min(100, Math.max(0, score));
-
-  document.getElementById('health-score').textContent = score;
-  const circumference = 263.9;
-  const offset = circumference - (score / 100) * circumference;
-  document.getElementById('health-ring-fill').style.strokeDashoffset = offset;
-
-  document.getElementById('hb-margin').textContent  = margin + '%';
-  document.getElementById('hb-runway').textContent  = runwayDays ? runwayDays + ' days' : '—';
-  document.getElementById('hb-burn').textContent    = fmt(burnRate) + '/day';
-  document.getElementById('hb-savings').textContent = savingsRate + '%';
-}
-
-function renderAdviceFeed() {
+function buildAdvice() {
   const feed = document.getElementById('advice-feed');
-  const { income, spent, catTotals } = getMonthTotals();
-
-  if (income === 0 && spent === 0) {
+  if (!feed) return;
+  const now = new Date();
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  if (!monthTx.length) {
     feed.innerHTML = '<div class="advice-empty">Log some transactions to get personalised AI advice.</div>';
     return;
   }
-
-  const advice = generateAdvice(income, spent, catTotals);
-  feed.innerHTML = advice.map((a, i) => `
-    <div class="advice-card" style="animation-delay:${i * 0.08}s">
-      <div class="advice-icon">${a.icon}</div>
-      <div class="advice-content">
-        <div class="advice-tag">${a.tag}</div>
-        <div class="advice-text">${a.text}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function generateAdvice(income, spent, catTotals) {
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const spent = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const advice = [];
-  const profit = income - spent;
-  const margin = income > 0 ? (profit / income) * 100 : 0;
 
-  if (profit < 0) {
-    advice.push({ icon: '🚨', tag: 'CRITICAL', text: `You are losing ${fmt(Math.abs(profit))} this month. Cut your highest expense immediately or raise your prices.` });
-  } else if (margin < 20) {
-    advice.push({ icon: '⚠️', tag: 'LOW MARGIN', text: `Your profit margin is only ${Math.round(margin)}%. Aim for 30%+. Either raise prices 20% or cut one recurring cost.` });
-  } else {
-    advice.push({ icon: '✅', tag: 'HEALTHY', text: `Profit margin: ${Math.round(margin)}%. You're in the green. Now focus on scaling income, not cutting costs.` });
-  }
+  if (inc === 0) advice.push({ icon: '⚡', text: 'No income logged this month. Use the Make Money tools to generate an offer and start outreach today.' });
+  if (spent > inc && inc > 0) advice.push({ icon: '🚨', text: `You are spending more than you earn. Cut the top expense category immediately.` });
+  if (inc > 0 && (inc - spent) / inc > 0.4) advice.push({ icon: '🎯', text: `Profit margin of ${((inc - spent) / inc * 100).toFixed(0)}% is healthy. Reinvest 20% into ads or tools to scale.` });
+  const subs = monthTx.filter(t => t.category === 'subscription').reduce((s, t) => s + t.amount, 0);
+  if (subs > 100) advice.push({ icon: '✂️', text: `${fmt(subs)} in subscriptions this month. Audit and cut any you haven't used in 30 days.` });
+  if (monthTx.length < 5) advice.push({ icon: '📊', text: 'Log more transactions for better AI accuracy. More data = more precise advice.' });
+  if (S.budget > 0 && spent > S.budget * 0.8) advice.push({ icon: '⚠️', text: `You have used ${((spent / S.budget) * 100).toFixed(0)}% of your monthly budget. Slow down spending.` });
+  advice.push({ icon: '💡', text: `Focus on one income stream this week: the one closest to generating revenue.` });
 
-  // biggest expense category
-  const topCat = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0];
-  if (topCat) {
-    const pct = Math.round((topCat[1] / spent) * 100);
-    advice.push({ icon: '💡', tag: 'TOP EXPENSE', text: `${topCat[0].charAt(0).toUpperCase() + topCat[0].slice(1)} is ${pct}% of your spending (${fmt(topCat[1])}). Is every pound here essential?` });
-  }
-
-  if (income > 0 && income < 1000) {
-    advice.push({ icon: '⚡', tag: 'INCOME BOOST', text: `You earned ${fmt(income)} this month. To reach $1K, you need ${fmt(1000 - income)} more. Send 5 more outreach messages today.` });
-  } else if (income >= 1000 && income < 5000) {
-    advice.push({ icon: '📈', tag: 'SCALE UP', text: `You're at ${fmt(income)}/month. To hit $5K, focus on raising your prices 20% — not finding new clients.` });
-  }
-
-  const subSpend = catTotals['subscription'] || 0;
-  if (subSpend > 50) {
-    advice.push({ icon: '🔄', tag: 'SUBSCRIPTIONS', text: `You're spending ${fmt(subSpend)} on subscriptions. Audit each one. Cancel anything you haven't used in 2 weeks.` });
-  }
-
-  advice.push({ icon: '🎯', tag: 'NEXT ACTION', text: buildNextAction() });
-  return advice;
-}
-
-function buildNextAction() {
-  const { goal, situation } = STATE;
-  if (goal === 'first-payment') return 'Send your offer to 10 people today. No pitch, just "I can help you with X. Want to know how?" That's it.';
-  if (goal === 'replace-job')   return 'Calculate your monthly expenses. That is your freedom number. Build a plan to hit it in 6 months.';
-  if (goal === 'scale')         return 'Raise your prices by 20% for the next new client. Most people say yes.';
-  if (goal === 'control')       return 'Track every transaction for 7 days. Awareness beats willpower every time.';
-  return 'Log your income and expenses daily. 5 minutes. It compounds.';
+  feed.innerHTML = advice.map(a => `<div class="advice-card">${a.icon} ${a.text}</div>`).join('');
 }
 
 function askAI() {
-  const q = document.getElementById('ask-input').value.trim();
+  const input = document.getElementById('ask-input');
+  const resultEl = document.getElementById('ask-result');
+  if (!input || !resultEl) return;
+  const q = input.value.trim();
   if (!q) return;
-  const res = document.getElementById('ask-result');
-  res.classList.remove('hidden');
-  res.textContent = '...';
+  if (!checkGenLimit()) return;
+
+  resultEl.classList.remove('hidden');
+  resultEl.textContent = 'Thinking…';
+
+  const now = new Date();
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const spent = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
   setTimeout(() => {
-    res.textContent = generateAIAnswer(q);
+    let answer = `Based on your data this month (income: ${fmt(inc)}, expenses: ${fmt(spent)}): `;
+    const ql = q.toLowerCase();
+    if (ql.includes('increas') || ql.includes('more money') || ql.includes('earn')) {
+      answer += `To increase income, focus on upselling existing clients first — it's 5x easier than finding new ones. Then launch one outreach campaign targeting 10 prospects per day using the Outreach tool.`;
+    } else if (ql.includes('save') || ql.includes('cut') || ql.includes('reduc')) {
+      answer += `Identify your top 3 expense categories and cut the non-essential one by 50%. Then automate ${Math.min(20, 20)}% of profit into a separate savings account the moment it arrives.`;
+    } else if (ql.includes('invest')) {
+      answer += `Build a ${S.budget > 0 ? '3-6 month' : '6-month'} cash runway before investing. With your current burn rate, focus on cash-flowing assets like client work before moving to passive investments.`;
+    } else if (ql.includes('runway') || ql.includes('survive') || ql.includes('budget')) {
+      answer += `At your current burn rate of ${fmt(spent / 30)}/day, ensure you have ${fmt(spent * 3)} saved as minimum runway. Set a hard budget cap and review it weekly.`;
+    } else {
+      answer += `Key insight: your profit is ${fmt(inc - spent)}. The fastest lever for your situation (${S.situation || 'entrepreneur'}) is increasing frequency of income before optimising expenses.`;
+    }
+    typeOut(resultEl, answer, 8);
   }, 600);
 }
 
-function generateAIAnswer(q) {
-  const ql = q.toLowerCase();
-  const { income, spent } = getMonthTotals();
-  const profit = income - spent;
-
-  if (ql.includes('profit') || ql.includes('increase income') || ql.includes('make more')) {
-    return profit > 0
-      ? `You have ${fmt(profit)} profit this month. To increase it: (1) Raise prices 10-20% for new clients. (2) Add one upsell to existing clients. (3) Cut your lowest-ROI expense.`
-      : `You're currently at a loss of ${fmt(Math.abs(profit))}. Priority: generate revenue before cutting costs. Use the Make Money tab to build an offer today.`;
-  }
-  if (ql.includes('save') || ql.includes('cut') || ql.includes('spending')) {
-    return `This month you spent ${fmt(spent)}. Start by cutting subscriptions and "convenience" expenses like daily coffee. Even ${fmt(5)}/day = ${fmt(150)}/month saved.`;
-  }
-  if (ql.includes('runway') || ql.includes('how long')) {
-    const burn = spent / 30;
-    const days = burn > 0 && income > 0 ? Math.round(income / burn) : null;
-    return days ? `At your current burn rate of ${fmt(Math.round(burn))}/day, your monthly income supports ${days} days of expenses. Build 3 months of runway as a safety net.` : 'Log your income and expenses first to calculate your runway.';
-  }
-  if (ql.includes('first client') || ql.includes('first sale') || ql.includes('first payment')) {
-    return 'Formula: (1) Identify one specific person who has the problem you solve. (2) Reach out with a simple message offering to help. (3) Charge $100-$500 to start. Speed beats perfection.';
-  }
-  if (ql.includes('price') || ql.includes('charge')) {
-    return 'Charge 2-3x what you think is fair. You will attract better clients and work less. Most people underprice out of fear. Test a higher price — the worst they say is no.';
-  }
-  return `Based on your current data: Income ${fmt(income)}, Expenses ${fmt(spent)}, Profit ${fmt(profit)}. Focus on: ${profit < 0 ? 'generating revenue first' : 'scaling what is already working'}. Use the Make Money tab for AI-generated offers and scripts.`;
+function buildCharts() {
+  const last7 = getLast7DayData();
+  buildIncomeChart(last7);
+  buildCatChart();
 }
 
-function renderCharts() {
-  renderLineChart();
-  renderPieChart();
-}
-
-function renderLineChart() {
-  const ctx = document.getElementById('income-chart');
-  if (!ctx) return;
-  if (_lineChart) _lineChart.destroy();
-
-  const days = 7;
-  const labels = [], incomeData = [], expenseData = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const label = d.toLocaleDateString('en-US', { weekday:'short' });
-    labels.push(label);
-    let inc = 0, exp = 0;
-    STATE.transactions.forEach(tx => {
-      const td = new Date(tx.date);
-      if (td.toDateString() === d.toDateString()) {
-        if (tx.type === 'income')  inc += tx.amount;
-        if (tx.type === 'expense') exp += tx.amount;
-      }
+function getLast7DayData() {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const label = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const dayStr = d.toDateString();
+    const dayTx = S.transactions.filter(t => new Date(t.date).toDateString() === dayStr);
+    days.push({
+      label,
+      income: dayTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
+      expense: dayTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
     });
-    incomeData.push(inc); expenseData.push(exp);
   }
+  return days;
+}
 
-  _lineChart = new Chart(ctx, {
+function buildIncomeChart(data) {
+  const canvas = document.getElementById('income-chart');
+  if (!canvas) return;
+  if (incomeChartInst) { incomeChartInst.destroy(); incomeChartInst = null; }
+  incomeChartInst = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels,
+      labels: data.map(d => d.label),
       datasets: [
-        { label: 'Income',  data: incomeData,  backgroundColor: 'rgba(16,185,129,.7)', borderRadius: 6 },
-        { label: 'Expense', data: expenseData, backgroundColor: 'rgba(245,158,11,.7)', borderRadius: 6 },
-      ],
+        { label: 'Income', data: data.map(d => d.income), backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 6, borderSkipped: false },
+        { label: 'Expenses', data: data.map(d => d.expense), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 6, borderSkipped: false }
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } },
+      plugins: { legend: { labels: { color: 'rgba(240,244,255,0.6)', font: { size: 11 } } } },
       scales: {
-        x: { ticks: { color: '#475569' }, grid: { color: 'rgba(255,255,255,.04)' } },
-        y: { ticks: { color: '#475569', callback: v => '$' + v }, grid: { color: 'rgba(255,255,255,.04)' } },
-      },
-    },
-  });
-}
-
-function renderPieChart() {
-  const ctx = document.getElementById('cat-chart');
-  if (!ctx) return;
-  if (_pieChart) _pieChart.destroy();
-  const { catTotals } = getMonthTotals();
-  const labels = Object.keys(catTotals);
-  const data   = Object.values(catTotals);
-  if (data.length === 0) return;
-
-  const colors = ['#10b981','#3b82f6','#f59e0b','#a855f7','#ef4444','#06b6d4','#84cc16','#f97316','#ec4899','#8b5cf6','#14b8a6','#64748b'];
-
-  _pieChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{ data, backgroundColor: colors.slice(0, data.length), borderWidth: 2, borderColor: '#080b14' }],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 }, padding: 12 } } },
-    },
-  });
-}
-
-/* ═══════════════════════════════════════════════════════════
-   CALENDAR
-═══════════════════════════════════════════════════════════ */
-let _calDate = new Date();
-let _selDay  = null;
-
-function initCalendar() {
-  renderCalendar();
-}
-function changeMonth(dir) {
-  _calDate = new Date(_calDate.getFullYear(), _calDate.getMonth() + dir, 1);
-  renderCalendar();
-}
-
-function renderCalendar() {
-  const y = _calDate.getFullYear(), m = _calDate.getMonth();
-  document.getElementById('cal-month').textContent =
-    _calDate.toLocaleString('en-US', { month:'long', year:'numeric' });
-
-  const firstDay = new Date(y, m, 1).getDay();
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const today = new Date();
-
-  const grid = document.getElementById('cal-grid');
-  grid.innerHTML = '';
-
-  // empty cells
-  for (let i = 0; i < firstDay; i++) {
-    const el = document.createElement('div');
-    el.className = 'cal-day empty-day';
-    grid.appendChild(el);
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(y, m, day);
-    const hasTx = STATE.transactions.some(tx => {
-      const d = new Date(tx.date);
-      return d.getFullYear()===y && d.getMonth()===m && d.getDate()===day;
-    });
-    const isToday = today.getFullYear()===y && today.getMonth()===m && today.getDate()===day;
-    const isSel   = _selDay === day;
-
-    const el = document.createElement('div');
-    el.className = 'cal-day' + (isToday ? ' today' : '') + (isSel ? ' selected' : '') + (hasTx ? ' has-tx' : '');
-    el.innerHTML = `<span class="day-num">${day}</span><div class="day-dot"></div>`;
-    el.onclick = () => selectCalDay(day);
-    grid.appendChild(el);
-  }
-
-  renderMonthStats(y, m);
-  if (_selDay) selectCalDay(_selDay);
-}
-
-function selectCalDay(day) {
-  _selDay = day;
-  const y = _calDate.getFullYear(), m = _calDate.getMonth();
-  const d = new Date(y, m, day);
-  document.getElementById('cal-detail-head').textContent =
-    d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
-
-  const txs = STATE.transactions.filter(tx => {
-    const td = new Date(tx.date);
-    return td.getFullYear()===y && td.getMonth()===m && td.getDate()===day;
-  });
-
-  if (txs.length === 0) {
-    document.getElementById('cal-detail-total').textContent = 'No activity';
-    document.getElementById('cal-detail-list').innerHTML = '<p class="cal-empty-msg">No transactions this day</p>';
-  } else {
-    let inc = 0, exp = 0;
-    txs.forEach(tx => { if (tx.type==='income') inc+=tx.amount; else exp+=tx.amount; });
-    document.getElementById('cal-detail-total').textContent =
-      `Income: ${fmt(inc)} · Spent: ${fmt(exp)} · Net: ${fmt(inc-exp)}`;
-    document.getElementById('cal-detail-list').innerHTML = txs.map(tx => buildTxHTML(tx)).join('');
-  }
-  renderCalendar(); // re-render to update selection
-}
-
-function renderMonthStats(y, m) {
-  let inc = 0, exp = 0;
-  STATE.transactions.forEach(tx => {
-    const d = new Date(tx.date);
-    if (d.getFullYear()===y && d.getMonth()===m) {
-      if (tx.type==='income')  inc += tx.amount;
-      if (tx.type==='expense') exp += tx.amount;
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(240,244,255,0.5)', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: 'rgba(240,244,255,0.5)', font: { size: 11 } } }
+      }
     }
   });
-  document.getElementById('ms-income').textContent = fmt(inc);
-  document.getElementById('ms-spent').textContent  = fmt(exp);
-  document.getElementById('ms-profit').textContent = fmt(inc - exp);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SETTINGS
-═══════════════════════════════════════════════════════════ */
+function buildCatChart() {
+  const canvas = document.getElementById('cat-chart');
+  if (!canvas) return;
+  if (catChartInst) { catChartInst.destroy(); catChartInst = null; }
+  const expTx = S.transactions.filter(t => t.type === 'expense');
+  if (!expTx.length) return;
+  const catMap = {};
+  expTx.forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
+  const labels = Object.keys(catMap);
+  const vals = Object.values(catMap);
+  const colors = ['#10b981','#3b82f6','#a855f7','#f59e0b','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#8b5cf6','#14b8a6','#64748b'];
+  catChartInst = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: vals, backgroundColor: colors.slice(0, labels.length), borderWidth: 0, hoverOffset: 8 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: 'rgba(240,244,255,0.6)', font: { size: 11 }, padding: 12 } } },
+      cutout: '65%'
+    }
+  });
+}
+
+/* ── CALENDAR ─────────────────────────────────────── */
+let calYear, calMonth;
+
+function renderCalendar() {
+  const now = new Date();
+  if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
+  const first = new Date(calYear, calMonth, 1).getDay();
+  const days = new Date(calYear, calMonth + 1, 0).getDate();
+  const monthName = new Date(calYear, calMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  el('cal-month', monthName);
+  const grid = document.getElementById('cal-grid');
+  if (!grid) return;
+  let html = '';
+  for (let i = 0; i < first; i++) html += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= days; d++) {
+    const dateStr = new Date(calYear, calMonth, d).toDateString();
+    const dayTx = S.transactions.filter(t => new Date(t.date).toDateString() === dateStr);
+    const hasInc = dayTx.some(t => t.type === 'income');
+    const hasExp = dayTx.some(t => t.type === 'expense');
+    const isToday = dateStr === now.toDateString();
+    let cls = 'cal-day';
+    if (isToday) cls += ' today';
+    if (dayTx.length) cls += hasInc ? ' has-income' : ' has-tx';
+    html += `<div class="${cls}" onclick="selectDay(${d})">${d}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function selectDay(d) {
+  document.querySelectorAll('.cal-day').forEach(c => c.classList.remove('selected'));
+  const cells = document.querySelectorAll('.cal-day:not(.empty)');
+  if (cells[d - 1]) cells[d - 1].classList.add('selected');
+  const dateStr = new Date(calYear, calMonth, d).toDateString();
+  const dayTx = S.transactions.filter(t => new Date(t.date).toDateString() === dateStr);
+  const head = document.getElementById('cal-detail-head');
+  const total = document.getElementById('cal-detail-total');
+  const list = document.getElementById('cal-detail-list');
+  if (!head) return;
+  head.textContent = new Date(calYear, calMonth, d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  if (!dayTx.length) {
+    total.textContent = '';
+    list.innerHTML = '<p class="cal-empty-msg">No transactions on this day.</p>';
+    return;
+  }
+  const inc = dayTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const exp = dayTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  total.textContent = 'Income: ' + fmt(inc) + ' · Spent: ' + fmt(exp);
+  list.innerHTML = dayTx.map(tx => txHTML(tx)).join('');
+}
+
+function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+  updateMonthStats();
+}
+
+function updateMonthStats() {
+  const monthTx = S.transactions.filter(t => {
+    const d = new Date(t.date);
+    return d.getMonth() === calMonth && d.getFullYear() === calYear;
+  });
+  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const spent = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  el('ms-income', fmt(inc));
+  el('ms-spent', fmt(spent));
+  el('ms-profit', fmt(inc - spent));
+}
+
+/* ── SETTINGS ─────────────────────────────────────── */
 function initSettings() {
-  const name = STATE.user?.name || 'User';
-  document.getElementById('p-name').textContent = name;
-  document.getElementById('pav-icon').textContent = name.charAt(0).toUpperCase() || '👤';
-  const goalLabels = { 'first-payment':'Get first payment', 'replace-job':'Replace salary', 'scale':'Scale revenue', 'control':'Control spending' };
-  document.getElementById('p-sub').textContent = 'Goal: ' + (goalLabels[STATE.goal] || '—');
-  document.getElementById('p-streak').textContent = STATE.streak + ' day streak 🔥';
-  document.getElementById('s-budget').textContent = STATE.monthlyBudget > 0 ? fmt(STATE.monthlyBudget) : 'Not set';
+  if (S.user) {
+    el('p-name', S.user.name || 'Imperium User');
+    const av = document.getElementById('pav-icon');
+    if (av && S.user.name) av.textContent = S.user.name[0].toUpperCase();
+  }
+  el('p-sub', 'Goal: ' + (S.goal || '—'));
+  el('p-streak', S.streak + ' day streak 🔥');
+  el('s-budget', S.budget > 0 ? fmt(S.budget) + '/mo' : 'Not set');
+  el('s-currency', S.currency + ' ' + (S.currency === '$' ? 'USD' : S.currency === '€' ? 'EUR' : 'GBP'));
+  const nd = document.getElementById('n-daily');
+  const nb = document.getElementById('n-budget');
+  if (nd) nd.checked = S.notifDaily;
+  if (nb) nb.checked = S.notifBudget;
 }
 
 function openBudgetModal() {
-  document.getElementById('budget-val').value = STATE.monthlyBudget || '';
-  document.getElementById('modal-budget').classList.remove('hidden');
+  const m = document.getElementById('modal-budget');
+  if (m) { m.classList.remove('hidden'); document.getElementById('budget-val').value = S.budget || ''; }
 }
-function closeBudgetModal() { document.getElementById('modal-budget').classList.add('hidden'); }
+function closeBudgetModal() { const m = document.getElementById('modal-budget'); if (m) m.classList.add('hidden'); }
 function saveBudget() {
   const v = parseFloat(document.getElementById('budget-val').value);
-  if (!isNaN(v) && v >= 0) { STATE.monthlyBudget = v; saveState(); showToast('Budget saved'); }
+  if (v > 0) { S.budget = v; saveState(); el('s-budget', fmt(v) + '/mo'); showToast('Budget set!', 'success'); }
   closeBudgetModal();
-  initSettings();
 }
 
-function openProModal()  { document.getElementById('modal-pro').classList.remove('hidden'); }
-function closeProModal() { document.getElementById('modal-pro').classList.add('hidden'); }
-function openCurrencyModal() { showToast('Currency selector coming soon', 'success'); }
+function openCurrencyModal() {
+  const currencies = ['$', '€', '£', '₹', '¥', 'A$', 'C$'];
+  const idx = currencies.indexOf(S.currency);
+  S.currency = currencies[(idx + 1) % currencies.length];
+  saveState();
+  el('s-currency', S.currency);
+  showToast('Currency: ' + S.currency, 'success');
+}
+
+function openProModal() { const m = document.getElementById('modal-pro'); if (m) m.classList.remove('hidden'); }
+function closeProModal() { const m = document.getElementById('modal-pro'); if (m) m.classList.add('hidden'); }
 
 function exportData() {
-  const json = JSON.stringify(STATE, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
+  const data = JSON.stringify({ transactions: S.transactions, settings: { budget: S.budget, currency: S.currency } }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'imperium-data.json';
-  a.click();
+  a.href = url; a.download = 'imperium-export.json'; a.click();
+  URL.revokeObjectURL(url);
   showToast('Data exported!', 'success');
 }
 
 function resetApp() {
-  if (!confirm('Delete all data? This cannot be undone.')) return;
-  localStorage.removeItem(STORE_KEY);
-  location.reload();
-}
-
-/* ═══════════════════════════════════════════════════════════
-   MAKE MONEY — AI GENERATORS
-═══════════════════════════════════════════════════════════ */
-let _selPlatform = 'instagram';
-let _selOutreachType = 'dm';
-
-function switchMakeTab(tab) {
-  document.querySelectorAll('.make-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('mtab-' + tab).classList.add('active');
-  document.querySelectorAll('.make-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('panel-' + tab).classList.add('active');
-}
-
-function selectPlatform(btn) {
-  document.querySelectorAll('.platform-pills .pill[data-p]').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  _selPlatform = btn.dataset.p;
-}
-
-function selectOutreachType(btn) {
-  document.querySelectorAll('.platform-pills .pill[data-o]').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  _selOutreachType = btn.dataset.o;
-}
-
-function checkGenLimit(onAllowed) {
-  if (STATE.genCount >= FREE_GEN_LIMIT) {
-    openProModal();
-    return;
-  }
-  STATE.genCount++;
+  if (!confirm('Delete ALL data? This cannot be undone.')) return;
+  S.transactions = [];
+  S.budget = 0;
+  S.streak = 0;
+  S.aiGensLeft = 3;
   saveState();
-  onAllowed();
+  updateHomeScreen();
+  showToast('Data cleared.', 'success');
 }
 
-function generateOffer() {
-  const input = document.getElementById('offer-input').value.trim();
-  if (!input) { showToast('Tell me your skill or idea first', 'error'); return; }
-  checkGenLimit(() => {
-    const btn = document.querySelector('#panel-offer .btn-primary');
-    setLoading(btn, true);
-    setTimeout(() => {
-      const result = buildOfferOutput(input);
-      document.getElementById('offer-result-body').textContent = result;
-      document.getElementById('offer-result').classList.remove('hidden');
-      setLoading(btn, false);
-      document.getElementById('offer-result').scrollIntoView({ behavior:'smooth', block:'nearest' });
-    }, 900);
-  });
-}
-
-function buildOfferOutput(input) {
-  const inp = input.toLowerCase();
-  let service = input;
-  let price = '$297';
-  let deliverable = 'complete project in 5 business days';
-  let outcome = 'results you can see';
-
-  if (inp.includes('video') || inp.includes('edit')) {
-    service = 'Professional Video Editing';
-    price = '$297 – $597';
-    deliverable = '3 polished videos per week with revisions';
-    outcome = '3x more watch time and engagement on your content';
-  } else if (inp.includes('fitness') || inp.includes('workout') || inp.includes('gym')) {
-    service = '12-Week Body Transformation Programme';
-    price = '$197 – $497';
-    deliverable = 'custom plan + weekly check-in calls';
-    outcome = 'lose 5-10kg and build visible muscle in 90 days';
-  } else if (inp.includes('social') || inp.includes('instagram') || inp.includes('content')) {
-    service = 'Social Media Content Package';
-    price = '$497/month';
-    deliverable = '30 posts, 15 stories, and a monthly strategy call';
-    outcome = '10K+ reach and consistent brand presence';
-  } else if (inp.includes('web') || inp.includes('website') || inp.includes('design')) {
-    service = 'Professional Website Design & Build';
-    price = '$797 – $1,497';
-    deliverable = '5-page website, mobile optimised, delivered in 10 days';
-    outcome = 'a website that converts visitors to customers';
-  } else if (inp.includes('write') || inp.includes('copy') || inp.includes('blog')) {
-    service = 'Conversion Copywriting Service';
-    price = '$397/month';
-    deliverable = '4 blog posts or landing page copy per month';
-    outcome = 'more traffic and 20% higher conversion rate';
-  } else if (inp.includes('coach') || inp.includes('mentor') || inp.includes('consult')) {
-    service = '1-on-1 Coaching Programme';
-    price = '$197/month';
-    deliverable = '4 weekly 60-min sessions + unlimited WhatsApp support';
-    outcome = 'a clear action plan and accountability system';
-  }
-
-  return `🎯 YOUR OFFER
-
-Service: "${service}"
-
-The Pitch:
-I help [target client] achieve [outcome] without [pain/frustration], in [timeframe].
-
-What They Get:
-• ${deliverable}
-• Dedicated support throughout
-• Revision rounds included
-• 100% satisfaction guarantee
-
-Price: ${price}
-
-Why They Should Say Yes Now:
-This price is locked for the next 5 clients. After that it increases 30%.
-
-How to Present It:
-"I'm working with 5 businesses this month on [service]. I've helped clients achieve [outcome]. Want me to send you the details?"
-
-Next Step:
-Send this offer to 10 people today. 1-2 will say yes.`;
-}
-
-function refineOffer() {
-  const current = document.getElementById('offer-result-body').textContent;
-  checkGenLimit(() => {
-    const result = current + '\n\n─────────────────\n💡 REFINED VERSION\n\nSimplify your pitch to one sentence:\n"I do [service] for [client type] so they can [outcome]. It costs [price] and takes [time]."\n\nThen add urgency:\n"I only take 3 clients per month. 1 spot left."';
-    document.getElementById('offer-result-body').textContent = result;
-  });
-}
-
-function generateContent() {
-  const input = document.getElementById('content-input').value.trim();
-  if (!input) { showToast('Describe your offer or topic first', 'error'); return; }
-  checkGenLimit(() => {
-    const btn = document.querySelector('#panel-content .btn-primary');
-    setLoading(btn, true);
-    setTimeout(() => {
-      const result = buildContentOutput(input, _selPlatform);
-      document.getElementById('content-result-body').textContent = result;
-      document.getElementById('content-result').classList.remove('hidden');
-      setLoading(btn, false);
-    }, 800);
-  });
-}
-
-function buildContentOutput(input, platform) {
-  const templates = {
-    instagram: `📸 INSTAGRAM POST\n\nHook (first line):\n"I made ${fmt(2000)} in 7 days with just ${input}. Here's exactly how 👇"\n\nCaption:\nMost people overthink this.\n\nHere's the simple version:\n→ Identify one person with one problem\n→ Offer one solution\n→ Charge a fair price\n\nThat's it. No funnel. No ads.\n\nWant to know how?\nComment "YES" and I'll send you the breakdown.\n\nHashtags:\n#freelance #makemoney #${input.toLowerCase().replace(/\s/g,'').slice(0,15)} #entrepreneur #sidehustle`,
-    twitter: `🐦 TWITTER/X THREAD\n\nTweet 1 (hook):\nI turned "${input}" into ${fmt(500)} in 48 hours.\n\nThread on exactly how 🧵👇\n\nTweet 2:\nStep 1: Find the problem.\nMost people skip this. Don't.\n\nTweet 3:\nStep 2: Build your offer in 30 minutes.\nNo portfolio needed.\n\nTweet 4:\nStep 3: Reach out to 10 people.\nNot to pitch — to start a conversation.\n\nTweet 5:\nThe result: 2 clients. ${fmt(500)} in 2 days.\nYou can do this too.\n\nRT if this was useful.`,
-    linkedin: `�� LINKEDIN POST\n\n3 months ago I was stuck with "${input}".\n\nToday it generates consistent income.\n\nHere's what changed:\n\n1. I stopped waiting to be "ready"\n2. I packaged my skill into a clear offer\n3. I reached out to 5 people per day\n\nNo fancy website. No logo. No portfolio.\n\nJust a clear offer and consistent action.\n\nIf you're sitting on a skill that could earn money — start today.\n\nWhat's stopping you? Drop it in the comments.\n\n#entrepreneurship #freelance #growth`,
-    tiktok: `🎵 TIKTOK SCRIPT\n\n[0-2s] Hook:\n"I made money from ${input} and here's the exact method"\n\n[3-15s] Story:\n"A few months ago I was broke and frustrated. I had this skill but no idea how to monetise it. Then I figured out the 3-step method."\n\n[15-35s] Method:\n"Step 1: Write your offer in one sentence. Step 2: Find 10 potential clients on Instagram. Step 3: Send this exact message: [show phone screen]"\n\n[35-45s] CTA:\n"Follow for part 2 where I show the messages that got me clients. Drop 'YES' if you want the template."\n\nText on screen: "From 0 to clients in 48 hours"`,
-  };
-  return templates[platform] || templates.instagram;
-}
-
-function generateOutreach() {
-  const input = document.getElementById('outreach-input').value.trim();
-  if (!input) { showToast('Describe your target audience first', 'error'); return; }
-  checkGenLimit(() => {
-    const btn = document.querySelector('#panel-outreach .btn-primary');
-    setLoading(btn, true);
-    setTimeout(() => {
-      const result = buildOutreachOutput(input, _selOutreachType);
-      document.getElementById('outreach-result-body').textContent = result;
-      document.getElementById('outreach-result').classList.remove('hidden');
-      setLoading(btn, false);
-    }, 700);
-  });
-}
-
-function buildOutreachOutput(input, type) {
-  const target = input;
-  const scripts = {
-    dm: `📱 DM SCRIPT\n\n[Message 1 — Cold intro]\n"Hey [Name], I came across your page and noticed you're doing great work with [their niche].\n\nI help ${target} [specific result]. I've got something that might be useful for you.\n\nWould it be weird if I sent you more details?"\n\n[If they reply YES]\n"Perfect. I work with ${target} to [service + outcome]. It takes [time] and the investment is [price].\n\nAre you open to a quick 15-min call this week to see if it's a fit?"\n\n[If no reply after 48h — Follow-up]\n"Hey, just following up on my last message. Still think this could be useful for you. Totally fine if it's not the right time 🙂"\n\n📌 Tips:\n• Send to 20 people per day\n• Personalise the first line\n• Never pitch immediately`,
-    email: `📧 EMAIL SCRIPT\n\nSubject: Quick idea for [their business name]\n\nHi [Name],\n\nI'll keep this short.\n\nI work with ${target} to [specific outcome] — usually in [timeframe].\n\nI noticed [specific thing about them] and thought you'd be a strong fit for what I do.\n\nI'm not asking for a big commitment. Just a quick 15-minute call to see if there's a fit.\n\nAre you free this week?\n\n[Your Name]\n\n---\n\nPS: If now isn't the right time, no worries at all.\n\n📌 Tips:\n• Keep subject lines under 7 words\n• Always offer a specific, low-commitment next step\n• Follow up 3 times before giving up`,
-    'follow-up': `🔁 FOLLOW-UP SCRIPTS\n\nFollow-up 1 (3 days after):\n"Hey [Name], just checking if you had a chance to see my last message?\n\nCompletely understand if timing isn't right — just didn't want to assume."\n\nFollow-up 2 (5 days after):\n"Hi [Name], one last follow-up — I'm locking in my schedule for the month and had one spot left. Thought of you.\n\nIf you're interested in [service], I'd love to chat. If not, totally fine!"\n\nFollow-up 3 (10 days after — the break-up):\n"Hey [Name], I'll stop reaching out after this one.\n\nIf things change and you need help with [problem], I'm here.\n\nWishing you the best regardless!"\n\n📌 Most deals close on follow-up 2-5. Never give up after one message.`,
-  };
-  return scripts[type] || scripts.dm;
-}
-
-function copyResult(id) {
-  const text = document.getElementById(id).textContent;
-  navigator.clipboard.writeText(text)
-    .then(() => showToast('Copied to clipboard!', 'success'))
-    .catch(() => showToast('Copy failed', 'error'));
-}
-
-/* ═══════════════════════════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════════════════════════ */
-function fmt(n) {
-  return STATE.currency + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-}
-
-function showToast(msg, type = '') {
-  const existing = document.querySelector('.toast');
-  if (existing) existing.remove();
-  const el = document.createElement('div');
-  el.className = 'toast' + (type ? ' ' + type : '');
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2800);
-}
-
-function setLoading(btn, on) {
-  if (!btn) return;
-  if (on) {
-    btn.dataset.origText = btn.textContent;
-    btn.innerHTML = '<span class="spinner"></span>';
-    btn.disabled = true;
+/* ── STREAK ───────────────────────────────────────── */
+function updateStreak() {
+  const today = new Date().toDateString();
+  if (S.lastLogin === today) return;
+  if (S.lastLogin) {
+    const last = new Date(S.lastLogin);
+    const diff = (new Date(today) - last) / 86400000;
+    if (diff <= 1.5) S.streak++;
+    else S.streak = 1;
   } else {
-    btn.textContent = btn.dataset.origText;
-    btn.disabled = false;
+    S.streak = 1;
   }
+  S.lastLogin = today;
+  S.aiGensLeft = 3;
+  saveState();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PARTICLES
-═══════════════════════════════════════════════════════════ */
+/* ── TOAST ────────────────────────────────────────── */
+function showToast(msg, type) {
+  let t = document.querySelector('.toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.className = 'toast';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.className = 'toast ' + (type || '');
+  requestAnimationFrame(() => { t.offsetHeight; t.classList.add('show'); });
+  setTimeout(() => { t.classList.remove('show'); }, 2800);
+}
+
+/* ── PARTICLES ────────────────────────────────────── */
 function initParticles() {
   const canvas = document.getElementById('particle-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  let particles = [];
-  let W, H;
+  let W, H, particles = [];
+  let mouseX = -9999, mouseY = -9999;
 
   function resize() {
-    W = canvas.width  = window.innerWidth;
+    W = canvas.width = window.innerWidth;
     H = canvas.height = window.innerHeight;
   }
   resize();
@@ -968,109 +965,213 @@ function initParticles() {
 
   for (let i = 0; i < 60; i++) {
     particles.push({
-      x: Math.random() * 1000, y: Math.random() * 1000,
-      vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3,
-      r: Math.random() * 1.5 + .5,
-      alpha: Math.random() * .5 + .1,
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      r: Math.random() * 1.5 + 0.3,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      alpha: Math.random() * 0.5 + 0.1
     });
   }
 
-  function draw() {
+  document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+
+  function loop() {
     ctx.clearRect(0, 0, W, H);
     particles.forEach(p => {
+      const dx = mouseX - p.x, dy = mouseY - p.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 120) {
+        p.vx -= (dx / dist) * 0.06;
+        p.vy -= (dy / dist) * 0.06;
+      }
       p.x += p.vx; p.y += p.vy;
+      p.vx *= 0.98; p.vy *= 0.98;
       if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
       if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(52,211,153,${p.alpha})`;
+      ctx.fillStyle = `rgba(96,165,250,${p.alpha})`;
       ctx.fill();
     });
-    // draw connections
+    // Connections
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 100) {
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 100) {
           ctx.beginPath();
-          ctx.strokeStyle = `rgba(52,211,153,${.06 * (1 - dist/100)})`;
-          ctx.lineWidth = .5;
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(96,165,250,${0.08 * (1 - d / 100)})`;
+          ctx.lineWidth = 0.5;
           ctx.stroke();
         }
       }
     }
-    requestAnimationFrame(draw);
+    requestAnimationFrame(loop);
   }
-  draw();
+  loop();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   BEAMS
-═══════════════════════════════════════════════════════════ */
+/* ── BEAMS CANVAS ─────────────────────────────────── */
 function initBeams() {
   const canvas = document.getElementById('beams-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   let W, H;
-  const beams = [];
   function resize() { W = canvas.width = canvas.offsetWidth; H = canvas.height = canvas.offsetHeight; }
   resize();
   window.addEventListener('resize', resize);
-  for (let i = 0; i < 4; i++) {
-    beams.push({ x: Math.random() * 1000, y: -50, vx: (Math.random()-.5)*.5, vy: Math.random()*.8+.3, angle: Math.random() * Math.PI * 2, len: 100+Math.random()*150 });
-  }
-  function drawBeams() {
+  const beams = Array.from({ length: 6 }, (_, i) => ({
+    x: (i / 5) * window.innerWidth,
+    y: 0,
+    angle: Math.PI / 6 + (Math.random() - 0.5) * 0.3,
+    speed: 0.0008 + Math.random() * 0.0008,
+    phase: Math.random() * Math.PI * 2,
+    color: i % 2 === 0 ? '59,130,246' : '168,85,247'
+  }));
+  function loop() {
     ctx.clearRect(0, 0, W, H);
+    const t = Date.now();
     beams.forEach(b => {
-      b.x += b.vx; b.y += b.vy;
-      if (b.y > H + 100) { b.y = -50; b.x = Math.random() * W; }
-      const grad = ctx.createLinearGradient(b.x, b.y, b.x + Math.cos(b.angle)*b.len, b.y + Math.sin(b.angle)*b.len);
-      grad.addColorStop(0, 'rgba(16,185,129,0)');
-      grad.addColorStop(.5,'rgba(16,185,129,.15)');
-      grad.addColorStop(1, 'rgba(59,130,246,0)');
+      const alpha = 0.03 + 0.02 * Math.sin(t * b.speed + b.phase);
+      const grad = ctx.createLinearGradient(b.x, 0, b.x + Math.tan(b.angle) * H, H);
+      grad.addColorStop(0, `rgba(${b.color},0)`);
+      grad.addColorStop(0.4, `rgba(${b.color},${alpha})`);
+      grad.addColorStop(1, `rgba(${b.color},0)`);
       ctx.beginPath();
-      ctx.moveTo(b.x, b.y);
-      ctx.lineTo(b.x + Math.cos(b.angle)*b.len, b.y + Math.sin(b.angle)*b.len);
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      ctx.moveTo(b.x, 0);
+      ctx.lineTo(b.x + Math.tan(b.angle) * H + 60, H);
+      ctx.lineTo(b.x + Math.tan(b.angle) * H - 60, H);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
     });
-    requestAnimationFrame(drawBeams);
+    requestAnimationFrame(loop);
   }
-  drawBeams();
+  loop();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   STREAK
-═══════════════════════════════════════════════════════════ */
-function updateStreak() {
-  const today = new Date().toDateString();
-  if (STATE.lastOpenDate !== today) {
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    if (STATE.lastOpenDate === yesterday.toDateString()) {
-      STATE.streak += 1;
-    } else if (STATE.lastOpenDate && STATE.lastOpenDate !== today) {
-      STATE.streak = 1;
-    } else {
-      STATE.streak = (STATE.streak || 0) + (STATE.streak === 0 ? 1 : 0);
-    }
-    STATE.lastOpenDate = today;
-    saveState();
+/* ── CURSOR GLOW ─────────────────────────────────── */
+function initCursorGlow() {
+  const glow = document.getElementById('cursor-glow');
+  if (!glow) return;
+  let cx = -9999, cy = -9999;
+  let ax = cx, ay = cy;
+  document.addEventListener('mousemove', e => { cx = e.clientX; cy = e.clientY; });
+  function update() {
+    ax += (cx - ax) * 0.12;
+    ay += (cy - ay) * 0.12;
+    glow.style.left = ax + 'px';
+    glow.style.top = ay + 'px';
+    requestAnimationFrame(update);
   }
+  update();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PERSIST
-═══════════════════════════════════════════════════════════ */
-function saveState() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); } catch(e) {}
+/* ── MAGNETIC BUTTONS ─────────────────────────────── */
+function initMagnetic() {
+  document.querySelectorAll('.magnetic').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const dx = (e.clientX - cx) * 0.22;
+      const dy = (e.clientY - cy) * 0.22;
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+    });
+    el.addEventListener('mouseleave', () => {
+      el.style.transform = 'translate(0,0)';
+    });
+  });
 }
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (raw) { Object.assign(STATE, JSON.parse(raw)); }
-  } catch(e) {}
+
+/* ── COMMAND PALETTE ──────────────────────────────── */
+const COMMANDS = [
+  { icon: '🏠', label: 'Go to Home',        action: () => navigateTo('screen-home'),     badge: '' },
+  { icon: '⚡', label: 'Make Money',         action: () => navigateTo('screen-make'),     badge: '' },
+  { icon: '➕', label: 'Log Transaction',    action: () => navigateTo('screen-track'),    badge: 'Track' },
+  { icon: '🧠', label: 'AI Insights',        action: () => navigateTo('screen-insights'), badge: '' },
+  { icon: '📅', label: 'Calendar',           action: () => navigateTo('screen-calendar'), badge: '' },
+  { icon: '⚙️', label: 'Settings',           action: () => navigateTo('screen-settings'), badge: '' },
+  { icon: '💡', label: 'Generate Offer',     action: () => { navigateTo('screen-make'); switchMakeTab('offer'); }, badge: 'AI' },
+  { icon: '📣', label: 'Generate Content',   action: () => { navigateTo('screen-make'); switchMakeTab('content'); }, badge: 'AI' },
+  { icon: '📩', label: 'Generate Outreach',  action: () => { navigateTo('screen-make'); switchMakeTab('outreach'); }, badge: 'AI' },
+  { icon: '🎯', label: 'Set Monthly Budget', action: openBudgetModal,                     badge: '' },
+  { icon: '📤', label: 'Export Data',        action: exportData,                          badge: '' },
+  { icon: '💳', label: 'Upgrade to Pro',     action: openProModal,                        badge: 'PRO' }
+];
+
+let cmdFocusIdx = 0;
+let filteredCmds = [...COMMANDS];
+
+function openCommand() {
+  const overlay = document.getElementById('cmd-overlay');
+  const input = document.getElementById('cmd-input');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  filteredCmds = [...COMMANDS];
+  renderCmdList();
+  if (input) { input.value = ''; input.focus(); }
+  cmdFocusIdx = 0;
 }
+
+function closeCommand() {
+  const overlay = document.getElementById('cmd-overlay');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+function filterCommands(q) {
+  const ql = q.toLowerCase();
+  filteredCmds = COMMANDS.filter(c => c.label.toLowerCase().includes(ql));
+  cmdFocusIdx = 0;
+  renderCmdList();
+}
+
+function renderCmdList() {
+  const list = document.getElementById('cmd-list');
+  if (!list) return;
+  if (!filteredCmds.length) {
+    list.innerHTML = '<div class="cmd-empty">No commands match your search.</div>';
+    return;
+  }
+  list.innerHTML = filteredCmds.map((c, i) => `
+    <div class="cmd-item${i === cmdFocusIdx ? ' focused' : ''}" onclick="execCmd(${i})">
+      <span class="cmd-item-icon">${c.icon}</span>
+      <span class="cmd-item-label">${c.label}</span>
+      ${c.badge ? `<span class="cmd-item-badge">${c.badge}</span>` : ''}
+    </div>
+  `).join('');
+}
+
+function execCmd(i) {
+  closeCommand();
+  setTimeout(() => filteredCmds[i] && filteredCmds[i].action(), 150);
+}
+
+function cmdKeyNav(e) {
+  if (e.key === 'ArrowDown') { cmdFocusIdx = Math.min(cmdFocusIdx + 1, filteredCmds.length - 1); renderCmdList(); e.preventDefault(); }
+  if (e.key === 'ArrowUp') { cmdFocusIdx = Math.max(cmdFocusIdx - 1, 0); renderCmdList(); e.preventDefault(); }
+  if (e.key === 'Enter') { execCmd(cmdFocusIdx); e.preventDefault(); }
+  if (e.key === 'Escape') { closeCommand(); }
+}
+
+// Keyboard shortcut: Cmd/Ctrl + K
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openCommand(); }
+  if (e.key === 'Escape') { closeCommand(); }
+});
+
+/* ── GLOBAL EFFECTS ───────────────────────────────── */
+function initGlobalEffects() {
+  initCursorGlow();
+  initMagnetic();
+  // Refresh magnetic on screen changes
+  setInterval(initMagnetic, 2000);
+}
+
+/* ── BOOT ─────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  runBoot();
+});

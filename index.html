@@ -1,55 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#080b14" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Imperium — Make & Manage Money</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#02040a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Imperium OS</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <div id="app">
 
-  <!-- ambient -->
+  <!-- AMBIENT LAYER -->
   <canvas id="particle-canvas"></canvas>
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div id="cursor-glow"></div>
+
+  <!-- ══════════════════════════════════════════
+       BOOT SCREEN
+  ══════════════════════════════════════════ -->
+  <div class="screen active" id="screen-boot">
+    <div class="boot-wrap">
+      <canvas id="boot-canvas"></canvas>
+      <div class="boot-content">
+        <div class="boot-logo">
+          <svg width="64" height="64" viewBox="0 0 44 44" fill="none">
+            <rect width="44" height="44" rx="12" fill="url(#lgBoot)"/>
+            <path d="M22 8 L35 13 L35 22 Q35 33 22 38 Q9 33 9 22 L9 13 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+            <path d="M22 14 L22 30 M16 19 L28 19 M17 24 L27 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="lgBoot" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="boot-name">IMPERIUM<span>OS</span></div>
+        <div class="boot-version">v4.0.0 — INITIALISING</div>
+        <div class="boot-bar-wrap">
+          <div class="boot-bar" id="boot-bar"></div>
+        </div>
+        <div class="boot-log" id="boot-log"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════════════════════════════════════
        AUTH
   ══════════════════════════════════════════ -->
-  <div class="screen active" id="screen-auth">
+  <div class="screen" id="screen-auth">
     <div class="auth-wrap">
       <div class="auth-logo-mark">
-        <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <svg width="48" height="48" viewBox="0 0 44 44" fill="none">
           <rect width="44" height="44" rx="12" fill="url(#lgAuth)"/>
-          <path d="M22 10 L33 14.5 L33 22 Q33 31 22 35 Q11 31 11 22 L11 14.5 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
-          <path d="M22 16 L22 28 M17 20 L27 20 M18 24 L26 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M22 8 L35 13 L35 22 Q35 33 22 38 Q9 33 9 22 L9 13 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M22 14 L22 30 M16 19 L28 19 M17 24 L27 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
           <defs><linearGradient id="lgAuth" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
         </svg>
       </div>
-      <h1 class="auth-brand">Imperium</h1>
+      <h1 class="auth-brand">Imperium<span>OS</span></h1>
       <p class="auth-tagline">Make money. Manage money. That's it.</p>
-
       <div class="auth-tabs">
         <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Log In</button>
         <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
       </div>
-
       <form id="form-login" class="auth-form" onsubmit="handleLogin(event)">
         <input class="auth-input" type="email" id="login-email" placeholder="Email" required autocomplete="email"/>
         <div class="pw-wrap">
           <input class="auth-input" type="password" id="login-password" placeholder="Password" required autocomplete="current-password"/>
           <button type="button" class="pw-eye" onclick="togglePw('login-password')">👁</button>
         </div>
-        <button class="btn-primary" type="submit">Log In</button>
+        <button class="btn-primary" type="submit">Log In →</button>
       </form>
-
       <form id="form-signup" class="auth-form hidden" onsubmit="handleSignup(event)">
         <input class="auth-input" type="text" id="signup-name" placeholder="Full name" required autocomplete="name"/>
         <input class="auth-input" type="email" id="signup-email" placeholder="Email" required autocomplete="email"/>
@@ -57,13 +85,11 @@
           <input class="auth-input" type="password" id="signup-password" placeholder="Password (min 6)" required autocomplete="new-password" minlength="6"/>
           <button type="button" class="pw-eye" onclick="togglePw('signup-password')">👁</button>
         </div>
-        <button class="btn-primary" type="submit">Create Account</button>
+        <button class="btn-primary" type="submit">Create Account →</button>
       </form>
-
       <div class="auth-or"><span>or</span></div>
-      <button class="btn-ghost w-full" onclick="continueAsGuest()">Continue as Guest</button>
+      <button class="btn-ghost w-full" onclick="continueAsGuest()">Enter as Guest</button>
       <p class="auth-msg" id="auth-msg"></p>
-
       <p class="auth-footer">Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p>
     </div>
   </div>
@@ -74,124 +100,117 @@
   <div class="screen" id="screen-onboarding">
     <div class="ob-wrap">
       <div class="ob-progress-bar"><div class="ob-progress-fill" id="ob-fill" style="width:33%"></div></div>
-
       <div class="ob-step active" id="ob-1">
         <div class="ob-icon">💡</div>
-        <h2 class="ob-title">What's your situation?</h2>
-        <p class="ob-sub">I'll personalise everything around where you are right now.</p>
+        <h2 class="ob-title">What is your situation?</h2>
+        <p class="ob-sub">Personalise the OS around where you are right now.</p>
         <div class="ob-options">
           <button class="ob-opt" data-v="idea" onclick="pickSituation(this)"><span class="ob-opt-icon">🌱</span><span class="ob-opt-text"><b>I have an idea</b><small>Nothing built yet</small></span></button>
           <button class="ob-opt" data-v="side-hustle" onclick="pickSituation(this)"><span class="ob-opt-icon">⚡</span><span class="ob-opt-text"><b>Side hustle</b><small>Some income, want more</small></span></button>
-          <button class="ob-opt" data-v="business" onclick="pickSituation(this)"><span class="ob-opt-icon">🚀</span><span class="ob-opt-text"><b>Running a business</b><small>Need to manage + grow</small></span></button>
+          <button class="ob-opt" data-v="business" onclick="pickSituation(this)"><span class="ob-opt-icon">🚀</span><span class="ob-opt-text"><b>Running a business</b><small>Need to manage and grow</small></span></button>
           <button class="ob-opt" data-v="job" onclick="pickSituation(this)"><span class="ob-opt-icon">💼</span><span class="ob-opt-text"><b>Employed</b><small>Want to make extra income</small></span></button>
         </div>
       </div>
-
       <div class="ob-step" id="ob-2">
         <div class="ob-icon">🎯</div>
-        <h2 class="ob-title">What's your #1 money goal?</h2>
-        <p class="ob-sub">Be honest — this shapes every AI suggestion.</p>
+        <h2 class="ob-title">What is your #1 money goal?</h2>
+        <p class="ob-sub">This shapes every AI suggestion.</p>
         <div class="ob-options">
-          <button class="ob-opt" data-v="first-payment" onclick="pickGoal(this)"><span class="ob-opt-icon">💳</span><span class="ob-opt-text"><b>Get my first payment</b><small>I haven't earned online yet</small></span></button>
+          <button class="ob-opt" data-v="first-payment" onclick="pickGoal(this)"><span class="ob-opt-icon">💳</span><span class="ob-opt-text"><b>Get my first payment</b><small>Have not earned online yet</small></span></button>
           <button class="ob-opt" data-v="replace-job" onclick="pickGoal(this)"><span class="ob-opt-icon">🔓</span><span class="ob-opt-text"><b>Replace my salary</b><small>Go full time for myself</small></span></button>
           <button class="ob-opt" data-v="scale" onclick="pickGoal(this)"><span class="ob-opt-icon">📈</span><span class="ob-opt-text"><b>Scale revenue</b><small>Already earning, need more</small></span></button>
           <button class="ob-opt" data-v="control" onclick="pickGoal(this)"><span class="ob-opt-icon">🔍</span><span class="ob-opt-text"><b>Control my spending</b><small>Stop leaking money</small></span></button>
         </div>
       </div>
-
       <div class="ob-step" id="ob-3">
         <div class="ob-icon">🔥</div>
-        <h2 class="ob-title">One last thing</h2>
-        <p class="ob-sub">What is your current monthly income? (approximate)</p>
+        <h2 class="ob-title">Current monthly income?</h2>
+        <p class="ob-sub">Approximate is fine.</p>
         <div class="ob-options">
           <button class="ob-opt" data-v="0" onclick="pickIncome(this)"><span class="ob-opt-icon">$0</span><span class="ob-opt-text"><b>Nothing yet</b><small>Starting from zero</small></span></button>
           <button class="ob-opt" data-v="1000" onclick="pickIncome(this)"><span class="ob-opt-icon">$1K</span><span class="ob-opt-text"><b>Under $1,000</b><small>Early days</small></span></button>
-          <button class="ob-opt selected" data-v="5000" onclick="pickIncome(this)"><span class="ob-opt-icon">$5K</span><span class="ob-opt-text"><b>$1K – $5K</b><small>Getting there</small></span></button>
+          <button class="ob-opt selected" data-v="5000" onclick="pickIncome(this)"><span class="ob-opt-icon">$5K</span><span class="ob-opt-text"><b>$1K to $5K</b><small>Getting there</small></span></button>
           <button class="ob-opt" data-v="15000" onclick="pickIncome(this)"><span class="ob-opt-icon">$15K+</span><span class="ob-opt-text"><b>$5K+</b><small>Growing fast</small></span></button>
         </div>
-        <button class="btn-primary ob-done-btn" onclick="finishOnboarding()">Build My Money System →</button>
+        <button class="btn-primary ob-done-btn" onclick="finishOnboarding()">Boot My OS →</button>
       </div>
     </div>
   </div>
 
   <!-- ══════════════════════════════════════════
-       HOME — Command Centre
+       HOME — COMMAND CENTRE
   ══════════════════════════════════════════ -->
   <div class="screen" id="screen-home">
     <canvas id="beams-canvas"></canvas>
     <div class="screen-content has-nav">
-
       <header class="top-bar">
         <div class="top-brand">
-          <div class="brand-mark">
-            <svg width="28" height="28" viewBox="0 0 44 44" fill="none">
+          <div class="brand-mark magnetic">
+            <svg width="30" height="30" viewBox="0 0 44 44" fill="none">
               <rect width="44" height="44" rx="10" fill="url(#lgHome)"/>
-              <path d="M22 10 L33 14.5 L33 22 Q33 31 22 35 Q11 31 11 22 L11 14.5 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
-              <path d="M22 16 L22 28 M17 20 L27 20 M18 24 L26 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M22 8 L35 13 L35 22 Q35 33 22 38 Q9 33 9 22 L9 13 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M22 14 L22 30 M16 19 L28 19 M17 24 L27 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
               <defs><linearGradient id="lgHome" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
             </svg>
           </div>
           <div>
-            <div class="brand-name">Imperium</div>
+            <div class="brand-name">Imperium<span class="brand-os">OS</span></div>
             <div class="brand-greeting" id="greeting">Good morning</div>
           </div>
         </div>
-        <div class="top-date" id="top-date"></div>
+        <div class="top-right">
+          <button class="cmd-btn" id="cmd-btn" onclick="openCommand()" title="Command Palette">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <div class="top-date" id="top-date"></div>
+        </div>
       </header>
 
-      <!-- AI PROMPT — the heart of the app -->
-      <div class="ai-prompt-card" id="ai-prompt-card">
+      <div class="ai-prompt-card glass-card" id="ai-prompt-card">
         <div class="ai-prompt-label">💬 AI says</div>
         <p class="ai-prompt-text" id="ai-prompt-text">Loading your daily briefing…</p>
         <div class="ai-prompt-actions" id="ai-prompt-actions"></div>
       </div>
 
-      <!-- MONEY SNAPSHOT -->
       <div class="money-snapshot">
-        <div class="snap-card snap-income">
+        <div class="snap-card snap-income glass-card">
           <div class="snap-icon">💰</div>
           <div class="snap-val" id="snap-income">$0</div>
-          <div class="snap-lbl">This Month Income</div>
+          <div class="snap-lbl">Income</div>
         </div>
-        <div class="snap-card snap-spent">
+        <div class="snap-card snap-spent glass-card">
           <div class="snap-icon">💸</div>
           <div class="snap-val" id="snap-spent">$0</div>
           <div class="snap-lbl">Spent</div>
         </div>
-        <div class="snap-card snap-profit">
+        <div class="snap-card snap-profit glass-card">
           <div class="snap-icon">📈</div>
           <div class="snap-val" id="snap-profit">$0</div>
           <div class="snap-lbl">Profit</div>
         </div>
-        <div class="snap-card snap-runway">
+        <div class="snap-card snap-runway glass-card">
           <div class="snap-icon">⏱️</div>
           <div class="snap-val" id="snap-runway">—</div>
           <div class="snap-lbl">Runway</div>
         </div>
       </div>
 
-      <!-- QUICK ACTIONS -->
       <div class="section-label">Quick Actions</div>
       <div class="quick-actions">
-        <button class="qa-btn" onclick="navigateTo('screen-make')">
-          <span class="qa-icon">⚡</span>
-          <span class="qa-text">Make Money</span>
+        <button class="qa-btn glass-card magnetic" onclick="navigateTo('screen-make')">
+          <span class="qa-icon">⚡</span><span class="qa-text">Make Money</span>
         </button>
-        <button class="qa-btn" onclick="navigateTo('screen-track')">
-          <span class="qa-icon">➕</span>
-          <span class="qa-text">Log Transaction</span>
+        <button class="qa-btn glass-card magnetic" onclick="navigateTo('screen-track')">
+          <span class="qa-icon">➕</span><span class="qa-text">Log Transaction</span>
         </button>
-        <button class="qa-btn" onclick="navigateTo('screen-insights')">
-          <span class="qa-icon">🧠</span>
-          <span class="qa-text">AI Insights</span>
+        <button class="qa-btn glass-card magnetic" onclick="navigateTo('screen-insights')">
+          <span class="qa-icon">🧠</span><span class="qa-text">AI Insights</span>
         </button>
-        <button class="qa-btn" onclick="navigateTo('screen-calendar')">
-          <span class="qa-icon">📅</span>
-          <span class="qa-text">Calendar</span>
+        <button class="qa-btn glass-card magnetic" onclick="navigateTo('screen-calendar')">
+          <span class="qa-icon">📅</span><span class="qa-text">Calendar</span>
         </button>
       </div>
 
-      <!-- RECENT TRANSACTIONS -->
       <div class="section-label-row">
         <span class="section-label">Recent</span>
         <button class="see-all" onclick="navigateTo('screen-track')">See all</button>
@@ -199,7 +218,6 @@
       <div class="tx-feed" id="tx-feed-home">
         <div class="tx-empty">No transactions yet. Tap <strong>Log Transaction</strong> to start.</div>
       </div>
-
     </div>
   </div>
 
@@ -208,26 +226,21 @@
   ══════════════════════════════════════════ -->
   <div class="screen" id="screen-make">
     <div class="screen-content has-nav">
-
       <header class="page-header">
         <h2 class="page-title">Make Money</h2>
         <p class="page-sub">AI-powered tools to generate income</p>
       </header>
-
-      <!-- MAKE TABS -->
       <div class="make-tabs">
         <button class="make-tab active" id="mtab-offer" onclick="switchMakeTab('offer')">💡 Offer</button>
         <button class="make-tab" id="mtab-content" onclick="switchMakeTab('content')">📣 Content</button>
         <button class="make-tab" id="mtab-outreach" onclick="switchMakeTab('outreach')">📩 Outreach</button>
       </div>
-
-      <!-- OFFER GENERATOR -->
       <div class="make-panel active" id="panel-offer">
-        <div class="ai-tool-card">
+        <div class="ai-tool-card glass-card">
           <h3 class="tool-title">💡 Idea → Offer</h3>
-          <p class="tool-desc">Turn your idea or skill into a clear, sellable offer in seconds.</p>
-          <textarea class="ai-textarea" id="offer-input" placeholder="Describe your skill, idea, or service… (e.g. 'I'm good at video editing' or 'I want to sell a fitness plan')"></textarea>
-          <button class="btn-primary" onclick="generateOffer()">Generate My Offer →</button>
+          <p class="tool-desc">Turn your skill or idea into a clear, sellable offer in seconds.</p>
+          <textarea class="ai-textarea" id="offer-input" placeholder="Describe your skill, idea, or service…"></textarea>
+          <button class="btn-primary magnetic" onclick="generateOffer()">Generate My Offer →</button>
         </div>
         <div class="ai-result hidden" id="offer-result">
           <div class="result-label">Your Offer</div>
@@ -238,12 +251,10 @@
           </div>
         </div>
       </div>
-
-      <!-- CONTENT GENERATOR -->
       <div class="make-panel" id="panel-content">
-        <div class="ai-tool-card">
-          <h3 class="tool-title">📣 Content Generator</h3>
-          <p class="tool-desc">Generate posts, hooks, and captions that drive attention to your offer.</p>
+        <div class="ai-tool-card glass-card">
+          <h3 class="tool-title">�� Content Generator</h3>
+          <p class="tool-desc">Posts, hooks, and captions that drive attention to your offer.</p>
           <div class="tool-row">
             <label class="tool-label">Platform</label>
             <div class="platform-pills">
@@ -254,7 +265,7 @@
             </div>
           </div>
           <textarea class="ai-textarea" id="content-input" placeholder="What is your offer / what do you want to promote?"></textarea>
-          <button class="btn-primary" onclick="generateContent()">Generate Content →</button>
+          <button class="btn-primary magnetic" onclick="generateContent()">Generate Content →</button>
         </div>
         <div class="ai-result hidden" id="content-result">
           <div class="result-label">Your Content</div>
@@ -265,12 +276,10 @@
           </div>
         </div>
       </div>
-
-      <!-- OUTREACH GENERATOR -->
       <div class="make-panel" id="panel-outreach">
-        <div class="ai-tool-card">
+        <div class="ai-tool-card glass-card">
           <h3 class="tool-title">📩 Outreach Scripts</h3>
-          <p class="tool-desc">Generate DMs, emails, and pitches to get your first clients.</p>
+          <p class="tool-desc">DMs, emails, and pitches to get your first clients.</p>
           <div class="tool-row">
             <label class="tool-label">Type</label>
             <div class="platform-pills">
@@ -279,8 +288,8 @@
               <button class="pill" data-o="follow-up" onclick="selectOutreachType(this)">Follow-up</button>
             </div>
           </div>
-          <textarea class="ai-textarea" id="outreach-input" placeholder="Who are you reaching out to and why? (e.g. 'Small business owners who need video editing')"></textarea>
-          <button class="btn-primary" onclick="generateOutreach()">Generate Script →</button>
+          <textarea class="ai-textarea" id="outreach-input" placeholder="Who are you reaching out to and why?"></textarea>
+          <button class="btn-primary magnetic" onclick="generateOutreach()">Generate Script →</button>
         </div>
         <div class="ai-result hidden" id="outreach-result">
           <div class="result-label">Your Script</div>
@@ -291,34 +300,27 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
   <!-- ══════════════════════════════════════════
-       TRACK — Log Transactions
+       TRACK
   ══════════════════════════════════════════ -->
   <div class="screen" id="screen-track">
     <div class="screen-content has-nav">
-
       <header class="page-header">
         <h2 class="page-title">Track Money</h2>
-        <p class="page-sub">Income & expenses in one place</p>
+        <p class="page-sub">Income and expenses in one place</p>
       </header>
-
-      <!-- LOG FORM -->
-      <div class="log-card">
+      <div class="log-card glass-card">
         <div class="log-type-toggle">
           <button class="log-type-btn active" id="logtype-expense" data-t="expense" onclick="switchLogType(this)">💸 Expense</button>
           <button class="log-type-btn" id="logtype-income" data-t="income" onclick="switchLogType(this)">💰 Income</button>
         </div>
-
         <div class="amount-row">
           <span class="amount-sym">$</span>
           <input type="number" id="tx-amount" class="amount-big" placeholder="0" inputmode="decimal" step="0.01" min="0"/>
         </div>
-
-        <!-- Category grid for expenses -->
         <div id="cat-grid-wrap">
           <div class="cat-grid">
             <button class="cat-btn selected" data-c="food" onclick="pickCat(this)"><span>🍔</span><small>Food</small></button>
@@ -335,8 +337,6 @@
             <button class="cat-btn" data-c="other" onclick="pickCat(this)"><span>📌</span><small>Other</small></button>
           </div>
         </div>
-
-        <!-- Income source -->
         <div id="income-source-wrap" class="hidden">
           <div class="cat-grid">
             <button class="cat-btn selected" data-c="freelance" onclick="pickCat(this)"><span>💻</span><small>Freelance</small></button>
@@ -347,10 +347,7 @@
             <button class="cat-btn" data-c="other" onclick="pickCat(this)"><span>📌</span><small>Other</small></button>
           </div>
         </div>
-
         <input type="text" id="tx-note" class="note-input" placeholder="Note (optional)…" autocomplete="off"/>
-
-        <!-- Receipt snap -->
         <label class="receipt-snap">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
           Snap Receipt
@@ -360,11 +357,8 @@
           <img id="receipt-img" alt="receipt"/>
           <button class="receipt-rm" onclick="rmReceipt()">✕</button>
         </div>
-
-        <button class="btn-primary log-save-btn" onclick="saveTransaction()">Save →</button>
+        <button class="btn-primary log-save-btn magnetic" onclick="saveTransaction()">Save →</button>
       </div>
-
-      <!-- TRANSACTION LIST -->
       <div class="section-label-row" style="margin-top:24px">
         <span class="section-label">All Transactions</span>
         <span class="tx-count" id="tx-count">0</span>
@@ -372,23 +366,19 @@
       <div class="tx-feed full-feed" id="tx-feed-full">
         <div class="tx-empty">No transactions yet.</div>
       </div>
-
     </div>
   </div>
 
   <!-- ══════════════════════════════════════════
-       AI INSIGHTS
+       INSIGHTS
   ══════════════════════════════════════════ -->
   <div class="screen" id="screen-insights">
     <div class="screen-content has-nav">
-
       <header class="page-header">
         <h2 class="page-title">AI Insights</h2>
         <p class="page-sub">Your personal money advisor</p>
       </header>
-
-      <!-- FINANCIAL HEALTH SCORE -->
-      <div class="health-card" id="health-card">
+      <div class="health-card glass-card" id="health-card">
         <div class="health-ring-wrap">
           <svg class="health-ring" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="42" class="ring-track"/>
@@ -406,34 +396,26 @@
           <div class="hb-row"><span class="hb-dot" style="background:#a855f7"></span><span class="hb-name">Savings Rate</span><span class="hb-val" id="hb-savings">—</span></div>
         </div>
       </div>
-
-      <!-- AI ADVICE FEED -->
       <div class="section-label">🧠 AI Advice</div>
       <div class="advice-feed" id="advice-feed">
         <div class="advice-empty">Log some transactions to get personalised AI advice.</div>
       </div>
-
-      <!-- ASK AI -->
-      <div class="ask-ai-card">
+      <div class="ask-ai-card glass-card">
         <div class="ask-label">Ask about your money</div>
         <div class="ask-row">
-          <input type="text" id="ask-input" class="ask-input" placeholder="e.g. How can I increase my profit this month?"/>
-          <button class="ask-send" onclick="askAI()">→</button>
+          <input type="text" id="ask-input" class="ask-input" placeholder="e.g. How can I increase profit this month?"/>
+          <button class="ask-send magnetic" onclick="askAI()">→</button>
         </div>
         <div class="ask-result hidden" id="ask-result"></div>
       </div>
-
-      <!-- CHARTS -->
-      <div class="chart-card" style="margin-top:20px">
-        <div class="chart-title">Income vs Expenses (7 days)</div>
+      <div class="chart-card glass-card" style="margin-top:20px">
+        <div class="chart-title">Income vs Expenses — 7 days</div>
         <div class="chart-wrap"><canvas id="income-chart"></canvas></div>
       </div>
-
-      <div class="chart-card">
+      <div class="chart-card glass-card">
         <div class="chart-title">Where Your Money Goes</div>
         <div class="chart-wrap chart-pie"><canvas id="cat-chart"></canvas></div>
       </div>
-
     </div>
   </div>
 
@@ -442,32 +424,23 @@
   ══════════════════════════════════════════ -->
   <div class="screen" id="screen-calendar">
     <div class="screen-content has-nav">
-
       <header class="cal-nav-header">
-        <button class="cal-arrow" onclick="changeMonth(-1)">‹</button>
+        <button class="cal-arrow magnetic" onclick="changeMonth(-1)">‹</button>
         <h2 class="cal-month" id="cal-month">March 2026</h2>
-        <button class="cal-arrow" onclick="changeMonth(1)">›</button>
+        <button class="cal-arrow magnetic" onclick="changeMonth(1)">›</button>
       </header>
-
-      <div class="cal-weekdays">
-        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-      </div>
+      <div class="cal-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
       <div class="cal-grid" id="cal-grid"></div>
-
-      <div class="cal-detail" id="cal-detail">
+      <div class="cal-detail glass-card" id="cal-detail">
         <div class="cal-detail-head" id="cal-detail-head">Select a day</div>
         <div class="cal-detail-total" id="cal-detail-total"></div>
-        <div class="cal-detail-list" id="cal-detail-list">
-          <p class="cal-empty-msg">Tap a day to see transactions</p>
-        </div>
+        <div class="cal-detail-list" id="cal-detail-list"><p class="cal-empty-msg">Tap a day to see transactions</p></div>
       </div>
-
       <div class="month-stat-row">
-        <div class="ms-card"><div class="ms-val" id="ms-income">$0</div><div class="ms-lbl">Income</div></div>
-        <div class="ms-card"><div class="ms-val" id="ms-spent">$0</div><div class="ms-lbl">Spent</div></div>
-        <div class="ms-card"><div class="ms-val" id="ms-profit">$0</div><div class="ms-lbl">Profit</div></div>
+        <div class="ms-card glass-card"><div class="ms-val" id="ms-income">$0</div><div class="ms-lbl">Income</div></div>
+        <div class="ms-card glass-card"><div class="ms-val" id="ms-spent">$0</div><div class="ms-lbl">Spent</div></div>
+        <div class="ms-card glass-card"><div class="ms-val" id="ms-profit">$0</div><div class="ms-lbl">Profit</div></div>
       </div>
-
     </div>
   </div>
 
@@ -476,70 +449,60 @@
   ══════════════════════════════════════════ -->
   <div class="screen" id="screen-settings">
     <div class="screen-content has-nav">
-
       <div class="profile-hero">
         <div class="profile-av"><span id="pav-icon">👤</span></div>
         <div class="profile-name" id="p-name">Imperium User</div>
         <div class="profile-sub" id="p-sub">Goal: —</div>
         <div class="profile-badge" id="p-streak">0 day streak 🔥</div>
       </div>
-
       <div class="settings-group">
         <div class="sg-title">Budget</div>
-        <div class="sg-card">
+        <div class="sg-card glass-card">
           <div class="sg-row" onclick="openBudgetModal()"><span class="sg-label">Monthly Budget</span><span class="sg-val" id="s-budget">Not set</span><span class="sg-arrow">›</span></div>
           <div class="sg-row" onclick="openCurrencyModal()"><span class="sg-label">Currency</span><span class="sg-val" id="s-currency">$ USD</span><span class="sg-arrow">›</span></div>
         </div>
       </div>
-
       <div class="settings-group">
         <div class="sg-title">Notifications</div>
-        <div class="sg-card">
+        <div class="sg-card glass-card">
           <div class="sg-row"><span class="sg-label">Daily briefing</span><label class="toggle"><input type="checkbox" id="n-daily" checked/><span class="tslider"></span></label></div>
           <div class="sg-row"><span class="sg-label">Budget alerts</span><label class="toggle"><input type="checkbox" id="n-budget" checked/><span class="tslider"></span></label></div>
         </div>
       </div>
-
       <div class="settings-group">
         <div class="sg-title">Data</div>
-        <div class="sg-card">
+        <div class="sg-card glass-card">
           <div class="sg-row" onclick="exportData()"><span class="sg-label">Export data</span><span class="sg-arrow">›</span></div>
           <div class="sg-row danger-row" onclick="resetApp()"><span class="sg-label" style="color:#ef4444">Delete everything</span><span class="sg-arrow">›</span></div>
         </div>
       </div>
-
       <div class="pro-card">
         <div class="pro-badge">PRO</div>
         <h3 class="pro-title">Imperium Pro</h3>
         <p class="pro-sub">Smarter AI. Better outputs. Real results.</p>
         <ul class="pro-list">
-          <li>Unlimited AI generations (offer, content, outreach)</li>
+          <li>Unlimited AI generations</li>
           <li>Advanced financial forecasting</li>
           <li>Weekly strategy report</li>
           <li>Priority AI answers</li>
         </ul>
-        <button class="btn-primary" onclick="openProModal()">Start Free Trial — $8/mo</button>
+        <button class="btn-primary magnetic" onclick="openProModal()">Start Free Trial — $8/mo</button>
         <p class="pro-note">Founding rate locked for first 100 members</p>
       </div>
-
       <div class="settings-group">
-        <div class="sg-card">
-          <div class="sg-row"><span class="sg-label">Version</span><span class="sg-val">Imperium v4.0.0</span></div>
+        <div class="sg-card glass-card">
+          <div class="sg-row"><span class="sg-label">Version</span><span class="sg-val">Imperium OS v4.0.0</span></div>
         </div>
       </div>
-
       <div class="settings-footer">
         <p>Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p>
-        <p>© 2026 Imperium. All rights reserved.</p>
+        <p>© 2026 Imperium OS. All rights reserved.</p>
       </div>
-
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════
-       BOTTOM NAV
-  ══════════════════════════════════════════ -->
-  <nav class="bottom-nav" id="bottom-nav">
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav hidden" id="bottom-nav">
     <button class="nav-btn active" id="nb-home" onclick="navigateTo('screen-home')">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 14 15 14 15 21"/></svg>
       <span>Home</span>
@@ -562,6 +525,18 @@
     </button>
   </nav>
 
+  <!-- COMMAND PALETTE -->
+  <div class="cmd-overlay hidden" id="cmd-overlay" onclick="closeCommand()">
+    <div class="cmd-palette" onclick="event.stopPropagation()">
+      <div class="cmd-search-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="cmd-input" id="cmd-input" placeholder="Type a command…" oninput="filterCommands(this.value)" onkeydown="cmdKeyNav(event)" autocomplete="off"/>
+        <kbd class="cmd-esc" onclick="closeCommand()">ESC</kbd>
+      </div>
+      <div class="cmd-list" id="cmd-list"></div>
+    </div>
+  </div>
+
   <!-- MODALS -->
   <div class="modal-bg hidden" id="modal-budget" onclick="closeBudgetModal()">
     <div class="modal-box" onclick="event.stopPropagation()">
@@ -572,7 +547,6 @@
       <button class="btn-primary" onclick="saveBudget()">Save</button>
     </div>
   </div>
-
   <div class="modal-bg hidden" id="modal-pro" onclick="closeProModal()">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="modal-pill"></div>
@@ -587,13 +561,8 @@
     </div>
   </div>
 
-</div><!-- /app -->
-
+</div>
 <script src="app.js"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
-</script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 </body>
 </html>
