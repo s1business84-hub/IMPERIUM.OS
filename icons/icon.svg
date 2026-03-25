@@ -1,20 +1,53 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0a0f2c"/>
-      <stop offset="100%" stop-color="#1e3a8a"/>
+      <stop offset="0%" stop-color="#070b18"/>
+      <stop offset="100%" stop-color="#0f1b3d"/>
     </linearGradient>
-    <linearGradient id="bolt" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#d4af37"/>
-      <stop offset="100%" stop-color="#f5e27a"/>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity=".15"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity=".05"/>
     </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="50%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e0e7ff"/>
+    </linearGradient>
+    <filter id="boltGlow">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="outerGlow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="12"/>
+      <feFlood flood-color="#60a5fa" flood-opacity="0.3"/>
+      <feComposite in2="SourceAlpha" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
   <!-- Background -->
-  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
-  <!-- Subtle glow circle -->
-  <circle cx="256" cy="256" r="200" fill="rgba(59,130,246,0.08)"/>
-  <!-- Lightning bolt (centered) -->
-  <path d="M 290 60 L 200 270 L 255 270 L 222 452 L 390 220 L 310 220 L 380 60 Z"
-        fill="url(#bolt)"
-        filter="drop-shadow(0 0 20px rgba(212,175,55,0.6))"/>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Subtle radial glow -->
+  <circle cx="256" cy="240" r="180" fill="url(#glow)"/>
+  <!-- Shield outline — modern crest -->
+  <path d="M256 72 L400 130 L400 260 Q400 370 256 440 Q112 370 112 260 L112 130 Z"
+        fill="none" stroke="url(#shieldGrad)" stroke-width="6" stroke-linejoin="round"
+        opacity=".5" filter="url(#outerGlow)"/>
+  <!-- Inner shield fill -->
+  <path d="M256 88 L388 140 L388 258 Q388 358 256 424 Q124 358 124 258 L124 140 Z"
+        fill="rgba(96,165,250,0.04)" stroke="rgba(96,165,250,0.08)" stroke-width="1"/>
+  <!-- Lightning bolt -->
+  <path d="M280 130 L216 268 L256 268 L236 390 L340 240 L290 240 L320 130 Z"
+        fill="url(#boltGrad)" filter="url(#boltGlow)"/>
+  <!-- 4 signal dots -->
+  <circle cx="160" cy="190" r="6" fill="#60a5fa" opacity=".7"/>
+  <circle cx="352" cy="190" r="6" fill="#818cf8" opacity=".7"/>
+  <circle cx="148" cy="300" r="6" fill="#14b8a6" opacity=".7"/>
+  <circle cx="364" cy="300" r="6" fill="#d4af37" opacity=".7"/>
 </svg>

@@ -1551,21 +1551,32 @@ document.addEventListener('keydown', (e) => {
   resize();
   window.addEventListener('resize', resize);
 
-  const beams = Array.from({ length: 6 }, () => ({
+  const beams = Array.from({ length: 8 }, () => ({
     x: Math.random() * canvas.width,
-    speed: .3 + Math.random() * .5,
-    width: 1 + Math.random() * 2,
-    opacity: .03 + Math.random() * .05,
-    hue: 210 + Math.random() * 40
+    speed: .2 + Math.random() * .6,
+    width: 1 + Math.random() * 2.5,
+    opacity: .02 + Math.random() * .06,
+    hue: 210 + Math.random() * 50,
+    wave: Math.random() * Math.PI * 2,
+    waveSpeed: .005 + Math.random() * .01
   }));
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     beams.forEach(b => {
+      b.wave += b.waveSpeed;
+      const sway = Math.sin(b.wave) * 15;
+
+      const gradient = ctx.createLinearGradient(b.x, 0, b.x + sway, canvas.height);
+      gradient.addColorStop(0, `hsla(${b.hue}, 60%, 70%, 0)`);
+      gradient.addColorStop(0.3, `hsla(${b.hue}, 60%, 70%, ${b.opacity})`);
+      gradient.addColorStop(0.7, `hsla(${b.hue}, 60%, 70%, ${b.opacity * .6})`);
+      gradient.addColorStop(1, `hsla(${b.hue}, 60%, 70%, 0)`);
+
       ctx.beginPath();
       ctx.moveTo(b.x, 0);
-      ctx.lineTo(b.x + 30, canvas.height);
-      ctx.strokeStyle = `hsla(${b.hue}, 60%, 70%, ${b.opacity})`;
+      ctx.quadraticCurveTo(b.x + sway * 2, canvas.height / 2, b.x + sway, canvas.height);
+      ctx.strokeStyle = gradient;
       ctx.lineWidth = b.width;
       ctx.stroke();
       b.x += b.speed;
@@ -1578,7 +1589,7 @@ document.addEventListener('keydown', (e) => {
 
 
 /* ═══════════════════════════════════════════════
-   PARTICLES
+   PARTICLES — Ambient floating dots with connections
    ═══════════════════════════════════════════════ */
 
 (function initParticles() {
@@ -1593,43 +1604,54 @@ document.addEventListener('keydown', (e) => {
   resize();
   window.addEventListener('resize', resize);
 
-  const particles = Array.from({ length: 60 }, () => ({
+  const particles = Array.from({ length: 70 }, () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
-    vx: (Math.random() - .5) * .3,
-    vy: (Math.random() - .5) * .3,
-    r: 1 + Math.random(),
-    o: .1 + Math.random() * .3
+    vx: (Math.random() - .5) * .35,
+    vy: (Math.random() - .5) * .35,
+    r: .8 + Math.random() * 1.5,
+    baseO: .08 + Math.random() * .25,
+    phase: Math.random() * Math.PI * 2,
+    pulseSpeed: .01 + Math.random() * .02,
+    hue: 210 + Math.random() * 30
   }));
+
+  let time = 0;
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    time++;
 
     particles.forEach(p => {
       p.x += p.vx;
       p.y += p.vy;
+      p.phase += p.pulseSpeed;
       if (p.x < 0) p.x = canvas.width;
       if (p.x > canvas.width) p.x = 0;
       if (p.y < 0) p.y = canvas.height;
       if (p.y > canvas.height) p.y = 0;
 
+      const pulse = .7 + .3 * Math.sin(p.phase);
+      const opacity = p.baseO * pulse;
+
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(148, 163, 184, ${p.o})`;
+      ctx.arc(p.x, p.y, p.r * pulse, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${p.hue}, 50%, 75%, ${opacity})`;
       ctx.fill();
     });
 
-    // Connect nearby
+    // Connect nearby particles with gradient lines
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 80) {
+        if (dist < 90) {
+          const alpha = .06 * (1 - dist/90);
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(148, 163, 184, ${.05 * (1 - dist/80)})`;
+          ctx.strokeStyle = `rgba(148, 163, 184, ${alpha})`;
           ctx.lineWidth = .5;
           ctx.stroke();
         }

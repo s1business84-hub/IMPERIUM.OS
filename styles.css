@@ -137,23 +137,394 @@ img { display: block; max-width: 100%; }
   width: 400px; height: 400px;
   background: var(--primary);
   top: -120px; right: -80px;
-  animation: orbDrift1 25s ease-in-out infinite alternate;
+  animation: orbFloat1 20s ease-in-out infinite alternate;
 }
 .orb-2 {
   width: 350px; height: 350px;
   background: var(--accent);
   bottom: -100px; left: -80px;
-  animation: orbDrift2 30s ease-in-out infinite alternate;
+  animation: orbFloat2 25s ease-in-out infinite alternate;
 }
 
-@keyframes orbDrift1 {
-  0%   { transform: translate(0, 0); }
-  100% { transform: translate(-40px, 30px); }
+/* ═══════════════════════════════════════════════
+   ANIMATIONS — System-wide motion design
+   ═══════════════════════════════════════════════ */
+
+/* --- Fade in from below --- */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
 }
-@keyframes orbDrift2 {
-  0%   { transform: translate(0, 0); }
-  100% { transform: translate(30px, -25px); }
+
+.anim-fade-in {
+  animation: fadeUp .6s var(--ease-spring) both;
+  animation-delay: var(--delay, 0s);
 }
+
+/* --- Slide up entrance --- */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.anim-slide-up {
+  animation: slideUp .5s var(--ease-spring) both;
+  animation-delay: var(--delay, 0s);
+}
+
+/* --- Scale in (pop) --- */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.anim-scale-in {
+  animation: scaleIn .6s var(--ease-spring) both;
+  animation-delay: var(--delay, 0s);
+}
+
+/* --- Stagger children --- */
+.anim-stagger > * {
+  opacity: 0;
+  animation: fadeUp .5s var(--ease-spring) both;
+}
+.anim-stagger > *:nth-child(1) { animation-delay: .05s; }
+.anim-stagger > *:nth-child(2) { animation-delay: .1s; }
+.anim-stagger > *:nth-child(3) { animation-delay: .15s; }
+.anim-stagger > *:nth-child(4) { animation-delay: .2s; }
+.anim-stagger > *:nth-child(5) { animation-delay: .25s; }
+.anim-stagger > *:nth-child(6) { animation-delay: .3s; }
+
+/* --- Logo pulse glow --- */
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, .15); }
+  50%      { box-shadow: 0 0 20px 4px rgba(96, 165, 250, .25); }
+}
+
+.anim-logo-pulse {
+  animation: logoPulse 3s ease-in-out infinite;
+}
+
+/* --- Shimmer text gradient --- */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.anim-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0%,
+    #c4b5fd 25%,
+    var(--accent) 50%,
+    #c4b5fd 75%,
+    var(--primary) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+/* --- Score ring pulse --- */
+@keyframes ringPulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(96,165,250,.2)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(96,165,250,.4)); }
+}
+
+.score-ring {
+  animation: ringPulse 3s ease-in-out infinite;
+}
+
+/* --- Glass card hover lift --- */
+.glass-card,
+.pillar-card,
+.stat-chip,
+.chart-card,
+.settings-card,
+.mission-item,
+.result-card,
+.insight-highlight,
+.progress-summary-card,
+.progress-stat-card,
+.sample-card,
+.first-run-card,
+.first-run-signal,
+.first-run-step,
+.ob-card,
+.insight-widget {
+  transition: transform var(--dur-normal) var(--ease-spring),
+              box-shadow var(--dur-normal) var(--ease-spring),
+              border-color var(--dur-normal) var(--ease-spring);
+}
+
+.pillar-card:hover,
+.stat-chip:hover,
+.mission-item:hover,
+.result-card:hover,
+.chart-card:hover,
+.progress-stat-card:hover,
+.first-run-signal:hover,
+.first-run-step:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(96, 165, 250, .08);
+  border-color: rgba(96, 165, 250, .15);
+}
+
+/* --- Button press animation --- */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  transition: background var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-spring),
+              box-shadow var(--dur-normal) var(--ease-spring);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 24px rgba(96, 165, 250, .3);
+}
+
+.btn-primary:active {
+  transform: scale(.97);
+}
+
+/* Button shine sweep */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -75%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+  transform: skewX(-20deg);
+  transition: none;
+  animation: btnShine 4s ease-in-out infinite;
+}
+
+@keyframes btnShine {
+  0%, 75%, 100% { left: -75%; }
+  85%   { left: 125%; }
+}
+
+/* --- Nav item animations --- */
+.nav-item {
+  transition: color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-spring);
+}
+
+.nav-item:active {
+  transform: scale(.9);
+}
+
+.nav-item.active .nav-icon {
+  animation: navBounce .4s var(--ease-spring);
+}
+
+@keyframes navBounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.2); }
+  70%  { transform: scale(.95); }
+  100% { transform: scale(1); }
+}
+
+/* --- Progress bar fill animation --- */
+.progress-bar,
+.skill-bar-fill,
+.pb-bar,
+.ob-progress-fill,
+.chat-skill-fill {
+  transition: width 1s var(--ease-spring);
+}
+
+/* --- Chat bubble entrance --- */
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateY(8px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* --- Card reveal on scroll (intersection observer will handle in JS) --- */
+@keyframes revealCard {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Subtle float for orbs --- */
+.orb-1 {
+  animation: orbFloat1 20s ease-in-out infinite alternate;
+}
+.orb-2 {
+  animation: orbFloat2 25s ease-in-out infinite alternate;
+}
+
+@keyframes orbFloat1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(-30px, 20px) scale(1.05); }
+  66%  { transform: translate(20px, -10px) scale(.95); }
+  100% { transform: translate(-40px, 30px) scale(1); }
+}
+
+@keyframes orbFloat2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(25px, -20px) scale(.95); }
+  66%  { transform: translate(-15px, 25px) scale(1.05); }
+  100% { transform: translate(30px, -25px) scale(1); }
+}
+
+/* --- Check circle celebration --- */
+@keyframes checkPop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.25); }
+  60%  { transform: scale(.9); }
+  100% { transform: scale(1); }
+}
+
+.check-circle.checked {
+  animation: checkPop .4s var(--ease-spring);
+}
+
+/* --- Mission complete strikethrough --- */
+.mission-item.completed .mission-task {
+  transition: opacity .4s, text-decoration-color .4s;
+  text-decoration: line-through;
+  text-decoration-color: var(--success);
+}
+
+/* --- Score number count-up shimmer --- */
+@keyframes scoreReveal {
+  0%   { opacity: 0; transform: scale(.5); filter: blur(8px); }
+  60%  { opacity: 1; transform: scale(1.05); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+.score-number {
+  animation: scoreReveal .8s var(--ease-spring) both;
+}
+
+/* --- Typing indicator --- */
+@keyframes typingDot {
+  0%, 60%, 100% { opacity: .3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+/* --- Mic pulse --- */
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248,113,113,.3); }
+  50%      { box-shadow: 0 0 0 10px rgba(248,113,113,0); }
+}
+
+/* --- Onboarding card selection --- */
+.ob-card {
+  transition: all var(--dur-normal) var(--ease-spring);
+}
+
+.ob-card.selected {
+  animation: cardSelect .35s var(--ease-spring);
+}
+
+@keyframes cardSelect {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* --- Auth tab slide --- */
+.auth-tab {
+  transition: all var(--dur-fast) var(--ease-spring);
+}
+
+.auth-tab.active {
+  animation: tabSlide .3s var(--ease-spring);
+}
+
+@keyframes tabSlide {
+  from { transform: scale(.95); }
+  to   { transform: scale(1); }
+}
+
+/* --- Modal sheet entrance --- */
+@keyframes sheetUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes modalBgIn {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to   { opacity: 1; backdrop-filter: blur(4px); }
+}
+
+/* --- Insight widget slide-in --- */
+.insight-widget:not(.hidden) {
+  animation: slideUp .5s var(--ease-spring) both;
+}
+
+/* --- Guest banner pulse --- */
+.guest-banner:not(.hidden) {
+  animation: fadeUp .4s var(--ease-spring) both;
+}
+
+/* --- Screen transitions enhancement --- */
+.screen {
+  will-change: opacity, transform, filter;
+}
+
+.screen.active {
+  animation: screenEnter .5s var(--ease-spring) both;
+}
+
+@keyframes screenEnter {
+  from { opacity: 0; transform: translateY(6px); filter: blur(3px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* --- Floating particles subtle twinkle --- */
+@keyframes twinkle {
+  0%, 100% { opacity: .15; }
+  50%      { opacity: .4; }
+}
+
+/* --- Review guide expand --- */
+.review-guide:not(.dismissed) {
+  animation: slideDown .4s var(--ease-spring) both;
+}
+
+@keyframes slideDown {
+  from { max-height: 0; opacity: 0; }
+  to   { max-height: 300px; opacity: 1; }
+}
+
+/* --- Badge float --- */
+.badge {
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+.badge:hover {
+  transform: translateY(-2px);
+}
+
+/* --- Profile avatar subtle breathe --- */
+@keyframes avatarBreathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(96,165,250,.1); }
+  50%      { box-shadow: 0 0 0 8px rgba(96,165,250,.05); }
+}
+
+.profile-avatar {
+  animation: avatarBreathe 4s ease-in-out infinite;
+}
+
+/* --- Streak badge glow for streaks >= 3 --- */
+@keyframes streakGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(96,165,250,.15); }
+  50%      { box-shadow: 0 0 16px rgba(96,165,250,.3); }
+}
+
+/* --- Toggle switch animation --- */
+.toggle-thumb {
+  transition: background var(--dur-fast) var(--ease-spring);
+}
+
+.toggle-thumb::before {
+  transition: all var(--dur-normal) var(--ease-spring);
+}
+
 
 /* Particle canvas */
 #particle-canvas {
@@ -183,6 +554,7 @@ img { display: block; max-width: 100%; }
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  will-change: opacity, transform, filter;
 }
 
 .screen.active {
@@ -230,25 +602,13 @@ img { display: block; max-width: 100%; }
 .progress-stat-card,
 .sample-card,
 .first-run-card,
+.first-run-signal,
 .insight-widget {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
-  transition: transform var(--dur-normal) var(--ease-spring),
-              box-shadow var(--dur-normal) var(--ease-spring);
-}
-
-/* Glass hover — subtle 1-2px lift */
-.pillar-card:hover,
-.stat-chip:hover,
-.mission-item:hover,
-.result-card:hover,
-.chart-card:hover,
-.progress-stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
 }
 
 
@@ -280,7 +640,6 @@ img { display: block; max-width: 100%; }
   flex: 1;
   padding: var(--sp-8) 0;
   color: var(--text-3);
-  transition: color var(--dur-fast) var(--ease-out);
 }
 .nav-item.active {
   color: var(--primary);
@@ -394,11 +753,6 @@ h3 { font-size: var(--fs-lg);  font-weight: 600; line-height: 1.3; }
   gap: var(--sp-32);
   text-align: center;
   animation: fadeUp .6s var(--ease-spring) both;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); filter: blur(4px); }
-  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
 }
 
 /* Logo */
@@ -1159,12 +1513,13 @@ h3 { font-size: var(--fs-lg);  font-weight: 600; line-height: 1.3; }
   gap: var(--sp-12);
 }
 .dash-brand-icon {
-  width: 40px; height: 40px;
+  width: 44px; height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--r-lg);
-  background: linear-gradient(135deg, var(--primary), var(--accent));
+  background: rgba(96, 165, 250, .08);
+  border: 1px solid rgba(96, 165, 250, .15);
   color: #fff;
   flex-shrink: 0;
 }
