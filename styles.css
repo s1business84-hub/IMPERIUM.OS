@@ -198,10 +198,10 @@ a{color:inherit;text-decoration:none}ul{list-style:none}
 .amount-row{display:flex;align-items:center;gap:8px}.amount-sym{font-size:2rem;color:var(--text2)}
 .amount-big{font-size:2.8rem;font-weight:800;width:100%;letter-spacing:-.04em;color:var(--text)}
 .amount-big::placeholder{color:var(--text3)}
-.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.cat-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;background:var(--glass);border:1.5px solid var(--border);border-radius:10px;font-size:1.3rem;transition:all .2s}
-.cat-btn small{font-size:.66rem;color:var(--text3);font-family:var(--font)}
-.cat-btn.selected{border-color:var(--blue);background:rgba(59,130,246,.1)}.cat-btn.selected small{color:var(--blue2)}
+.cat-pills{display:flex;flex-wrap:wrap;gap:7px;padding:2px 0 6px}
+.cat-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:var(--glass);border:1.5px solid var(--border);border-radius:99px;font-size:.82rem;font-weight:600;color:var(--text2);white-space:nowrap;transition:all .18s var(--tr);cursor:pointer}
+.cat-btn:hover{border-color:var(--blue);color:var(--text)}
+.cat-btn.selected{border-color:var(--blue);background:rgba(59,130,246,.15);color:var(--text);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
 .note-input{width:100%;padding:12px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.9rem}
 .note-input::placeholder{color:var(--text3)}
 .receipt-snap{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text2);cursor:pointer;padding:8px 0}
