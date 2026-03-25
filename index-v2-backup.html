@@ -12,10 +12,10 @@
   <meta name="apple-mobile-web-app-title" content="Imperium" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="application-name" content="Imperium" />
-  <meta name="description" content="See exactly how much of your life you wasted today — and how to fix it tomorrow." />
+  <meta name="description" content="A 2-minute daily review that turns your day into AI-powered feedback and tomorrow's action plan" />
 
-  <meta property="og:title" content="Imperium — Stop wasting your life" />
-  <meta property="og:description" content="A 2-minute daily review that shows you exactly how much you're wasting — time, money, potential — and builds tomorrow's fix." />
+  <meta property="og:title" content="Imperium — Your Daily Operating System" />
+  <meta property="og:description" content="A 2-minute daily review that turns your day into AI-powered feedback and tomorrow's action plan" />
   <meta property="og:type" content="website" />
   <title>Imperium</title>
 
@@ -36,29 +36,33 @@
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
 
+
+
     <!-- ═══════════════════════════════════════════
-         AUTH
+         AUTH — Split screen on desktop
     ════════════════════════════════════════════ -->
     <div class="screen" id="screen-auth">
       <div class="auth-split">
+        <!-- Left: product statement (visible on tablet+) -->
         <div class="auth-left">
           <div class="auth-left-inner">
             <span class="auth-left-icon anim-logo-pulse">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="url(#authLeftGrad)" stroke-width="1.5" fill="rgba(96,165,250,0.06)" stroke-linejoin="round"/>
-                <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="#60a5fa"/>
-                <defs><linearGradient id="authLeftGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#818cf8"/></linearGradient></defs>
-              </svg>
-            </span>
-            <h2 class="auth-left-title">Stop wasting your life.</h2>
-            <p class="auth-left-sub">2 minutes. Brutally honest. See exactly how much time, money, and potential you burned today — and get a plan to fix it tomorrow.</p>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="url(#authLeftGrad)" stroke-width="1.5" fill="rgba(96,165,250,0.06)" stroke-linejoin="round"/>
+              <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="#60a5fa"/>
+              <defs><linearGradient id="authLeftGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#818cf8"/></linearGradient></defs>
+            </svg>
+          </span>
+            <h2 class="auth-left-title">Your daily operating system</h2>
+            <p class="auth-left-sub">AI analyzes your day across 4 performance signals. Wake up with a plan.</p>
             <div class="auth-left-stats">
               <div class="auth-stat"><span class="auth-stat-num">2 min</span><span class="auth-stat-lbl">Daily check-in</span></div>
-              <div class="auth-stat"><span class="auth-stat-num">4</span><span class="auth-stat-lbl">Reality signals</span></div>
+              <div class="auth-stat"><span class="auth-stat-num">4</span><span class="auth-stat-lbl">Performance signals</span></div>
               <div class="auth-stat"><span class="auth-stat-num">100%</span><span class="auth-stat-lbl">Local &amp; private</span></div>
             </div>
           </div>
         </div>
+        <!-- Right: auth panel -->
         <div class="auth-right">
           <div class="auth-wrap">
             <div class="auth-logo">
@@ -72,13 +76,15 @@
               <h1 class="auth-brand anim-shimmer">Imperium</h1>
             </div>
 
-            <p class="auth-headline">See how much you wasted today — in 2 minutes</p>
+            <p class="auth-headline">Get your first AI review in 2 minutes</p>
 
+            <!-- Tab Toggle -->
             <div class="auth-tabs">
               <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
               <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
             </div>
 
+            <!-- Login Form -->
             <div class="auth-form active" id="form-login">
               <div class="auth-field-wrap">
                 <label class="auth-label">Email</label>
@@ -105,6 +111,7 @@
               </button>
             </div>
 
+            <!-- Sign Up Form -->
             <div class="auth-form" id="form-signup">
               <div class="auth-field-wrap">
                 <label class="auth-label">Full Name</label>
@@ -134,9 +141,10 @@
               </button>
             </div>
 
+            <!-- Demo CTA -->
             <button class="auth-demo-btn" onclick="continueAsGuest()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              Try it free — no signup needed
+              Try demo first — no signup needed
             </button>
 
             <div class="auth-toast hidden" id="auth-toast"></div>
@@ -153,28 +161,21 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         ONBOARDING — Conversational, direct
+         ONBOARDING — 4 steps, one per screen
     ════════════════════════════════════════════ -->
     <div class="screen" id="screen-onboarding">
       <div class="onboarding-wrap">
+        <!-- Progress bar -->
         <div class="ob-progress">
           <div class="ob-progress-fill" id="ob-progress-fill" style="width:25%"></div>
         </div>
         <p class="ob-step-label" id="ob-step-label">Step 1 of 4</p>
+        <p class="ob-framing">Let's personalize your system</p>
 
-        <div class="ob-ai-intro" id="ob-ai-intro">
-          <div class="ob-ai-avatar">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
-              <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="#60a5fa"/>
-            </svg>
-          </div>
-          <p class="ob-ai-text" id="ob-ai-text">Before I can tell you what you're wasting, I need to know who you are. 4 quick questions.</p>
-        </div>
-
+        <!-- Step 1: Role -->
         <div class="onboarding-step active" id="ob-step-1">
-          <h2 class="ob-question">What do you do?</h2>
-          <p class="ob-subtitle">This changes how I score you and what missions I assign</p>
+          <h2 class="ob-question">What best describes you?</h2>
+          <p class="ob-subtitle">This controls language, missions, and benchmarks</p>
           <div class="ob-cards">
             <button class="ob-card" data-value="student" onclick="selectRole(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
@@ -195,32 +196,34 @@
           </div>
         </div>
 
+        <!-- Step 2: Goal -->
         <div class="onboarding-step" id="ob-step-2">
-          <h2 class="ob-question">What's killing you right now?</h2>
-          <p class="ob-subtitle">Be honest. I'll design everything around fixing this.</p>
+          <h2 class="ob-question">What's your #1 goal for the next 30 days?</h2>
+          <p class="ob-subtitle">Every insight and mission is calibrated to this</p>
           <div class="ob-cards">
             <button class="ob-card" data-value="money" onclick="selectGoal(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-              <span class="ob-card-text"><span class="ob-card-label">Bleeding money</span><span class="ob-card-desc">Spending without thinking, no income growth</span></span>
+              <span class="ob-card-text"><span class="ob-card-label">Stop Wasting Money</span><span class="ob-card-desc">Track spending, find leaks</span></span>
             </button>
             <button class="ob-card" data-value="discipline" onclick="selectGoal(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-              <span class="ob-card-text"><span class="ob-card-label">Zero discipline</span><span class="ob-card-desc">Can't stick to anything, always restarting</span></span>
+              <span class="ob-card-text"><span class="ob-card-label">Consistent Routine</span><span class="ob-card-desc">Show up every day</span></span>
             </button>
             <button class="ob-card" data-value="focus" onclick="selectGoal(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
-              <span class="ob-card-text"><span class="ob-card-label">Constant distraction</span><span class="ob-card-desc">Phone, scrolling, can't do deep work</span></span>
+              <span class="ob-card-text"><span class="ob-card-label">Deep Focus</span><span class="ob-card-desc">Ship real work, kill distractions</span></span>
             </button>
             <button class="ob-card" data-value="decisions" onclick="selectGoal(this)">
               <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg></span>
-              <span class="ob-card-text"><span class="ob-card-label">Bad decisions</span><span class="ob-card-desc">Keep making the same mistakes</span></span>
+              <span class="ob-card-text"><span class="ob-card-label">Better Decisions</span><span class="ob-card-desc">Think clearly, act fast</span></span>
             </button>
           </div>
         </div>
 
+        <!-- Step 3: Reminder Time -->
         <div class="onboarding-step" id="ob-step-3">
-          <h2 class="ob-question">When should I hold you accountable?</h2>
-          <p class="ob-subtitle">I'll remind you to do your daily review</p>
+          <h2 class="ob-question">When should we remind you to review?</h2>
+          <p class="ob-subtitle">Most people review at the end of their day</p>
           <div class="ob-cards">
             <button class="ob-card" data-value="morning" onclick="selectReminder(this)">
               <span class="ob-card-icon">☀️</span>
@@ -241,41 +244,44 @@
           </div>
         </div>
 
+        <!-- Step 4: Mission Intensity -->
         <div class="onboarding-step" id="ob-step-4">
-          <h2 class="ob-question">How hard should I push you?</h2>
-          <p class="ob-subtitle">This controls how brutal the feedback gets</p>
+          <h2 class="ob-question">How intense should your missions be?</h2>
+          <p class="ob-subtitle">You can change this anytime in settings</p>
           <div class="ob-cards">
             <button class="ob-card" data-value="easy" onclick="selectIntensity(this)">
               <span class="ob-card-icon">🌱</span>
-              <span class="ob-card-text"><span class="ob-card-label">Encouraging</span><span class="ob-card-desc">Gentle nudges, positive framing</span></span>
+              <span class="ob-card-text"><span class="ob-card-label">Light</span><span class="ob-card-desc">2 simple daily missions</span></span>
             </button>
             <button class="ob-card selected" data-value="moderate" onclick="selectIntensity(this)">
               <span class="ob-card-icon">⚡</span>
-              <span class="ob-card-text"><span class="ob-card-label">Direct</span><span class="ob-card-desc">Honest feedback, no sugarcoating — recommended</span></span>
+              <span class="ob-card-text"><span class="ob-card-label">Moderate</span><span class="ob-card-desc">2 core + 1 stretch mission — recommended</span></span>
             </button>
             <button class="ob-card" data-value="intense" onclick="selectIntensity(this)">
               <span class="ob-card-icon">🔥</span>
-              <span class="ob-card-text"><span class="ob-card-label">Brutal</span><span class="ob-card-desc">Unfiltered truth. Will hurt. Will work.</span></span>
+              <span class="ob-card-text"><span class="ob-card-label">Intense</span><span class="ob-card-desc">3 core + 1 stretch mission</span></span>
             </button>
           </div>
-          <button class="btn-primary ob-finish-btn" id="ob-finish-btn" onclick="finishOnboarding()">Show me what I'm wasting →</button>
+          <button class="btn-primary ob-finish-btn" id="ob-finish-btn" onclick="finishOnboarding()">Start Using Imperium →</button>
         </div>
       </div>
     </div>
 
     <!-- ═══════════════════════════════════════════
-         HOME — Daily Reality Check
+         HOME DASHBOARD — Daily Operating Score
     ════════════════════════════════════════════ -->
     <div class="screen active" id="screen-home">
       <canvas id="beams-canvas"></canvas>
       <div class="screen-content has-nav">
 
+        <!-- Guest banner -->
         <div class="guest-banner hidden" id="guest-banner">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span id="guest-banner-text">Guest mode — <strong id="guest-days-left">3 days</strong> remaining</span>
           <button class="guest-banner-btn" onclick="skipToAuth()">Save Progress →</button>
         </div>
 
+        <!-- AI insight widget -->
         <div class="insight-widget hidden" id="insight-widget">
           <div class="insight-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -286,6 +292,7 @@
           <p class="insight-text" id="insight-text"></p>
         </div>
 
+        <!-- Imperium Branded Header -->
         <header class="dash-header anim-fade-in">
           <div class="dash-brand">
             <div class="dash-brand-icon anim-logo-pulse">
@@ -305,49 +312,72 @@
           </div>
         </header>
 
-        <!-- ===== FIRST-TIME USER ===== -->
+        <!-- First-Time User — Welcome + How it works -->
         <div class="first-run-section" id="first-run-section">
+          <!-- Hero intro -->
           <div class="first-run-hero anim-stagger">
-            <h2 class="first-run-headline">How much of your life<br>did you waste today?</h2>
-            <p class="first-run-desc">Answer 7 honest questions. Get a brutally clear score, see exactly where your time and money went, and wake up tomorrow with a plan that actually works.</p>
+            <p class="first-run-tagline">Your Daily Operating System</p>
+            <p class="first-run-desc">A 2-minute daily review that scores you across 4 performance signals and builds tomorrow's action plan.</p>
           </div>
 
+          <!-- What Imperium does — signals -->
           <div class="first-run-signals">
             <div class="first-run-signal">
-              <span class="signal-dot" style="background:#f87171"></span>
-              <span><strong>Time wasted</strong> — hours burned on nothing</span>
+              <span class="signal-dot" style="background:#60a5fa"></span>
+              <span><strong>Execution</strong> — did you ship real work?</span>
+            </div>
+            <div class="first-run-signal">
+              <span class="signal-dot" style="background:#a855f7"></span>
+              <span><strong>Reasoning</strong> — are you making good decisions?</span>
+            </div>
+            <div class="first-run-signal">
+              <span class="signal-dot" style="background:#14b8a6"></span>
+              <span><strong>Focus</strong> — high-value work vs distractions</span>
             </div>
             <div class="first-run-signal">
               <span class="signal-dot" style="background:#d4af37"></span>
-              <span><strong>Money leaked</strong> — spending you didn't need</span>
-            </div>
-            <div class="first-run-signal">
-              <span class="signal-dot" style="background:#60a5fa"></span>
-              <span><strong>Potential gap</strong> — how far below your max you are</span>
-            </div>
-            <div class="first-run-signal">
-              <span class="signal-dot" style="background:#34d399"></span>
-              <span><strong>Tomorrow's fix</strong> — exact actions to recover</span>
+              <span><strong>Financial</strong> — spending wisely, moving to earn</span>
             </div>
           </div>
 
-          <div class="first-run-proof">
-            <p class="proof-text">"I didn't realize I was wasting 3 hours a day until this showed me."</p>
+          <!-- How it works -->
+          <div class="first-run-steps">
+            <div class="first-run-step">
+              <div class="step-num">1</div>
+              <div><strong>Check in</strong> — answer 7 questions (~2 min)</div>
+            </div>
+            <div class="first-run-step">
+              <div class="step-num">2</div>
+              <div><strong>AI analyzes</strong> — scores + evidence-based insights</div>
+            </div>
+            <div class="first-run-step">
+              <div class="step-num">3</div>
+              <div><strong>Get your plan</strong> — personalised missions for tomorrow</div>
+            </div>
           </div>
 
-          <div class="first-run-card anim-slide-up" style="--delay:.3s">
-            <h3 class="first-run-title">Your first reality check</h3>
-            <p class="first-run-sub">7 questions. 2 minutes. You'll never see your day the same way again.</p>
+          <!-- CTA -->
+          <div class="first-run-card anim-slide-up" style="--delay:.4s">
+            <div class="first-run-icon anim-logo-pulse">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="#60a5fa" stroke-width="1.2" fill="rgba(96,165,250,0.08)" stroke-linejoin="round"/>
+                <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="#60a5fa"/>
+              </svg>
+            </div>
+            <h3 class="first-run-title">Start your first review</h3>
+            <p class="first-run-sub">It takes 2 minutes. You'll get your operating score, AI analysis, and tomorrow's missions.</p>
             <button class="btn-primary first-run-btn" onclick="navigateTo('screen-review')">
-              Start My Review →
+              Start 2-Minute Review →
             </button>
-            <p class="first-run-privacy">🔒 All data stays on this device. We never see your answers.</p>
+            <p class="first-run-privacy">🔒 All data stays on this device</p>
           </div>
 
+          <!-- Auth link for new users -->
           <div class="first-run-auth" id="first-run-auth">
             <button class="first-run-auth-btn" onclick="skipToAuth()">Create Account / Log In</button>
           </div>
 
+          <!-- Trust + credits -->
           <div class="trust-bar">
             <span class="trust-item">🔒 100% local</span>
             <span class="trust-item">⚡ 2 min daily</span>
@@ -361,16 +391,8 @@
           </div>
         </div>
 
-        <!-- ===== RETURNING USER ===== -->
+        <!-- Returning user: primary action -->
         <div class="returning-section" id="returning-section">
-
-          <!-- Verdict — emotional hook -->
-          <div class="verdict-card" id="verdict-card">
-            <div class="verdict-emoji" id="verdict-emoji">⚡</div>
-            <div class="verdict-headline" id="verdict-headline">You haven't checked in yet today.</div>
-            <div class="verdict-sub" id="verdict-sub">Do your 2-minute review to see today's reality check.</div>
-          </div>
-
           <!-- Score Ring -->
           <div class="score-ring-wrap anim-scale-in">
             <div class="score-ring">
@@ -387,35 +409,7 @@
               </svg>
               <div class="score-center">
                 <span class="score-number" id="daily-score">--</span>
-                <span class="score-label">Reality Score</span>
-              </div>
-            </div>
-            <p class="score-potential" id="score-potential"></p>
-          </div>
-
-          <!-- Waste Breakdown -->
-          <div class="waste-section" id="waste-section">
-            <h3 class="section-title">Today's Damage Report</h3>
-            <div class="waste-grid">
-              <div class="waste-card waste-time">
-                <div class="waste-icon">⏱️</div>
-                <div class="waste-val" id="waste-time-val">—</div>
-                <div class="waste-lbl">Hours Wasted</div>
-              </div>
-              <div class="waste-card waste-money">
-                <div class="waste-icon">💸</div>
-                <div class="waste-val" id="waste-money-val">—</div>
-                <div class="waste-lbl">Money Burned</div>
-              </div>
-              <div class="waste-card waste-potential">
-                <div class="waste-icon">📉</div>
-                <div class="waste-val" id="waste-potential-val">—</div>
-                <div class="waste-lbl">Below Potential</div>
-              </div>
-              <div class="waste-card waste-streak">
-                <div class="waste-icon">🔥</div>
-                <div class="waste-val" id="waste-streak-val">0</div>
-                <div class="waste-lbl">Day Streak</div>
+                <span class="score-label">Today's Score</span>
               </div>
             </div>
           </div>
@@ -459,6 +453,7 @@
             </div>
           </div>
 
+          <!-- Quick Stats -->
           <div class="quick-stats">
             <div class="stat-chip">
               <span class="stat-num" id="streak-count">0</span>
@@ -475,6 +470,7 @@
           </div>
         </div>
 
+        <!-- Review Button -->
         <button class="btn-primary review-btn" onclick="navigateTo('screen-review')">
           Start Daily Review · 2 min
         </button>
@@ -483,7 +479,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         DAILY REVIEW (CHAT)
+         DAILY REVIEW (CHAT) — with progress indicator
     ════════════════════════════════════════════ -->
     <div class="screen" id="screen-review">
       <div class="chat-header">
@@ -500,21 +496,23 @@
             <p class="chat-status" id="chat-status-text">Ready to analyze your day</p>
           </div>
         </div>
+        <!-- Progress indicator -->
         <div class="review-progress" id="review-progress">
           <span class="review-step-text" id="review-step-text">1/7</span>
           <span class="review-time-est">~2 min</span>
         </div>
       </div>
 
+      <!-- Input guide banner -->
       <div class="review-guide" id="review-guide">
         <div class="review-guide-inner">
           <button class="review-guide-close" onclick="dismissReviewGuide()" aria-label="Close guide">✕</button>
-          <h4 class="review-guide-title">💡 Be brutally honest</h4>
+          <h4 class="review-guide-title">💡 How to answer</h4>
           <ul class="review-guide-list">
-            <li><strong>Be specific</strong> — "Scrolled TikTok for 2 hrs" beats "wasted some time"</li>
-            <li><strong>Be honest</strong> — lying to this app only wastes your own time</li>
-            <li><strong>Use voice</strong> — tap 🎙️ to speak instead of typing</li>
-            <li><strong>Dollar amounts</strong> — just type the number (e.g. "45")</li>
+            <li><strong>Be specific</strong> — "Worked on pitch deck for 2 hrs" beats "did some work"</li>
+            <li><strong>Be honest</strong> — accuracy makes AI insights actually useful</li>
+            <li><strong>Use voice</strong> — tap the mic 🎙️ to speak your answer instead of typing</li>
+            <li><strong>Dollar amounts</strong> — for spending/earning, just type the number (e.g. "45")</li>
           </ul>
         </div>
       </div>
@@ -534,51 +532,34 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
         </div>
-        <p class="chat-privacy-note">🔒 Your answers never leave this device</p>
+        <p class="chat-privacy-note">🔒 Your answers stay on this device</p>
       </div>
     </div>
 
     <!-- ═══════════════════════════════════════════
-         ANALYSIS — Reality Report
+         ANALYSIS — Intelligence Report
     ════════════════════════════════════════════ -->
     <div class="screen" id="screen-results">
       <div class="screen-content has-nav">
         <header class="results-header">
           <button class="back-btn ghost" onclick="navigateTo('screen-home')">‹ Home</button>
-          <h2 class="results-title">Your Reality Check</h2>
+          <h2 class="results-title">Today's Intelligence Report</h2>
           <div></div>
         </header>
 
+        <!-- Score Banner -->
         <div class="results-score-banner">
           <div class="results-score-inner">
             <span class="results-score-num" id="result-score-num">--</span>
-            <span class="results-score-lbl">Reality Score</span>
+            <span class="results-score-lbl">Operating Score</span>
           </div>
           <div class="results-score-trend" id="result-trend"></div>
         </div>
 
-        <!-- Waste punch -->
-        <div class="waste-summary-card" id="waste-summary-card">
-          <h3 class="waste-summary-title" id="waste-summary-title">Today's damage:</h3>
-          <div class="waste-summary-stats">
-            <div class="ws-stat">
-              <span class="ws-val" id="ws-time">—</span>
-              <span class="ws-lbl">wasted</span>
-            </div>
-            <div class="ws-stat">
-              <span class="ws-val" id="ws-money">—</span>
-              <span class="ws-lbl">burned</span>
-            </div>
-            <div class="ws-stat">
-              <span class="ws-val" id="ws-potential">—</span>
-              <span class="ws-lbl">below max</span>
-            </div>
-          </div>
-        </div>
-
+        <!-- Signal Breakdown -->
         <div class="skill-breakdown-card" id="skill-breakdown-card">
-          <h3 class="skill-breakdown-title">Performance Breakdown</h3>
-          <p class="skill-breakdown-sub">Based on what you told us</p>
+          <h3 class="skill-breakdown-title">Performance Signals</h3>
+          <p class="skill-breakdown-sub">Each score is based on what you told us</p>
           <div class="skill-bars">
             <div class="skill-bar-row">
               <div class="skill-bar-label"><span class="skill-dot" style="background:#60a5fa"></span><span>Execution</span></div>
@@ -604,30 +585,32 @@
           <div class="input-summary" id="input-summary"></div>
         </div>
 
+        <!-- Dominant Insight — highlighted -->
         <div class="insight-highlight" id="insight-highlight">
-          <h3 class="insight-highlight-title">⚠️ Key Finding</h3>
+          <h3 class="insight-highlight-title">Key Finding</h3>
           <p class="insight-highlight-body" id="insight-highlight-body">Complete your daily review to see insights.</p>
         </div>
 
+        <!-- Intelligence Cards -->
         <div class="result-cards" id="result-cards">
           <div class="result-card">
-            <h3 class="result-card-label">🔴 Biggest Mistake</h3>
+            <h3 class="result-card-label">Biggest Mistake</h3>
             <p class="result-body" id="res-mistake">Complete your daily review to see insights.</p>
           </div>
           <div class="result-card">
-            <h3 class="result-card-label">💸 Money Reality</h3>
+            <h3 class="result-card-label">Money Impact</h3>
             <p class="result-body" id="res-money">—</p>
           </div>
           <div class="result-card">
-            <h3 class="result-card-label">🧠 Thinking Pattern</h3>
+            <h3 class="result-card-label">Thinking Pattern</h3>
             <p class="result-body" id="res-thinking">—</p>
           </div>
           <div class="result-card">
-            <h3 class="result-card-label">🚫 What You Missed</h3>
+            <h3 class="result-card-label">Missed Opportunity</h3>
             <p class="result-body" id="res-missed">—</p>
           </div>
           <div class="result-card result-card-action">
-            <h3 class="result-card-label">✅ Tomorrow's Fix</h3>
+            <h3 class="result-card-label">Tomorrow's Fix</h3>
             <ul class="result-fixes" id="res-fixes"><li>—</li></ul>
           </div>
         </div>
@@ -639,29 +622,31 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         TOMORROW'S FIX (MISSIONS)
+         TODAY'S PLAN (MISSIONS)
     ════════════════════════════════════════════ -->
     <div class="screen" id="screen-missions">
       <div class="screen-content has-nav">
         <header class="section-header-row">
           <div>
-            <h2 class="page-title">Tomorrow's Fix</h2>
-            <p class="page-sub" id="missions-page-sub">Targeted at your weakest signals</p>
+            <h2 class="page-title">Today's Plan</h2>
+            <p class="page-sub" id="missions-page-sub">Based on yesterday's weakest signals</p>
           </div>
         </header>
 
+        <!-- Empty state when no review data -->
         <div class="missions-empty" id="missions-empty">
           <div class="missions-empty-icon">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           </div>
-          <h3 class="missions-empty-title">No plan yet</h3>
-          <p class="missions-empty-desc">Complete your daily review and I'll generate targeted missions based on your weakest areas.</p>
+          <h3 class="missions-empty-title">No missions yet</h3>
+          <p class="missions-empty-desc">Complete your first daily review and Imperium will generate personalised missions based on your weakest signals.</p>
           <button class="btn-primary" onclick="navigateTo('screen-review')" style="margin-top:16px">
             Start Daily Review →
           </button>
         </div>
 
         <div class="missions-list hidden" id="missions-list">
+          <!-- Core mission 1 -->
           <div class="mission-item" id="mission-execution" data-pillar="execution">
             <div class="mission-check" onclick="completeMission('execution')">
               <div class="check-circle" id="check-execution"></div>
@@ -676,6 +661,7 @@
             </div>
           </div>
 
+          <!-- Core mission 2 -->
           <div class="mission-item" id="mission-reasoning" data-pillar="reasoning">
             <div class="mission-check" onclick="completeMission('reasoning')">
               <div class="check-circle" id="check-reasoning"></div>
@@ -690,6 +676,7 @@
             </div>
           </div>
 
+          <!-- Stretch mission -->
           <div class="mission-item stretch-mission" id="mission-focus" data-pillar="focus">
             <div class="mission-check" onclick="completeMission('focus')">
               <div class="check-circle" id="check-focus"></div>
@@ -706,6 +693,7 @@
           </div>
         </div>
 
+        <!-- Completion status -->
         <div class="missions-status" id="missions-status">
           <span class="missions-status-text" id="missions-status-text">0 of 3 completed</span>
         </div>
@@ -713,37 +701,20 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         PROGRESS — Your Pattern
+         PROGRESS — Natural language insights
     ════════════════════════════════════════════ -->
     <div class="screen" id="screen-progress">
       <div class="screen-content has-nav">
         <header class="section-header-row">
-          <h2 class="page-title">Your Pattern</h2>
+          <h2 class="page-title">Progress</h2>
         </header>
 
+        <!-- Natural language weekly summary -->
         <div class="progress-summary-card" id="progress-summary">
-          <p class="progress-summary-text" id="progress-summary-text">Complete a few reviews to see your weekly pattern here.</p>
+          <p class="progress-summary-text" id="progress-summary-text">Complete a few reviews to see your weekly summary.</p>
         </div>
 
-        <!-- Cumulative waste -->
-        <div class="cumulative-waste" id="cumulative-waste">
-          <h3 class="section-title">This Week's Total Waste</h3>
-          <div class="cw-grid">
-            <div class="cw-item">
-              <span class="cw-val" id="cw-hours">0</span>
-              <span class="cw-lbl">Hours Wasted</span>
-            </div>
-            <div class="cw-item">
-              <span class="cw-val" id="cw-money">$0</span>
-              <span class="cw-lbl">Money Burned</span>
-            </div>
-            <div class="cw-item">
-              <span class="cw-val" id="cw-potential">0%</span>
-              <span class="cw-lbl">Avg Below Max</span>
-            </div>
-          </div>
-        </div>
-
+        <!-- Stats Row -->
         <div class="progress-stats-row">
           <div class="progress-stat-card">
             <span class="p-stat-num" id="prog-streak">0</span>
@@ -759,11 +730,13 @@
           </div>
         </div>
 
+        <!-- Score Chart -->
         <div class="chart-card">
-          <h3 class="chart-title">Reality Score Trend</h3>
+          <h3 class="chart-title">Weekly Trend</h3>
           <div class="chart-wrap"><canvas id="score-chart"></canvas></div>
         </div>
 
+        <!-- Signal Breakdown -->
         <div class="chart-card">
           <h3 class="chart-title">Signal Breakdown</h3>
           <div class="pillar-breakdown" id="pillar-breakdown-prog">
@@ -793,7 +766,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════════
-         PROFILE / SETTINGS
+         PROFILE / SETTINGS — Full trust layer
     ════════════════════════════════════════════ -->
     <div class="screen" id="screen-profile">
       <div class="screen-content has-nav">
@@ -809,6 +782,7 @@
           </div>
         </div>
 
+        <!-- Account -->
         <div class="settings-section">
           <h3 class="settings-heading">Account</h3>
           <div class="settings-card">
@@ -828,6 +802,7 @@
           </div>
         </div>
 
+        <!-- Notifications -->
         <div class="settings-section">
           <h3 class="settings-heading">Notifications</h3>
           <div class="settings-card">
@@ -854,44 +829,53 @@
           </div>
         </div>
 
+        <!-- Data & Privacy -->
         <div class="settings-section">
           <h3 class="settings-heading">Data &amp; Privacy</h3>
           <div class="settings-card">
             <div class="setting-row">
               <div class="setting-info">
                 <span class="setting-label">Where is my data stored?</span>
-                <span class="setting-desc">100% local on this device. Nothing is uploaded. We never see your answers.</span>
+                <span class="setting-desc">100% local on this device. Nothing is uploaded to any server. We never see your answers.</span>
               </div>
             </div>
             <div class="setting-row">
               <div class="setting-info">
-                <span class="setting-label">How does scoring work?</span>
-                <span class="setting-desc">Calculated locally from your answers. No external AI APIs.</span>
+                <span class="setting-label">How does AI scoring work?</span>
+                <span class="setting-desc">Your score is calculated locally from discipline, time usage, money behaviour, and task completion. No external AI APIs are called.</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Is my data used for training?</span>
+                <span class="setting-desc">No. Your personal data never leaves your device. We don't train models on user data.</span>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- Export & Data Control -->
         <div class="settings-section">
           <h3 class="settings-heading">Data Controls</h3>
           <div class="settings-card">
             <div class="setting-row" onclick="exportData()">
               <div class="setting-info">
                 <span class="setting-label">Export My Data</span>
-                <span class="setting-desc">Download everything as JSON</span>
+                <span class="setting-desc">Download all reviews, scores, and insights as JSON</span>
               </div>
               <span class="setting-arrow">›</span>
             </div>
             <div class="setting-row" onclick="resetApp()">
               <div class="setting-info">
                 <span class="setting-label danger">Delete All Data</span>
-                <span class="setting-desc">Permanently clear everything</span>
+                <span class="setting-desc">Permanently clear all history and start fresh</span>
               </div>
               <span class="setting-arrow">›</span>
             </div>
           </div>
         </div>
 
+        <!-- Pro Upgrade -->
         <div class="pro-card">
           <h3 class="pro-title">Imperium Pro</h3>
           <p class="pro-subtitle">Deeper analysis for serious users</p>
@@ -906,13 +890,14 @@
           <p class="pro-note">First 100 members lock in $8/mo forever. Regular price $20/mo.</p>
         </div>
 
+        <!-- App Info -->
         <div class="settings-section">
           <h3 class="settings-heading">App</h3>
           <div class="settings-card">
             <div class="setting-row">
               <div class="setting-info">
                 <span class="setting-label">Version</span>
-                <span class="setting-desc">Imperium v3.0.0</span>
+                <span class="setting-desc">Imperium v2.0.0</span>
               </div>
             </div>
           </div>
@@ -932,19 +917,19 @@
     <nav class="bottom-nav" id="bottom-nav">
       <button class="nav-item active" onclick="navigateTo('screen-home')" id="nav-home">
         <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 14 15 14 15 21"/></svg></span>
-        <span class="nav-label">Today</span>
+        <span class="nav-label">Home</span>
       </button>
       <button class="nav-item" onclick="navigateTo('screen-missions')" id="nav-missions">
         <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
-        <span class="nav-label">Fix</span>
+        <span class="nav-label">Plan</span>
       </button>
       <button class="nav-item" onclick="navigateTo('screen-results')" id="nav-results">
         <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></span>
-        <span class="nav-label">Report</span>
+        <span class="nav-label">Analysis</span>
       </button>
       <button class="nav-item" onclick="navigateTo('screen-progress')" id="nav-progress">
         <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
-        <span class="nav-label">Pattern</span>
+        <span class="nav-label">Progress</span>
       </button>
       <button class="nav-item" onclick="navigateTo('screen-profile')" id="nav-profile">
         <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
@@ -977,6 +962,7 @@
       </div>
     </div>
 
+    <!-- FOOTER -->
     <footer class="app-footer">
       <p>Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p>
       <p class="footer-copy">© 2026 Imperium. All rights reserved.</p>

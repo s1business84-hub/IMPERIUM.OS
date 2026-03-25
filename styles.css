@@ -3032,6 +3032,222 @@ h3 { font-size: var(--fs-lg);  font-weight: 600; line-height: 1.3; }
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   v3.0.0 — New Components: Verdict, Waste, Onboarding AI
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Onboarding: AI intro ────────────────────────────────── */
+.ob-ai-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-12);
+  margin-bottom: var(--sp-24);
+  padding: var(--sp-16);
+  background: rgba(96, 165, 250, 0.06);
+  border: 1px solid rgba(96, 165, 250, 0.15);
+  border-radius: var(--r-xl);
+}
+.ob-ai-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(96, 165, 250, 0.1);
+  border-radius: 50%;
+}
+.ob-ai-text {
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ── First-run headline (replaces tagline) ────────────────── */
+.first-run-headline {
+  font-size: clamp(1.5rem, 5.5vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  margin-bottom: var(--sp-12);
+}
+
+/* ── First-run proof quote ────────────────────────────────── */
+.first-run-proof {
+  text-align: center;
+  margin-bottom: var(--sp-24);
+  padding: var(--sp-16);
+  background: rgba(96, 165, 250, 0.04);
+  border-left: 3px solid var(--primary);
+  border-radius: 0 var(--r-lg) var(--r-lg) 0;
+}
+.proof-text {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Verdict Card ─────────────────────────────────────────── */
+.verdict-card {
+  text-align: center;
+  padding: var(--sp-24) var(--sp-16);
+  margin-bottom: var(--sp-24);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  animation: fadeIn .5s ease both;
+}
+.verdict-emoji {
+  font-size: 2.5rem;
+  margin-bottom: var(--sp-8);
+  line-height: 1;
+}
+.verdict-headline {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1.3;
+  margin-bottom: var(--sp-8);
+}
+.verdict-sub {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+/* ── Waste Section ────────────────────────────────────────── */
+.waste-section {
+  margin-bottom: var(--sp-24);
+}
+.waste-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-12);
+}
+.waste-card {
+  padding: var(--sp-16);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  text-align: center;
+  transition: transform .2s, border-color .2s;
+}
+.waste-card:hover {
+  transform: translateY(-2px);
+}
+.waste-icon {
+  font-size: 1.5rem;
+  margin-bottom: var(--sp-4);
+}
+.waste-val {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1.2;
+}
+.waste-lbl {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  margin-top: var(--sp-4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.waste-time { border-color: rgba(248, 113, 113, 0.2); }
+.waste-time .waste-val { color: #f87171; }
+.waste-money { border-color: rgba(212, 175, 55, 0.2); }
+.waste-money .waste-val { color: #d4af37; }
+.waste-potential { border-color: rgba(96, 165, 250, 0.2); }
+.waste-potential .waste-val { color: #60a5fa; }
+.waste-streak { border-color: rgba(52, 211, 153, 0.2); }
+.waste-streak .waste-val { color: #34d399; }
+
+/* ── Score Potential ──────────────────────────────────────── */
+.score-potential {
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  margin-top: var(--sp-8);
+  line-height: 1.4;
+}
+
+/* ── Waste Summary (Results screen) ──────────────────────── */
+.waste-summary-card {
+  padding: var(--sp-20) var(--sp-16);
+  margin-bottom: var(--sp-24);
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.08), rgba(212, 175, 55, 0.06));
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: var(--r-xl);
+  text-align: center;
+}
+.waste-summary-title {
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: #f87171;
+  margin-bottom: var(--sp-16);
+}
+.waste-summary-stats {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--sp-8);
+}
+.ws-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.ws-val {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--text-1);
+}
+.ws-lbl {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Cumulative Waste (Progress screen) ──────────────────── */
+.cumulative-waste {
+  margin-bottom: var(--sp-24);
+}
+.cw-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-12);
+}
+.cw-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-16);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+}
+.cw-val {
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: #f87171;
+}
+.cw-lbl {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+/* ── Returning section visibility ────────────────────────── */
+.returning-section.hidden { display: none; }
+.review-btn.hidden { display: none; }
+
 /* Large Desktop (1440px+) */
 @media (min-width: 1440px) {
   .bottom-nav { width: 260px; }
