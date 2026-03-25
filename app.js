@@ -208,29 +208,66 @@ function togglePw(id) {
 
 /* ── ONBOARDING ───────────────────────────────────── */
 let obStep = 1;
+
 function pickSituation(btn) {
   document.querySelectorAll('#ob-1 .ob-opt').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   S.situation = btn.dataset.v;
-  setTimeout(() => goObStep(2), 300);
+  document.getElementById('ob-next-1').disabled = false;
 }
+
 function pickGoal(btn) {
   document.querySelectorAll('#ob-2 .ob-opt').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   S.goal = btn.dataset.v;
-  setTimeout(() => goObStep(3), 300);
+  document.getElementById('ob-next-2').disabled = false;
 }
+
 function pickIncome(btn) {
   document.querySelectorAll('#ob-3 .ob-opt').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   S.income = parseInt(btn.dataset.v) || 0;
+  document.getElementById('ob-next-3').disabled = false;
 }
+
 function goObStep(n) {
-  document.getElementById('ob-' + obStep).classList.remove('active');
+  const prev = document.getElementById('ob-' + obStep);
+  const next = document.getElementById('ob-' + n);
+  const forward = n > obStep;
+
+  // Slide out current
+  prev.classList.add(forward ? 'ob-exit-left' : 'ob-exit-right');
+  setTimeout(() => {
+    prev.classList.remove('ob-slide-active', 'ob-exit-left', 'ob-exit-right');
+  }, 320);
+
+  // Slide in next
+  next.classList.add(forward ? 'ob-enter-right' : 'ob-enter-left');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    next.classList.add('ob-slide-active');
+    next.classList.remove('ob-enter-right', 'ob-enter-left');
+  }));
+
   obStep = n;
-  document.getElementById('ob-' + n).classList.add('active');
+
+  // Progress bar
   document.getElementById('ob-fill').style.width = (n / 3 * 100) + '%';
+
+  // Dots
+  document.querySelectorAll('.ob-dot').forEach((d, i) => d.classList.toggle('active', i < n));
+
+  // Step label
+  document.getElementById('ob-step-label').textContent = n + ' of 3';
+
+  // Back button
+  const back = document.getElementById('ob-back');
+  back.style.visibility = n > 1 ? 'visible' : 'hidden';
 }
+
+function obBack() {
+  if (obStep > 1) goObStep(obStep - 1);
+}
+
 function finishOnboarding() {
   S.onboarded = true;
   S.aiGensLeft = 3;

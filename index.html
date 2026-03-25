@@ -98,43 +98,123 @@
        ONBOARDING
   ══════════════════════════════════════════ -->
   <div class="screen" id="screen-onboarding">
-    <div class="ob-wrap">
+    <div class="ob-shell">
+
+      <!-- Top bar -->
+      <div class="ob-topbar">
+        <button class="ob-back-btn" id="ob-back" onclick="obBack()" style="visibility:hidden">‹ Back</button>
+        <div class="ob-dots">
+          <span class="ob-dot active" id="ob-dot-1"></span>
+          <span class="ob-dot" id="ob-dot-2"></span>
+          <span class="ob-dot" id="ob-dot-3"></span>
+        </div>
+        <span class="ob-step-label" id="ob-step-label">1 of 3</span>
+      </div>
+
+      <!-- Progress bar -->
       <div class="ob-progress-bar"><div class="ob-progress-fill" id="ob-fill" style="width:33%"></div></div>
-      <div class="ob-step active" id="ob-1">
-        <div class="ob-icon">💡</div>
-        <h2 class="ob-title">What is your situation?</h2>
-        <p class="ob-sub">Personalise the OS around where you are right now.</p>
-        <div class="ob-options">
-          <button class="ob-opt" data-v="idea" onclick="pickSituation(this)"><span class="ob-opt-icon">🌱</span><span class="ob-opt-text"><b>I have an idea</b><small>Nothing built yet</small></span></button>
-          <button class="ob-opt" data-v="side-hustle" onclick="pickSituation(this)"><span class="ob-opt-icon">⚡</span><span class="ob-opt-text"><b>Side hustle</b><small>Some income, want more</small></span></button>
-          <button class="ob-opt" data-v="business" onclick="pickSituation(this)"><span class="ob-opt-icon">🚀</span><span class="ob-opt-text"><b>Running a business</b><small>Need to manage and grow</small></span></button>
-          <button class="ob-opt" data-v="job" onclick="pickSituation(this)"><span class="ob-opt-icon">💼</span><span class="ob-opt-text"><b>Employed</b><small>Want to make extra income</small></span></button>
+
+      <!-- Slides container -->
+      <div class="ob-slides" id="ob-slides">
+
+        <!-- STEP 1 — Situation -->
+        <div class="ob-slide ob-slide-active" id="ob-1">
+          <div class="ob-hero">💡</div>
+          <div class="ob-text">
+            <h2 class="ob-title">Where are you right now?</h2>
+            <p class="ob-sub">Help the AI understand your starting point.</p>
+          </div>
+          <div class="ob-options">
+            <button class="ob-opt" data-v="idea" onclick="pickSituation(this)">
+              <span class="ob-opt-icon">🌱</span>
+              <span class="ob-opt-text"><b>I have an idea</b><small>Nothing built yet</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="side-hustle" onclick="pickSituation(this)">
+              <span class="ob-opt-icon">⚡</span>
+              <span class="ob-opt-text"><b>Side hustle</b><small>Some income, want more</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="business" onclick="pickSituation(this)">
+              <span class="ob-opt-icon">🚀</span>
+              <span class="ob-opt-text"><b>Running a business</b><small>Need to manage and grow</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="job" onclick="pickSituation(this)">
+              <span class="ob-opt-icon">💼</span>
+              <span class="ob-opt-text"><b>Employed</b><small>Want to make extra income</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+          </div>
+          <button class="ob-next-btn" id="ob-next-1" onclick="goObStep(2)" disabled>Continue →</button>
         </div>
-      </div>
-      <div class="ob-step" id="ob-2">
-        <div class="ob-icon">🎯</div>
-        <h2 class="ob-title">What is your #1 money goal?</h2>
-        <p class="ob-sub">This shapes every AI suggestion.</p>
-        <div class="ob-options">
-          <button class="ob-opt" data-v="first-payment" onclick="pickGoal(this)"><span class="ob-opt-icon">💳</span><span class="ob-opt-text"><b>Get my first payment</b><small>Have not earned online yet</small></span></button>
-          <button class="ob-opt" data-v="replace-job" onclick="pickGoal(this)"><span class="ob-opt-icon">🔓</span><span class="ob-opt-text"><b>Replace my salary</b><small>Go full time for myself</small></span></button>
-          <button class="ob-opt" data-v="scale" onclick="pickGoal(this)"><span class="ob-opt-icon">📈</span><span class="ob-opt-text"><b>Scale revenue</b><small>Already earning, need more</small></span></button>
-          <button class="ob-opt" data-v="control" onclick="pickGoal(this)"><span class="ob-opt-icon">🔍</span><span class="ob-opt-text"><b>Control my spending</b><small>Stop leaking money</small></span></button>
+
+        <!-- STEP 2 — Goal -->
+        <div class="ob-slide" id="ob-2">
+          <div class="ob-hero">🎯</div>
+          <div class="ob-text">
+            <h2 class="ob-title">What's your #1 money goal?</h2>
+            <p class="ob-sub">Every AI suggestion will be aimed at this.</p>
+          </div>
+          <div class="ob-options">
+            <button class="ob-opt" data-v="first-payment" onclick="pickGoal(this)">
+              <span class="ob-opt-icon">💳</span>
+              <span class="ob-opt-text"><b>Get my first payment</b><small>Haven't earned online yet</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="replace-job" onclick="pickGoal(this)">
+              <span class="ob-opt-icon">🔓</span>
+              <span class="ob-opt-text"><b>Replace my salary</b><small>Go full time for myself</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="scale" onclick="pickGoal(this)">
+              <span class="ob-opt-icon">📈</span>
+              <span class="ob-opt-text"><b>Scale revenue</b><small>Already earning, want more</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="control" onclick="pickGoal(this)">
+              <span class="ob-opt-icon">🔍</span>
+              <span class="ob-opt-text"><b>Control my spending</b><small>Stop leaking money</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+          </div>
+          <button class="ob-next-btn" id="ob-next-2" onclick="goObStep(3)" disabled>Continue →</button>
         </div>
-      </div>
-      <div class="ob-step" id="ob-3">
-        <div class="ob-icon">🔥</div>
-        <h2 class="ob-title">Current monthly income?</h2>
-        <p class="ob-sub">Approximate is fine.</p>
-        <div class="ob-options">
-          <button class="ob-opt" data-v="0" onclick="pickIncome(this)"><span class="ob-opt-icon">$0</span><span class="ob-opt-text"><b>Nothing yet</b><small>Starting from zero</small></span></button>
-          <button class="ob-opt" data-v="1000" onclick="pickIncome(this)"><span class="ob-opt-icon">$1K</span><span class="ob-opt-text"><b>Under $1,000</b><small>Early days</small></span></button>
-          <button class="ob-opt selected" data-v="5000" onclick="pickIncome(this)"><span class="ob-opt-icon">$5K</span><span class="ob-opt-text"><b>$1K to $5K</b><small>Getting there</small></span></button>
-          <button class="ob-opt" data-v="15000" onclick="pickIncome(this)"><span class="ob-opt-icon">$15K+</span><span class="ob-opt-text"><b>$5K+</b><small>Growing fast</small></span></button>
+
+        <!-- STEP 3 — Income -->
+        <div class="ob-slide" id="ob-3">
+          <div class="ob-hero">🔥</div>
+          <div class="ob-text">
+            <h2 class="ob-title">Current monthly income?</h2>
+            <p class="ob-sub">Approximate is fine — you can update this any time.</p>
+          </div>
+          <div class="ob-options">
+            <button class="ob-opt" data-v="0" onclick="pickIncome(this)">
+              <span class="ob-opt-icon">$0</span>
+              <span class="ob-opt-text"><b>Nothing yet</b><small>Starting from zero</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="1000" onclick="pickIncome(this)">
+              <span class="ob-opt-icon">$1K</span>
+              <span class="ob-opt-text"><b>Under $1,000</b><small>Early days</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="5000" onclick="pickIncome(this)">
+              <span class="ob-opt-icon">$5K</span>
+              <span class="ob-opt-text"><b>$1K – $5K</b><small>Getting there</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="15000" onclick="pickIncome(this)">
+              <span class="ob-opt-icon">$15K+</span>
+              <span class="ob-opt-text"><b>$5K+</b><small>Growing fast</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+          </div>
+          <button class="ob-next-btn ob-next-final" id="ob-next-3" onclick="finishOnboarding()" disabled>Boot My OS 🚀</button>
         </div>
-        <button class="btn-primary ob-done-btn" onclick="finishOnboarding()">Boot My OS →</button>
-      </div>
-    </div>
+
+      </div><!-- /ob-slides -->
+    </div><!-- /ob-shell -->
   </div>
 
   <!-- ══════════════════════════════════════════
