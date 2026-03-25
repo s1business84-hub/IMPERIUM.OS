@@ -310,17 +310,34 @@
     <div class="screen-content has-nav">
       <header class="page-header">
         <h2 class="page-title">Track Money</h2>
-        <p class="page-sub">Income and expenses in one place</p>
+        <p class="page-sub">Log by typing, voice, or receipt scan</p>
       </header>
+
+      <!-- VOICE LOG BANNER -->
+      <div class="voice-log-banner glass-card" id="voice-banner">
+        <div class="vlb-left">
+          <div class="vlb-title">🎙️ Speak to Log</div>
+          <div class="vlb-sub" id="voice-hint">"Spent $12 on coffee" or "Got paid $500 from client"</div>
+        </div>
+        <button class="mic-btn" id="mic-btn" onclick="toggleVoiceLog()">
+          <svg class="mic-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+      </div>
+
       <div class="log-card glass-card">
+        <!-- TYPE TOGGLE -->
         <div class="log-type-toggle">
           <button class="log-type-btn active" id="logtype-expense" data-t="expense" onclick="switchLogType(this)">💸 Expense</button>
           <button class="log-type-btn" id="logtype-income" data-t="income" onclick="switchLogType(this)">💰 Income</button>
         </div>
+
+        <!-- AMOUNT -->
         <div class="amount-row">
-          <span class="amount-sym">$</span>
+          <span class="amount-sym" id="amount-sym">$</span>
           <input type="number" id="tx-amount" class="amount-big" placeholder="0" inputmode="decimal" step="0.01" min="0"/>
         </div>
+
+        <!-- CATEGORIES -->
         <div id="cat-grid-wrap">
           <div class="cat-grid">
             <button class="cat-btn selected" data-c="food" onclick="pickCat(this)"><span>🍔</span><small>Food</small></button>
@@ -347,19 +364,67 @@
             <button class="cat-btn" data-c="other" onclick="pickCat(this)"><span>📌</span><small>Other</small></button>
           </div>
         </div>
+
+        <!-- NOTE -->
         <input type="text" id="tx-note" class="note-input" placeholder="Note (optional)…" autocomplete="off"/>
-        <label class="receipt-snap">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-          Snap Receipt
+
+        <!-- CARD TRACKING -->
+        <div class="card-track-section" id="card-track-section">
+          <div class="card-track-toggle" onclick="toggleCardTrack()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <span>Add card / due date</span>
+            <span class="card-track-arrow" id="card-track-arrow">›</span>
+          </div>
+          <div class="card-track-fields hidden" id="card-fields">
+            <div class="card-fields-row">
+              <input type="text" id="card-name" class="card-input" placeholder="Card name (e.g. HDFC, Amex)" autocomplete="off" maxlength="24"/>
+              <input type="text" id="card-last4" class="card-input card-last4" placeholder="Last 4" inputmode="numeric" maxlength="4"/>
+            </div>
+            <div class="card-fields-row">
+              <label class="card-due-label">
+                <span>Due date</span>
+                <input type="date" id="card-due" class="card-input card-due-input"/>
+              </label>
+              <div class="card-type-pills">
+                <button class="card-pill selected" data-ct="credit" onclick="pickCardType(this)">Credit</button>
+                <button class="card-pill" data-ct="debit" onclick="pickCardType(this)">Debit</button>
+                <button class="card-pill" data-ct="upi" onclick="pickCardType(this)">UPI</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECEIPT -->
+        <div class="receipt-row">
+          <label class="receipt-snap" onclick="document.getElementById('receipt-file').click()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            Snap Receipt
+          </label>
+          <button class="scan-receipt-btn" id="scan-receipt-btn" onclick="scanReceiptOCR()" title="Auto-scan amount from receipt">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+            Scan & Fill
+          </button>
           <input type="file" id="receipt-file" accept="image/*" capture="environment" onchange="handleReceipt(event)" hidden/>
-        </label>
+        </div>
         <div class="receipt-thumb hidden" id="receipt-thumb">
           <img id="receipt-img" alt="receipt"/>
+          <div class="receipt-thumb-info">
+            <span class="receipt-thumb-name" id="receipt-thumb-name">Receipt attached</span>
+            <span class="receipt-scan-status" id="receipt-scan-status"></span>
+          </div>
           <button class="receipt-rm" onclick="rmReceipt()">✕</button>
         </div>
+
         <button class="btn-primary log-save-btn magnetic" onclick="saveTransaction()">Save →</button>
       </div>
-      <div class="section-label-row" style="margin-top:24px">
+
+      <!-- DUE DATES SECTION -->
+      <div class="section-label-row" style="margin-top:24px" id="due-dates-header">
+        <span class="section-label">Upcoming Due Dates</span>
+      </div>
+      <div class="due-dates-feed" id="due-dates-feed"></div>
+
+      <div class="section-label-row" style="margin-top:16px">
         <span class="section-label">All Transactions</span>
         <span class="tx-count" id="tx-count">0</span>
       </div>

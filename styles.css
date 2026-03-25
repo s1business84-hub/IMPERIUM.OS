@@ -350,6 +350,83 @@ a{color:inherit;text-decoration:none}ul{list-style:none}
 .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* VOICE LOG BANNER */
+.voice-log-banner{margin:16px 20px 0;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.vlb-left{flex:1;min-width:0}
+.vlb-title{font-size:.8rem;font-weight:700;color:var(--cyan);letter-spacing:.04em;margin-bottom:3px}
+.vlb-sub{font-size:.78rem;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mic-btn{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;color:white;flex-shrink:0;transition:all .25s;box-shadow:0 0 0 0 rgba(59,130,246,.5)}
+.mic-btn:hover{transform:scale(1.05)}
+.mic-btn:active{transform:scale(.95)}
+.mic-btn.recording{animation:micPulse 1s ease-in-out infinite;background:linear-gradient(135deg,var(--red),#f43f5e);box-shadow:0 0 0 8px rgba(239,68,68,.2)}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 12px rgba(239,68,68,0)}}
+.mic-icon{transition:transform .2s}
+.mic-btn.recording .mic-icon{animation:micBob .6s ease-in-out infinite alternate}
+@keyframes micBob{from{transform:scale(1)}to{transform:scale(1.15)}}
+
+/* CARD TRACKING */
+.card-track-section{padding:4px 0}
+.card-track-toggle{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text2);cursor:pointer;padding:8px 0;user-select:none;transition:color .2s}
+.card-track-toggle svg{color:var(--text3)}
+.card-track-toggle:hover{color:var(--text)}
+.card-track-toggle span:first-of-type{flex:1}
+.card-track-arrow{font-size:1.1rem;color:var(--text3);transition:transform .2s}
+.card-track-fields{display:flex;flex-direction:column;gap:10px;padding:8px 0 4px;animation:fadeSlideDown .2s ease}
+@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.card-fields-row{display:flex;gap:10px}
+.card-input{flex:1;padding:11px 13px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;color:var(--text);transition:border-color .2s}
+.card-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.card-input::placeholder{color:var(--text3)}
+.card-last4{max-width:90px;text-align:center;letter-spacing:.15em;font-weight:700}
+.card-due-label{flex:1;display:flex;flex-direction:column;gap:5px}
+.card-due-label span{font-size:.72rem;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase}
+.card-due-input{background:var(--glass);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:.88rem;color:var(--text);width:100%;transition:border-color .2s;color-scheme:dark}
+.card-due-input:focus{border-color:var(--blue)}
+.card-type-pills{display:flex;flex-direction:column;justify-content:flex-end;gap:6px;align-items:flex-end}
+.card-pill{padding:6px 14px;border-radius:99px;font-size:.76rem;font-weight:600;background:var(--glass);border:1px solid var(--border);color:var(--text2);transition:all .2s;white-space:nowrap}
+.card-pill.selected{background:rgba(59,130,246,.15);border-color:var(--blue);color:var(--text)}
+
+/* RECEIPT ROW */
+.receipt-row{display:flex;align-items:center;gap:10px;padding:4px 0}
+.receipt-snap{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--text2);cursor:pointer;padding:8px 12px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius-sm);transition:all .2s;flex:1;user-select:none}
+.receipt-snap:hover{border-color:var(--border2);color:var(--text)}
+.scan-receipt-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.4);border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;color:var(--cyan);transition:all .2s;white-space:nowrap;cursor:pointer}
+.scan-receipt-btn:hover{background:rgba(6,182,212,.2);border-color:var(--cyan)}
+.scan-receipt-btn.scanning{animation:scanPulse .8s ease-in-out infinite}
+@keyframes scanPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(6,182,212,.4)}50%{opacity:.7;box-shadow:0 0 0 6px rgba(6,182,212,0)}}
+.receipt-thumb{display:flex;align-items:center;gap:12px;padding:10px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.receipt-thumb img{width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0}
+.receipt-thumb-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.receipt-thumb-name{font-size:.82rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.receipt-scan-status{font-size:.76rem;color:var(--green);font-weight:600}
+.receipt-rm{width:24px;height:24px;border-radius:50%;background:rgba(239,68,68,.2);color:var(--red);font-size:.7rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.receipt-rm:hover{background:var(--red);color:white}
+
+/* DUE DATES */
+.due-dates-feed{padding:0 20px;display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.due-card{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.due-card.due-critical{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.06)}
+.due-card.due-overdue{border-color:rgba(239,68,68,.6);background:rgba(239,68,68,.1)}
+.due-card.due-warn{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05)}
+.due-card.due-ok{border-color:var(--border)}
+.due-card-left{display:flex;align-items:center;gap:10px}
+.due-card-icon{font-size:1.5rem}
+.due-card-name{font-size:.9rem;font-weight:700;color:var(--text)}
+.due-card-sub{font-size:.74rem;color:var(--text3);margin-top:2px;text-transform:capitalize}
+.due-card-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.due-card-owed{font-size:1rem;font-weight:800;color:var(--red)}
+.due-card-owed-lbl{font-size:.7rem;color:var(--text3)}
+.due-chip{padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:700;white-space:nowrap}
+.due-chip.due-critical,.due-chip.due-overdue{background:rgba(239,68,68,.2);color:var(--red);border:1px solid rgba(239,68,68,.4)}
+.due-chip.due-warn{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.due-chip.due-ok{background:var(--glass2);color:var(--text2);border:1px solid var(--border)}
+
+/* TX CARD BADGE + RECEIPT */
+.tx-cat-row{display:flex;align-items:center;gap:6px}
+.tx-receipt-badge{font-size:.75rem;opacity:.7}
+.tx-card-badge{display:inline-flex;align-items:center;gap:4px;font-size:.7rem;color:var(--text3);background:var(--glass2);border:1px solid var(--border);border-radius:6px;padding:2px 7px;margin-top:3px}
+.tx-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+
 /* NEON */
 .neon-green{color:var(--green);text-shadow:0 0 12px var(--green)}
 .neon-blue{color:var(--blue2);text-shadow:0 0 12px var(--blue)}

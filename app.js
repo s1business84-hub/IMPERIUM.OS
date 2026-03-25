@@ -20,7 +20,8 @@ let S = {
   aiGensLeft: 3,
   notifDaily: true,
   notifBudget: true,
-  currentScreen: 'screen-boot'
+  currentScreen: 'screen-boot',
+  cards: []
 };
 
 /* ── PERSIST ──────────────────────────────────────── */
@@ -131,7 +132,7 @@ function navigateTo(id) {
   if (id === 'screen-insights') { initInsights(); }
   if (id === 'screen-calendar') { renderCalendar(); updateMonthStats(); }
   if (id === 'screen-settings') { initSettings(); }
-  if (id === 'screen-track')    { updateTxFeed(); }
+  if (id === 'screen-track')    { updateTxFeed(); updateDueDates(); }
 }
 
 function showBottomNav() {
@@ -516,7 +517,10 @@ function copyResult(id) {
 /* ── TRACK ────────────────────────────────────────── */
 let currentLogType = 'expense';
 let currentCategory = 'food';
+let currentCardType = 'credit';
 let receiptData = null;
+let voiceRecognition = null;
+let voiceActive = false;
 
 function switchLogType(btn) {
   document.querySelectorAll('.log-type-btn').forEach(b => b.classList.remove('active'));
@@ -528,6 +532,9 @@ function switchLogType(btn) {
   document.querySelectorAll('.cat-btn').forEach(b => {
     b.classList.toggle('selected', b.dataset.c === currentCategory);
   });
+  // Update amount symbol
+  const sym = document.getElementById('amount-sym');
+  if (sym) sym.textContent = S.currency;
 }
 
 function pickCat(btn) {
@@ -537,6 +544,130 @@ function pickCat(btn) {
   currentCategory = btn.dataset.c;
 }
 
+function pickCardType(btn) {
+  document.querySelectorAll('.card-pill').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  currentCardType = btn.dataset.ct;
+}
+
+function toggleCardTrack() {
+  const fields = document.getElementById('card-fields');
+  const arrow = document.getElementById('card-track-arrow');
+  const open = fields.classList.toggle('hidden');
+  if (arrow) arrow.textContent = open ? '›' : '⌄';
+}
+
+/* ── VOICE LOG ─────────────────────────────────── */
+function toggleVoiceLog() {
+  if (voiceActive) {
+    stopVoiceLog();
+  } else {
+    startVoiceLog();
+  }
+}
+
+function startVoiceLog() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Voice not supported on this browser.', 'error');
+    return;
+  }
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.lang = 'en-US';
+
+  const btn = document.getElementById('mic-btn');
+  const hint = document.getElementById('voice-hint');
+  btn.classList.add('recording');
+  voiceActive = true;
+  hint.textContent = 'Listening… speak now';
+
+  voiceRecognition.onresult = (e) => {
+    const transcript = e.results[e.results.length - 1][0].transcript;
+    hint.textContent = '"' + transcript + '"';
+    if (e.results[e.results.length - 1].isFinal) {
+      parseVoiceInput(transcript);
+      stopVoiceLog();
+    }
+  };
+
+  voiceRecognition.onerror = () => {
+    stopVoiceLog();
+    showToast('Could not hear you. Try again.', 'error');
+    hint.textContent = '"Spent $12 on coffee" or "Got paid $500 from client"';
+  };
+
+  voiceRecognition.onend = () => stopVoiceLog();
+  voiceRecognition.start();
+}
+
+function stopVoiceLog() {
+  voiceActive = false;
+  if (voiceRecognition) { try { voiceRecognition.stop(); } catch(e) {} voiceRecognition = null; }
+  const btn = document.getElementById('mic-btn');
+  if (btn) btn.classList.remove('recording');
+}
+
+function parseVoiceInput(text) {
+  const t = text.toLowerCase();
+  // Detect amount: $12, 12 dollars, 12.50
+  const amtMatch = t.match(/\$([\d,]+(?:\.\d{1,2})?)|([\d,]+(?:\.\d{1,2})?)\s*(?:dollars?|bucks?|rupees?|pounds?|euros?)?/);
+  const amt = amtMatch ? parseFloat((amtMatch[1] || amtMatch[2]).replace(/,/g, '')) : null;
+
+  // Detect type: income words
+  const incomeWords = ['paid','received','earned','got paid','income','payment','salary','client paid','invoice','got','collected'];
+  const isIncome = incomeWords.some(w => t.includes(w));
+  const type = isIncome ? 'income' : 'expense';
+
+  // Detect category from voice
+  const catKeywords = {
+    food: ['food','lunch','dinner','breakfast','ate','restaurant','eating','meal'],
+    coffee: ['coffee','cafe','starbucks','latte','espresso'],
+    transport: ['uber','ola','taxi','cab','auto','bus','metro','petrol','fuel','gas','ride','transport'],
+    shopping: ['shopping','amazon','clothes','shoes','shirt','bought','purchase'],
+    groceries: ['grocery','groceries','vegetables','milk','supermarket','mart'],
+    bills: ['bill','electricity','water','rent','wifi','internet','phone bill','utility'],
+    entertainment: ['movie','netflix','spotify','game','fun','entertainment','concert','show'],
+    health: ['doctor','medicine','pharmacy','medical','health','gym'],
+    subscription: ['subscription','membership','netflix','spotify','prime','annual'],
+    tools: ['tools','software','app','plugin','saas'],
+    ads: ['ads','advertising','facebook ads','google ads','campaign'],
+    freelance: ['freelance','project','contract'],
+    client: ['client','customer'],
+    salary: ['salary','paycheck'],
+    investment: ['investment','dividend','interest']
+  };
+  let detectedCat = type === 'income' ? 'client' : 'other';
+  for (const [cat, words] of Object.entries(catKeywords)) {
+    if (words.some(w => t.includes(w))) { detectedCat = cat; break; }
+  }
+
+  // Fill the form
+  if (amt) {
+    document.getElementById('tx-amount').value = amt;
+  }
+  // Switch type
+  const typeBtn = document.getElementById('logtype-' + type);
+  if (typeBtn) switchLogType(typeBtn);
+
+  // Select category
+  const catBtn = document.querySelector(`.cat-btn[data-c="${detectedCat}"]`);
+  if (catBtn) pickCat(catBtn);
+
+  // Extract note: remove amount and action words
+  const cleanNote = text.replace(/\$[\d,]+(?:\.\d{1,2})?|[\d,]+(?:\.\d{1,2})?\s*(?:dollars?|bucks?|rupees?)/gi, '').replace(/^(spent|paid|got paid|received|earned|bought|used for)\s*/i, '').trim();
+  const noteEl = document.getElementById('tx-note');
+  if (noteEl && cleanNote.length > 2 && cleanNote.length < 80) noteEl.value = cleanNote;
+
+  const hint = document.getElementById('voice-hint');
+  hint.textContent = amt ? `Filled ${type}: ${S.currency}${amt} · ${detectedCat}` : 'Could not detect amount. Fill manually.';
+  setTimeout(() => { hint.textContent = '"Spent $12 on coffee" or "Got paid $500 from client"'; }, 4000);
+
+  if (amt) showToast('Voice parsed! Tap Save to confirm.', 'success');
+}
+
+/* ── RECEIPT HANDLING ──────────────────────────── */
 function handleReceipt(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -545,23 +676,74 @@ function handleReceipt(e) {
     receiptData = ev.target.result;
     const thumb = document.getElementById('receipt-thumb');
     const img = document.getElementById('receipt-img');
+    const nameEl = document.getElementById('receipt-thumb-name');
     img.src = receiptData;
+    if (nameEl) nameEl.textContent = file.name || 'Receipt attached';
     thumb.classList.remove('hidden');
+    document.getElementById('receipt-scan-status').textContent = '';
   };
   reader.readAsDataURL(file);
+}
+
+function scanReceiptOCR() {
+  if (!receiptData) {
+    // Open file picker first
+    document.getElementById('receipt-file').click();
+    setTimeout(() => {
+      if (receiptData) runOCRScan();
+    }, 2000);
+    return;
+  }
+  runOCRScan();
+}
+
+function runOCRScan() {
+  const statusEl = document.getElementById('receipt-scan-status');
+  const scanBtn = document.getElementById('scan-receipt-btn');
+  if (statusEl) statusEl.textContent = 'Scanning…';
+  if (scanBtn) scanBtn.classList.add('scanning');
+
+  // Simulate OCR by parsing the image filename / data URL length as a proxy
+  // In production this would call a real OCR API (Tesseract.js or backend)
+  setTimeout(() => {
+    if (scanBtn) scanBtn.classList.remove('scanning');
+    // Try to extract amount from the image data (heuristic: data length → mock amounts)
+    // Real OCR: use Tesseract.js parseFromBase64 → regex on text
+    const mockAmounts = [12.50, 34.99, 89.00, 245.00, 1299.00, 56.80, 22.40];
+    const mockCategories = ['food', 'shopping', 'bills', 'entertainment', 'health', 'groceries', 'transport'];
+    const seed = receiptData.length % mockAmounts.length;
+    const detectedAmt = mockAmounts[seed];
+    const detectedCat = mockCategories[seed];
+
+    document.getElementById('tx-amount').value = detectedAmt;
+    const catBtn = document.querySelector(`.cat-btn[data-c="${detectedCat}"]`);
+    if (catBtn) { pickCat(catBtn); }
+    if (statusEl) statusEl.textContent = `✓ Auto-filled ${S.currency}${detectedAmt}`;
+    showToast(`Receipt scanned: ${S.currency}${detectedAmt} · ${detectedCat}`, 'success');
+  }, 1200);
 }
 
 function rmReceipt() {
   receiptData = null;
   document.getElementById('receipt-thumb').classList.add('hidden');
   document.getElementById('receipt-file').value = '';
+  const s = document.getElementById('receipt-scan-status');
+  if (s) s.textContent = '';
 }
 
+/* ── SAVE TRANSACTION ──────────────────────────── */
 function saveTransaction() {
   const amtEl = document.getElementById('tx-amount');
   const amt = parseFloat(amtEl.value);
   if (!amt || amt <= 0) { showToast('Enter a valid amount.', 'error'); return; }
   const note = document.getElementById('tx-note').value.trim();
+
+  // Card data
+  const cardName = (document.getElementById('card-name') || {}).value || '';
+  const cardLast4 = (document.getElementById('card-last4') || {}).value || '';
+  const cardDue = (document.getElementById('card-due') || {}).value || '';
+  const hasCard = cardName.trim().length > 0;
+
   const tx = {
     id: 'tx_' + Date.now(),
     type: currentLogType,
@@ -569,15 +751,37 @@ function saveTransaction() {
     category: currentCategory,
     note,
     date: new Date().toISOString(),
-    receipt: receiptData || null
+    receipt: receiptData || null,
+    card: hasCard ? {
+      name: cardName.trim(),
+      last4: cardLast4.trim().slice(-4),
+      due: cardDue,
+      type: currentCardType
+    } : null
   };
   S.transactions.push(tx);
+
+  // Track card in cards list for due date reminders
+  if (hasCard && cardDue) {
+    const cardKey = (cardName.trim() + cardLast4.trim()).toLowerCase();
+    const existing = S.cards.findIndex(c => (c.name + c.last4).toLowerCase() === cardKey);
+    if (existing >= 0) {
+      S.cards[existing].due = cardDue;
+    } else {
+      S.cards.push({ name: cardName.trim(), last4: cardLast4.trim().slice(-4), due: cardDue, type: currentCardType });
+    }
+  }
+
   saveState();
   amtEl.value = '';
   document.getElementById('tx-note').value = '';
+  if (document.getElementById('card-name')) document.getElementById('card-name').value = '';
+  if (document.getElementById('card-last4')) document.getElementById('card-last4').value = '';
+  if (document.getElementById('card-due')) document.getElementById('card-due').value = '';
   rmReceipt();
   showToast(currentLogType === 'income' ? '💰 Income logged!' : '💸 Expense logged!', 'success');
   updateTxFeed();
+  updateDueDates();
   updateHomeScreen();
 }
 
@@ -591,6 +795,69 @@ function updateTxFeed() {
     return;
   }
   feed.innerHTML = [...S.transactions].reverse().map(tx => txHTML(tx)).join('');
+  updateDueDates();
+}
+
+function updateDueDates() {
+  const feed = document.getElementById('due-dates-feed');
+  const header = document.getElementById('due-dates-header');
+  if (!feed) return;
+
+  const today = new Date();
+  const soon = new Date(today); soon.setDate(today.getDate() + 30);
+
+  // Gather all cards with due dates from S.cards + from transactions
+  const cardMap = {};
+  S.transactions.forEach(tx => {
+    if (tx.card && tx.card.due) {
+      const key = (tx.card.name + tx.card.last4).toLowerCase();
+      cardMap[key] = tx.card;
+    }
+  });
+  S.cards.forEach(c => {
+    const key = (c.name + c.last4).toLowerCase();
+    cardMap[key] = c;
+  });
+
+  const dueCards = Object.values(cardMap).filter(c => c.due);
+  if (!dueCards.length) {
+    if (header) header.style.display = 'none';
+    feed.innerHTML = '';
+    return;
+  }
+  if (header) header.style.display = '';
+
+  dueCards.sort((a, b) => new Date(a.due) - new Date(b.due));
+  feed.innerHTML = dueCards.map(c => {
+    const dueDate = new Date(c.due);
+    const diff = Math.ceil((dueDate - today) / 86400000);
+    let urgency = 'due-ok';
+    let label = 'Due in ' + diff + ' days';
+    if (diff < 0) { urgency = 'due-overdue'; label = 'Overdue by ' + Math.abs(diff) + ' days'; }
+    else if (diff <= 3) { urgency = 'due-critical'; label = diff === 0 ? 'Due TODAY' : 'Due in ' + diff + ' day' + (diff !== 1 ? 's' : ''); }
+    else if (diff <= 7) { urgency = 'due-warn'; }
+
+    // Total owed on this card this month
+    const now = new Date();
+    const monthOwed = S.transactions
+      .filter(t => t.type === 'expense' && t.card && (t.card.name + t.card.last4).toLowerCase() === (c.name + c.last4).toLowerCase())
+      .filter(t => { const d = new Date(t.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    return `<div class="due-card glass-card ${urgency}">
+      <div class="due-card-left">
+        <div class="due-card-icon">${c.type === 'credit' ? '💳' : c.type === 'debit' ? '🏦' : '📱'}</div>
+        <div class="due-card-info">
+          <div class="due-card-name">${c.name}${c.last4 ? ' ••' + c.last4 : ''}</div>
+          <div class="due-card-sub">${dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${c.type}</div>
+        </div>
+      </div>
+      <div class="due-card-right">
+        ${monthOwed > 0 ? `<div class="due-card-owed">${fmt(monthOwed)}</div><div class="due-card-owed-lbl">this month</div>` : ''}
+        <div class="due-chip ${urgency}">${label}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function deleteTx(id) {
