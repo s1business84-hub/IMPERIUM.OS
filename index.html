@@ -440,46 +440,138 @@
   <div class="screen" id="screen-insights">
     <div class="screen-content has-nav">
       <header class="page-header">
-        <h2 class="page-title">AI Insights</h2>
-        <p class="page-sub">Your personal money advisor</p>
+        <h2 class="page-title">🧠 AI Insights</h2>
+        <p class="page-sub">Deep intelligence on your money</p>
       </header>
-      <div class="health-card glass-card" id="health-card">
-        <div class="health-ring-wrap">
-          <svg class="health-ring" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="42" class="ring-track"/>
-            <circle cx="50" cy="50" r="42" class="ring-fill" id="health-ring-fill" stroke-dasharray="263.9" stroke-dashoffset="263.9"/>
-          </svg>
-          <div class="health-center">
-            <span class="health-score" id="health-score">—</span>
-            <span class="health-lbl">Health</span>
+
+      <!-- INSIGHT TABS -->
+      <div class="ins-tabs">
+        <button class="ins-tab active" id="itab-overview"  onclick="switchInsTab('overview')">Overview</button>
+        <button class="ins-tab" id="itab-spending" onclick="switchInsTab('spending')">Spending</button>
+        <button class="ins-tab" id="itab-income"   onclick="switchInsTab('income')">Income</button>
+        <button class="ins-tab" id="itab-forecast" onclick="switchInsTab('forecast')">Forecast</button>
+      </div>
+
+      <!-- ── OVERVIEW TAB ── -->
+      <div class="ins-panel active" id="ipanel-overview">
+
+        <!-- HEALTH SCORE -->
+        <div class="health-card glass-card" id="health-card">
+          <div class="health-ring-wrap">
+            <svg class="health-ring" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" class="ring-track"/>
+              <circle cx="50" cy="50" r="42" class="ring-fill" id="health-ring-fill" stroke-dasharray="263.9" stroke-dashoffset="263.9"/>
+            </svg>
+            <div class="health-center">
+              <span class="health-score" id="health-score">—</span>
+              <span class="health-lbl">Health</span>
+            </div>
+          </div>
+          <div class="health-breakdown">
+            <div class="hb-row"><span class="hb-dot" style="background:#10b981"></span><span class="hb-name">Profit Margin</span><span class="hb-val" id="hb-margin">—</span></div>
+            <div class="hb-row"><span class="hb-dot" style="background:#3b82f6"></span><span class="hb-name">Runway</span><span class="hb-val" id="hb-runway">—</span></div>
+            <div class="hb-row"><span class="hb-dot" style="background:#f59e0b"></span><span class="hb-name">Burn Rate</span><span class="hb-val" id="hb-burn">—</span></div>
+            <div class="hb-row"><span class="hb-dot" style="background:#a855f7"></span><span class="hb-name">Savings Rate</span><span class="hb-val" id="hb-savings">—</span></div>
           </div>
         </div>
-        <div class="health-breakdown">
-          <div class="hb-row"><span class="hb-dot" style="background:#10b981"></span><span class="hb-name">Profit Margin</span><span class="hb-val" id="hb-margin">—</span></div>
-          <div class="hb-row"><span class="hb-dot" style="background:#3b82f6"></span><span class="hb-name">Runway</span><span class="hb-val" id="hb-runway">—</span></div>
-          <div class="hb-row"><span class="hb-dot" style="background:#f59e0b"></span><span class="hb-name">Burn Rate</span><span class="hb-val" id="hb-burn">—</span></div>
-          <div class="hb-row"><span class="hb-dot" style="background:#a855f7"></span><span class="hb-name">Savings Rate</span><span class="hb-val" id="hb-savings">—</span></div>
+
+        <!-- MONTH COMPARISON STRIP -->
+        <div class="ins-month-strip" id="ins-month-strip"></div>
+
+        <!-- AI ADVICE CARDS -->
+        <div class="section-label" style="margin-top:4px">🤖 AI Advice</div>
+        <div class="advice-feed" id="advice-feed">
+          <div class="advice-empty">Log some transactions to get personalised AI advice.</div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="chart-card glass-card" style="margin-top:4px">
+          <div class="chart-title-row">
+            <span class="chart-title">Income vs Expenses</span>
+            <div class="chart-range-pills">
+              <button class="crp active" onclick="setChartRange(7,this)">7d</button>
+              <button class="crp" onclick="setChartRange(30,this)">30d</button>
+              <button class="crp" onclick="setChartRange(90,this)">3mo</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="income-chart"></canvas></div>
         </div>
       </div>
-      <div class="section-label">🧠 AI Advice</div>
-      <div class="advice-feed" id="advice-feed">
-        <div class="advice-empty">Log some transactions to get personalised AI advice.</div>
+
+      <!-- ── SPENDING TAB ── -->
+      <div class="ins-panel" id="ipanel-spending">
+        <div class="section-label" style="padding-top:16px">Top Spending Categories</div>
+        <div class="spending-table" id="spending-table"></div>
+
+        <div class="chart-card glass-card" style="margin-top:4px">
+          <div class="chart-title">Where Your Money Goes</div>
+          <div class="chart-wrap chart-pie"><canvas id="cat-chart"></canvas></div>
+        </div>
+
+        <div class="section-label" style="margin-top:8px">Biggest Single Expenses</div>
+        <div class="big-tx-list" id="big-tx-list"></div>
+
+        <div class="ins-ai-block glass-card" id="spending-ai-block">
+          <div class="ins-ai-label">🤖 AI on your spending</div>
+          <div class="ins-ai-text" id="spending-ai-text">Loading…</div>
+        </div>
       </div>
-      <div class="ask-ai-card glass-card">
-        <div class="ask-label">Ask about your money</div>
+
+      <!-- ── INCOME TAB ── -->
+      <div class="ins-panel" id="ipanel-income">
+        <div class="ins-income-stats" id="ins-income-stats"></div>
+
+        <div class="section-label" style="padding-top:4px">Income Sources</div>
+        <div class="income-source-table" id="income-source-table"></div>
+
+        <div class="chart-card glass-card" style="margin-top:4px">
+          <div class="chart-title">Daily Income — This Month</div>
+          <div class="chart-wrap"><canvas id="income-daily-chart"></canvas></div>
+        </div>
+
+        <div class="ins-ai-block glass-card" id="income-ai-block">
+          <div class="ins-ai-label">🤖 AI on your income</div>
+          <div class="ins-ai-text" id="income-ai-text">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ── FORECAST TAB ── -->
+      <div class="ins-panel" id="ipanel-forecast">
+        <div class="forecast-hero glass-card" id="forecast-hero"></div>
+
+        <div class="chart-card glass-card" style="margin-top:12px">
+          <div class="chart-title">30-Day Projection</div>
+          <div class="chart-wrap"><canvas id="forecast-chart"></canvas></div>
+        </div>
+
+        <div class="section-label" style="margin-top:8px">Goal Progress</div>
+        <div class="goal-progress-card glass-card" id="goal-progress-card"></div>
+
+        <div class="ins-ai-block glass-card" id="forecast-ai-block">
+          <div class="ins-ai-label">🤖 AI forecast analysis</div>
+          <div class="ins-ai-text" id="forecast-ai-text">Loading…</div>
+        </div>
+      </div>
+
+      <!-- AI CHAT — always visible at bottom -->
+      <div class="ask-ai-card glass-card" style="margin-top:16px">
+        <div class="ask-label-row">
+          <span class="ask-label">Ask AI anything about your money</span>
+          <button class="ask-mic-btn" id="ask-mic-btn" onclick="toggleAskMic()" title="Voice question">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+        <div class="ask-quick-chips" id="ask-quick-chips">
+          <button class="ask-chip" onclick="askQuick('How can I reduce my biggest expense?')">Cut costs</button>
+          <button class="ask-chip" onclick="askQuick('What is my biggest financial risk right now?')">Biggest risk</button>
+          <button class="ask-chip" onclick="askQuick('How do I hit my goal faster?')">Hit goal faster</button>
+          <button class="ask-chip" onclick="askQuick('Where am I leaking money?')">Money leaks</button>
+        </div>
         <div class="ask-row">
-          <input type="text" id="ask-input" class="ask-input" placeholder="e.g. How can I increase profit this month?"/>
+          <input type="text" id="ask-input" class="ask-input" placeholder="e.g. How can I increase profit this month?" onkeydown="if(event.key==='Enter') askAI()"/>
           <button class="ask-send magnetic" onclick="askAI()">→</button>
         </div>
         <div class="ask-result hidden" id="ask-result"></div>
-      </div>
-      <div class="chart-card glass-card" style="margin-top:20px">
-        <div class="chart-title">Income vs Expenses — 7 days</div>
-        <div class="chart-wrap"><canvas id="income-chart"></canvas></div>
-      </div>
-      <div class="chart-card glass-card">
-        <div class="chart-title">Where Your Money Goes</div>
-        <div class="chart-wrap chart-pie"><canvas id="cat-chart"></canvas></div>
       </div>
     </div>
   </div>

@@ -437,3 +437,92 @@ a{color:inherit;text-decoration:none}ul{list-style:none}
 
 /* UTILITY */
 .text-green{color:var(--green2)}.text-red{color:var(--red)}.text-blue{color:var(--blue2)}.text-amber{color:var(--amber)}
+
+/* ══ AI INSIGHTS TABS ══════════════════════════════ */
+.ins-tabs{display:flex;gap:6px;padding:14px 16px 0;flex-shrink:0}
+.ins-tab{flex:1;padding:9px 6px;font-size:.74rem;font-weight:700;letter-spacing:.03em;border-radius:10px;color:var(--text2);background:var(--glass);border:1px solid var(--border);transition:all .2s var(--tr);cursor:pointer}
+.ins-tab.active{background:rgba(59,130,246,.15);border-color:var(--blue);color:var(--text)}
+.ins-panel{display:none;padding:0 0 16px}
+.ins-panel.active{display:block}
+.ins-empty{padding:16px;font-size:.82rem;color:var(--text3);text-align:center}
+
+/* ══ MONTH COMPARISON STRIP ════════════════════════ */
+.ins-month-strip{display:flex;gap:10px;padding:12px 16px 4px;overflow-x:auto}
+.ins-month-strip::-webkit-scrollbar{height:0}
+.mstrip-col{flex:1;min-width:72px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius);padding:10px 10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.mstrip-col.mstrip-now{border-color:var(--blue);background:rgba(59,130,246,.08)}
+.mstrip-bars{display:flex;align-items:flex-end;gap:4px;height:64px}
+.mstrip-bar{width:14px;border-radius:4px 4px 0 0;min-height:4px;transition:height .4s var(--tr)}
+.mstrip-inc{background:rgba(16,185,129,.7)}
+.mstrip-exp{background:rgba(239,68,68,.7)}
+.mstrip-label{font-size:.68rem;font-weight:700;color:var(--text3);letter-spacing:.04em}
+.mstrip-profit{font-size:.78rem;font-weight:800}
+
+/* ══ CHART RANGE PILLS ══════════════════════════════ */
+.chart-title-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px}
+.chart-title-row .section-title{margin:0}
+.chart-range-pills{display:flex;gap:4px}
+.crp{padding:4px 11px;border-radius:99px;font-size:.7rem;font-weight:600;background:var(--glass);border:1px solid var(--border);color:var(--text2);transition:all .2s;cursor:pointer}
+.crp.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ══ SPEND ROW (spending table + income source) ════ */
+.spend-row{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:4px 16px;border-radius:var(--radius)}
+.spend-icon{font-size:1.25rem;width:30px;text-align:center;flex-shrink:0}
+.spend-details{flex:1;min-width:0}
+.spend-name-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.spend-name{font-size:.82rem;font-weight:600;color:var(--text);text-transform:capitalize}
+.spend-amt{font-size:.88rem;font-weight:700;color:var(--text)}
+.spend-bar-wrap{height:5px;background:var(--glass2);border-radius:99px}
+.spend-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:width .6s var(--tr)}
+.spend-pct{font-size:.72rem;color:var(--text3);flex-shrink:0;min-width:28px;text-align:right}
+
+/* ══ AI INSIGHT BLOCK ══════════════════════════════ */
+.ins-ai-block{margin:6px 16px 14px;padding:16px 16px 14px}
+.ins-ai-label{font-size:.7rem;font-weight:700;color:var(--cyan);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ins-ai-text{font-size:.86rem;color:var(--text2);line-height:1.75}
+
+/* ══ INCOME STATS STRIP ════════════════════════════ */
+.ins-income-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 6px}
+.inc-stat-card{padding:14px;border-radius:var(--radius)}
+.inc-stat-val{font-size:1.18rem;font-weight:800;color:var(--text)}
+.inc-stat-lbl{font-size:.7rem;color:var(--text3);margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
+.inc-stat-change{font-size:.74rem;font-weight:600;color:var(--text2);margin-top:4px}
+
+/* ══ FORECAST HERO ══════════════════════════════════ */
+.forecast-hero{margin:12px 16px 0;padding:18px}
+.fc-hero-row{display:flex;gap:6px;margin-bottom:10px}
+.fc-hero-item{flex:1;text-align:center;background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:12px 8px}
+.fc-hero-label{font-size:.66rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:600}
+.fc-hero-val{font-size:1.05rem;font-weight:800}
+.fc-hero-sub{font-size:.74rem;color:var(--text3);text-align:center}
+
+/* ══ GOAL PROGRESS ══════════════════════════════════ */
+.goal-progress-card{margin:10px 16px;padding:16px}
+.gp-title{font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:4px}
+.gp-vals{display:flex;gap:6px;align-items:baseline;font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:2px}
+.gp-bar-wrap{height:8px;background:var(--glass2);border-radius:99px;margin:8px 0 5px}
+.gp-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--blue));transition:width .8s var(--tr)}
+.gp-pct{font-size:.74rem;color:var(--blue2);font-weight:700;text-align:right}
+
+/* ══ ASK AI ENHANCEMENTS ════════════════════════════ */
+.ask-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ask-label{font-size:.82rem;font-weight:600;color:var(--text2)}
+.ask-mic-btn{width:32px;height:32px;border-radius:50%;background:var(--glass2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--text2);flex-shrink:0;transition:all .2s;cursor:pointer}
+.ask-mic-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.ask-mic-btn.recording{background:linear-gradient(135deg,#ef4444,#f43f5e);color:#fff;border-color:transparent;animation:micPulse 1s ease-in-out infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+.ask-quick-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.ask-chip{padding:6px 12px;border-radius:99px;font-size:.74rem;font-weight:600;background:var(--glass);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .2s;white-space:nowrap}
+.ask-chip:hover{border-color:var(--cyan);color:var(--text);background:rgba(6,182,212,.08)}
+
+/* ══ ADVICE CARD STYLES ═════════════════════════════ */
+.advice-card{padding:12px 14px;border-radius:var(--radius);background:var(--glass);border:1px solid var(--border);margin-bottom:8px}
+.advice-card-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.advice-icon{font-size:1.1rem}
+.advice-title{font-size:.82rem;font-weight:700;color:var(--text)}
+.advice-body{font-size:.82rem;color:var(--text2);line-height:1.65;padding-left:26px}
+.advice-card.advice-critical{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.06)}
+.advice-card.advice-warn{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05)}
+.advice-card.advice-good{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+.advice-card.advice-info{border-color:var(--border)}
+.advice-empty{font-size:.82rem;color:var(--text3);padding:16px;text-align:center}
