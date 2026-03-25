@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#06080f" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#06080f" />
+  <meta name="color-scheme" content="dark" />
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Imperium" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="Imperium" />
+  <meta name="description" content="See exactly how much of your life you wasted today — and how to fix it tomorrow." />
+
+  <meta property="og:title" content="Imperium — Stop wasting your life" />
+  <meta property="og:description" content="A 2-minute daily review that shows you exactly how much you're wasting — time, money, potential — and builds tomorrow's fix." />
+  <meta property="og:type" content="website" />
+  <title>Imperium</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+
+  <div id="app">
+
+    <!-- Ambient background -->
+    <canvas id="particle-canvas"></canvas>
+    <canvas id="aurora-canvas"></canvas>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="mesh-gradient"></div>
+
+    <!-- ═══════════════════════════════════════════
+         AUTH
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-auth">
+      <div class="auth-split">
+        <div class="auth-left">
+          <div class="auth-left-inner">
+            <span class="auth-left-icon anim-logo-pulse">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="url(#authLeftGrad)" stroke-width="1.5" fill="rgba(96,165,250,0.06)" stroke-linejoin="round"/>
+                <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="#60a5fa"/>
+                <defs><linearGradient id="authLeftGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#818cf8"/></linearGradient></defs>
+              </svg>
+            </span>
+            <h2 class="auth-left-title">Stop wasting your life.</h2>
+            <p class="auth-left-sub">2 minutes. Brutally honest. See exactly how much time, money, and potential you burned today — and get a plan to fix it tomorrow.</p>
+            <div class="auth-left-stats">
+              <div class="auth-stat"><span class="auth-stat-num">2 min</span><span class="auth-stat-lbl">Daily check-in</span></div>
+              <div class="auth-stat"><span class="auth-stat-num">4</span><span class="auth-stat-lbl">Reality signals</span></div>
+              <div class="auth-stat"><span class="auth-stat-num">100%</span><span class="auth-stat-lbl">Local &amp; private</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="auth-right">
+          <div class="auth-wrap">
+            <div class="auth-logo">
+              <span class="auth-logo-icon anim-logo-pulse">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="url(#authLogoGrad)" stroke-width="1.5" fill="rgba(96,165,250,0.08)" stroke-linejoin="round"/>
+                  <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="#60a5fa"/>
+                  <defs><linearGradient id="authLogoGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#818cf8"/></linearGradient></defs>
+                </svg>
+              </span>
+              <h1 class="auth-brand anim-shimmer">Imperium</h1>
+            </div>
+
+            <p class="auth-headline">See how much you wasted today — in 2 minutes</p>
+
+            <div class="auth-tabs">
+              <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
+              <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
+            </div>
+
+            <div class="auth-form active" id="form-login">
+              <div class="auth-field-wrap">
+                <label class="auth-label">Email</label>
+                <div class="auth-input-row">
+                  <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+                  <input type="email" class="auth-input" id="login-email" placeholder="you@example.com" autocomplete="email" />
+                </div>
+              </div>
+              <div class="auth-field-wrap">
+                <label class="auth-label">Password</label>
+                <div class="auth-input-row">
+                  <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                  <input type="password" class="auth-input" id="login-password" placeholder="Enter password" autocomplete="current-password" />
+                  <button class="auth-eye-btn" onclick="togglePassword('login-password', this)" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                </div>
+              </div>
+              <button class="auth-forgot" onclick="showAuthMessage('Reset link sent to your email!')">Forgot password?</button>
+              <button class="btn-primary auth-submit-btn" onclick="handleLogin()">
+                <span>Log In</span><span class="auth-btn-arrow">→</span>
+              </button>
+              <div class="auth-or"><span>or continue with</span></div>
+              <button class="auth-social-btn" onclick="handleSocialAuth('Google')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Continue with Google
+              </button>
+            </div>
+
+            <div class="auth-form" id="form-signup">
+              <div class="auth-field-wrap">
+                <label class="auth-label">Full Name</label>
+                <div class="auth-input-row">
+                  <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                  <input type="text" class="auth-input" id="signup-name" placeholder="Your name" autocomplete="name" />
+                </div>
+              </div>
+              <div class="auth-field-wrap">
+                <label class="auth-label">Email</label>
+                <div class="auth-input-row">
+                  <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
+                  <input type="email" class="auth-input" id="signup-email" placeholder="you@example.com" autocomplete="email" />
+                </div>
+              </div>
+              <div class="auth-field-wrap">
+                <label class="auth-label">Password</label>
+                <div class="auth-input-row">
+                  <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                  <input type="password" class="auth-input" id="signup-password" placeholder="Min 8 characters" autocomplete="new-password" />
+                  <button class="auth-eye-btn" onclick="togglePassword('signup-password', this)" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                </div>
+              </div>
+              <p class="auth-terms">By signing up you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a></p>
+              <button class="btn-primary auth-submit-btn" onclick="handleSignup()">
+                <span>Create Account</span><span class="auth-btn-arrow">→</span>
+              </button>
+            </div>
+
+            <button class="auth-demo-btn" onclick="continueAsGuest()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Try it free — no signup needed
+            </button>
+
+            <div class="auth-toast hidden" id="auth-toast"></div>
+
+            <div class="auth-credits-footer">
+              <span class="credits-label">Founded by</span>
+              <span class="credits-name-footer">Sanskaar</span>
+              <span class="credits-label">Co-founded by</span>
+              <span class="credits-name-footer">Kashish</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         ONBOARDING — Conversational, direct
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-onboarding">
+      <div class="onboarding-wrap">
+        <div class="ob-progress">
+          <div class="ob-progress-fill" id="ob-progress-fill" style="width:25%"></div>
+        </div>
+        <p class="ob-step-label" id="ob-step-label">Step 1 of 4</p>
+
+        <div class="ob-ai-intro" id="ob-ai-intro">
+          <div class="ob-ai-avatar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+              <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="#60a5fa"/>
+            </svg>
+          </div>
+          <p class="ob-ai-text" id="ob-ai-text">Before I can tell you what you're wasting, I need to know who you are. 4 quick questions.</p>
+        </div>
+
+        <div class="onboarding-step active" id="ob-step-1">
+          <h2 class="ob-question">What do you do?</h2>
+          <p class="ob-subtitle">This changes how I score you and what missions I assign</p>
+          <div class="ob-cards">
+            <button class="ob-card" data-value="student" onclick="selectRole(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+              <span class="ob-card-text"><span class="ob-card-label">Student</span><span class="ob-card-desc">Exams, learning, grades</span></span>
+            </button>
+            <button class="ob-card" data-value="founder" onclick="selectRole(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg></span>
+              <span class="ob-card-text"><span class="ob-card-label">Founder / Builder</span><span class="ob-card-desc">Shipping, scaling, earning</span></span>
+            </button>
+            <button class="ob-card" data-value="sales" onclick="selectRole(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></span>
+              <span class="ob-card-text"><span class="ob-card-label">Sales / Closer</span><span class="ob-card-desc">Deals, pipeline, income</span></span>
+            </button>
+            <button class="ob-card" data-value="creator" onclick="selectRole(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></span>
+              <span class="ob-card-text"><span class="ob-card-label">Creator</span><span class="ob-card-desc">Content, audience, craft</span></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="onboarding-step" id="ob-step-2">
+          <h2 class="ob-question">What's killing you right now?</h2>
+          <p class="ob-subtitle">Be honest. I'll design everything around fixing this.</p>
+          <div class="ob-cards">
+            <button class="ob-card" data-value="money" onclick="selectGoal(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+              <span class="ob-card-text"><span class="ob-card-label">Bleeding money</span><span class="ob-card-desc">Spending without thinking, no income growth</span></span>
+            </button>
+            <button class="ob-card" data-value="discipline" onclick="selectGoal(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+              <span class="ob-card-text"><span class="ob-card-label">Zero discipline</span><span class="ob-card-desc">Can't stick to anything, always restarting</span></span>
+            </button>
+            <button class="ob-card" data-value="focus" onclick="selectGoal(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
+              <span class="ob-card-text"><span class="ob-card-label">Constant distraction</span><span class="ob-card-desc">Phone, scrolling, can't do deep work</span></span>
+            </button>
+            <button class="ob-card" data-value="decisions" onclick="selectGoal(this)">
+              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg></span>
+              <span class="ob-card-text"><span class="ob-card-label">Bad decisions</span><span class="ob-card-desc">Keep making the same mistakes</span></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="onboarding-step" id="ob-step-3">
+          <h2 class="ob-question">When should I hold you accountable?</h2>
+          <p class="ob-subtitle">I'll remind you to do your daily review</p>
+          <div class="ob-cards">
+            <button class="ob-card" data-value="morning" onclick="selectReminder(this)">
+              <span class="ob-card-icon">☀️</span>
+              <span class="ob-card-text"><span class="ob-card-label">Morning</span><span class="ob-card-desc">8:00 AM</span></span>
+            </button>
+            <button class="ob-card" data-value="afternoon" onclick="selectReminder(this)">
+              <span class="ob-card-icon">🌤️</span>
+              <span class="ob-card-text"><span class="ob-card-label">Afternoon</span><span class="ob-card-desc">2:00 PM</span></span>
+            </button>
+            <button class="ob-card selected" data-value="evening" onclick="selectReminder(this)">
+              <span class="ob-card-icon">🌙</span>
+              <span class="ob-card-text"><span class="ob-card-label">Evening</span><span class="ob-card-desc">9:00 PM — recommended</span></span>
+            </button>
+            <button class="ob-card" data-value="none" onclick="selectReminder(this)">
+              <span class="ob-card-icon">🔕</span>
+              <span class="ob-card-text"><span class="ob-card-label">No reminders</span><span class="ob-card-desc">I'll remember on my own</span></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="onboarding-step" id="ob-step-4">
+          <h2 class="ob-question">How hard should I push you?</h2>
+          <p class="ob-subtitle">This controls how brutal the feedback gets</p>
+          <div class="ob-cards">
+            <button class="ob-card" data-value="easy" onclick="selectIntensity(this)">
+              <span class="ob-card-icon">🌱</span>
+              <span class="ob-card-text"><span class="ob-card-label">Encouraging</span><span class="ob-card-desc">Gentle nudges, positive framing</span></span>
+            </button>
+            <button class="ob-card selected" data-value="moderate" onclick="selectIntensity(this)">
+              <span class="ob-card-icon">⚡</span>
+              <span class="ob-card-text"><span class="ob-card-label">Direct</span><span class="ob-card-desc">Honest feedback, no sugarcoating — recommended</span></span>
+            </button>
+            <button class="ob-card" data-value="intense" onclick="selectIntensity(this)">
+              <span class="ob-card-icon">🔥</span>
+              <span class="ob-card-text"><span class="ob-card-label">Brutal</span><span class="ob-card-desc">Unfiltered truth. Will hurt. Will work.</span></span>
+            </button>
+          </div>
+          <button class="btn-primary ob-finish-btn" id="ob-finish-btn" onclick="finishOnboarding()">Show me what I'm wasting →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         HOME — Daily Reality Check
+    ════════════════════════════════════════════ -->
+    <div class="screen active" id="screen-home">
+      <canvas id="beams-canvas"></canvas>
+      <div class="screen-content has-nav">
+
+        <div class="guest-banner hidden" id="guest-banner">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span id="guest-banner-text">Guest mode — <strong id="guest-days-left">3 days</strong> remaining</span>
+          <button class="guest-banner-btn" onclick="skipToAuth()">Save Progress →</button>
+        </div>
+
+        <div class="insight-widget hidden" id="insight-widget">
+          <div class="insight-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+              <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="#60a5fa"/>
+            </svg>
+          </div>
+          <p class="insight-text" id="insight-text"></p>
+        </div>
+
+        <header class="dash-header anim-fade-in">
+          <div class="dash-brand">
+            <div class="dash-brand-icon anim-logo-pulse">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="url(#logoGrad)" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+                <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="white" opacity=".95"/>
+                <defs><linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#818cf8"/></linearGradient></defs>
+              </svg>
+            </div>
+            <div>
+              <h1 class="dash-brand-name anim-shimmer">Imperium</h1>
+              <p class="greeting" id="greeting-text">Good morning</p>
+            </div>
+          </div>
+          <div class="header-right">
+            <p class="score-date" id="score-date"></p>
+          </div>
+        </header>
+
+        <!-- ===== FIRST-TIME USER ===== -->
+        <div class="first-run-section" id="first-run-section">
+          <div class="first-run-hero anim-stagger">
+            <h2 class="first-run-headline">How much of your life<br>did you waste today?</h2>
+            <p class="first-run-desc">Answer 7 honest questions. Get a brutally clear score, see exactly where your time and money went, and wake up tomorrow with a plan that actually works.</p>
+          </div>
+
+          <div class="first-run-signals">
+            <div class="first-run-signal">
+              <span class="signal-dot" style="background:#f87171"></span>
+              <span><strong>Time wasted</strong> — hours burned on nothing</span>
+            </div>
+            <div class="first-run-signal">
+              <span class="signal-dot" style="background:#d4af37"></span>
+              <span><strong>Money leaked</strong> — spending you didn't need</span>
+            </div>
+            <div class="first-run-signal">
+              <span class="signal-dot" style="background:#60a5fa"></span>
+              <span><strong>Potential gap</strong> — how far below your max you are</span>
+            </div>
+            <div class="first-run-signal">
+              <span class="signal-dot" style="background:#34d399"></span>
+              <span><strong>Tomorrow's fix</strong> — exact actions to recover</span>
+            </div>
+          </div>
+
+          <div class="first-run-proof">
+            <p class="proof-text">"I didn't realize I was wasting 3 hours a day until this showed me."</p>
+          </div>
+
+          <div class="first-run-card anim-slide-up" style="--delay:.3s">
+            <h3 class="first-run-title">Your first reality check</h3>
+            <p class="first-run-sub">7 questions. 2 minutes. You'll never see your day the same way again.</p>
+            <button class="btn-primary first-run-btn" onclick="navigateTo('screen-review')">
+              Start My Review →
+            </button>
+            <p class="first-run-privacy">🔒 All data stays on this device. We never see your answers.</p>
+          </div>
+
+          <div class="first-run-auth" id="first-run-auth">
+            <button class="first-run-auth-btn" onclick="skipToAuth()">Create Account / Log In</button>
+          </div>
+
+          <div class="trust-bar">
+            <span class="trust-item">🔒 100% local</span>
+            <span class="trust-item">⚡ 2 min daily</span>
+            <span class="trust-item">🚫 No credit card</span>
+          </div>
+          <div class="landing-credits">
+            <span class="credits-label">Founded by</span>
+            <span class="credits-name">Sanskaar</span>
+            <span class="credits-label">Co-founded by</span>
+            <span class="credits-name">Kashish</span>
+          </div>
+        </div>
+
+        <!-- ===== RETURNING USER ===== -->
+        <div class="returning-section" id="returning-section">
+
+          <!-- Verdict — emotional hook -->
+          <div class="verdict-card" id="verdict-card">
+            <div class="verdict-emoji" id="verdict-emoji">⚡</div>
+            <div class="verdict-headline" id="verdict-headline">You haven't checked in yet today.</div>
+            <div class="verdict-sub" id="verdict-sub">Do your 2-minute review to see today's reality check.</div>
+          </div>
+
+          <!-- Score Ring -->
+          <div class="score-ring-wrap anim-scale-in">
+            <div class="score-ring">
+              <svg class="ring-svg" viewBox="0 0 120 120">
+                <defs>
+                  <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#60a5fa" />
+                    <stop offset="100%" stop-color="#818cf8" />
+                  </linearGradient>
+                </defs>
+                <circle class="ring-bg" cx="60" cy="60" r="52" />
+                <circle class="ring-progress" id="score-ring-circle" cx="60" cy="60" r="52"
+                  stroke-dasharray="326.7" stroke-dashoffset="326.7" />
+              </svg>
+              <div class="score-center">
+                <span class="score-number" id="daily-score">--</span>
+                <span class="score-label">Reality Score</span>
+              </div>
+            </div>
+            <p class="score-potential" id="score-potential"></p>
+          </div>
+
+          <!-- Waste Breakdown -->
+          <div class="waste-section" id="waste-section">
+            <h3 class="section-title">Today's Damage Report</h3>
+            <div class="waste-grid">
+              <div class="waste-card waste-time">
+                <div class="waste-icon">⏱️</div>
+                <div class="waste-val" id="waste-time-val">—</div>
+                <div class="waste-lbl">Hours Wasted</div>
+              </div>
+              <div class="waste-card waste-money">
+                <div class="waste-icon">💸</div>
+                <div class="waste-val" id="waste-money-val">—</div>
+                <div class="waste-lbl">Money Burned</div>
+              </div>
+              <div class="waste-card waste-potential">
+                <div class="waste-icon">📉</div>
+                <div class="waste-val" id="waste-potential-val">—</div>
+                <div class="waste-lbl">Below Potential</div>
+              </div>
+              <div class="waste-card waste-streak">
+                <div class="waste-icon">🔥</div>
+                <div class="waste-val" id="waste-streak-val">0</div>
+                <div class="waste-lbl">Day Streak</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance Signals -->
+          <div class="pillars-section anim-stagger">
+            <h3 class="section-title">Performance Signals</h3>
+            <div class="pillars-grid">
+              <div class="pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-dot" style="background:#60a5fa"></span>
+                  <span class="pillar-name">Execution</span>
+                  <span class="pillar-val" id="pillar-execution-val">0</span>
+                </div>
+                <div class="progress-bar-wrap"><div class="progress-bar execution" id="pillar-execution" style="width:0%"></div></div>
+              </div>
+              <div class="pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-dot" style="background:#a855f7"></span>
+                  <span class="pillar-name">Reasoning</span>
+                  <span class="pillar-val" id="pillar-reasoning-val">0</span>
+                </div>
+                <div class="progress-bar-wrap"><div class="progress-bar reasoning" id="pillar-reasoning" style="width:0%"></div></div>
+              </div>
+              <div class="pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-dot" style="background:#14b8a6"></span>
+                  <span class="pillar-name">Focus</span>
+                  <span class="pillar-val" id="pillar-focus-val">0</span>
+                </div>
+                <div class="progress-bar-wrap"><div class="progress-bar focus" id="pillar-focus" style="width:0%"></div></div>
+              </div>
+              <div class="pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-dot" style="background:#d4af37"></span>
+                  <span class="pillar-name">Financial</span>
+                  <span class="pillar-val" id="pillar-financial-val">0</span>
+                </div>
+                <div class="progress-bar-wrap"><div class="progress-bar financial" id="pillar-financial" style="width:0%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick-stats">
+            <div class="stat-chip">
+              <span class="stat-num" id="streak-count">0</span>
+              <span class="stat-lbl">Day Streak</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-num" id="missions-done">0/3</span>
+              <span class="stat-lbl">Today's Plan</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-num" id="weekly-avg">--</span>
+              <span class="stat-lbl">Week Avg</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-primary review-btn" onclick="navigateTo('screen-review')">
+          Start Daily Review · 2 min
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         DAILY REVIEW (CHAT)
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-review">
+      <div class="chat-header">
+        <button class="back-btn" onclick="navigateTo('screen-home')">‹</button>
+        <div class="chat-header-info">
+          <div class="ai-avatar anim-logo-pulse">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2 L20 5.5 L20 12 Q20 18 12 22 Q4 18 4 12 L4 5.5 Z" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+              <path d="M13.5 6 L10.5 12.5 L12.5 12.5 L11.5 18.5 L16 11 L13.5 11 L15 6 Z" fill="#60a5fa"/>
+            </svg>
+          </div>
+          <div>
+            <p class="chat-name">Imperium AI</p>
+            <p class="chat-status" id="chat-status-text">Ready to analyze your day</p>
+          </div>
+        </div>
+        <div class="review-progress" id="review-progress">
+          <span class="review-step-text" id="review-step-text">1/7</span>
+          <span class="review-time-est">~2 min</span>
+        </div>
+      </div>
+
+      <div class="review-guide" id="review-guide">
+        <div class="review-guide-inner">
+          <button class="review-guide-close" onclick="dismissReviewGuide()" aria-label="Close guide">✕</button>
+          <h4 class="review-guide-title">💡 Be brutally honest</h4>
+          <ul class="review-guide-list">
+            <li><strong>Be specific</strong> — "Scrolled TikTok for 2 hrs" beats "wasted some time"</li>
+            <li><strong>Be honest</strong> — lying to this app only wastes your own time</li>
+            <li><strong>Use voice</strong> — tap 🎙️ to speak instead of typing</li>
+            <li><strong>Dollar amounts</strong> — just type the number (e.g. "45")</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chat-messages"></div>
+
+      <div class="chat-input-wrap" id="chat-input-wrap">
+        <div class="chat-options" id="chat-options"></div>
+        <div class="chat-text-input" id="chat-text-row">
+          <input type="text" id="chat-text-field"
+            placeholder="Type or tap 🎙️ to speak…"
+            autocomplete="off" autocorrect="off" spellcheck="true" />
+          <button class="mic-btn" id="chat-mic-btn" onclick="toggleVoiceInput()" aria-label="Voice input">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+          </button>
+          <button class="send-btn" id="chat-send-btn" onclick="sendTextAnswer()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <p class="chat-privacy-note">🔒 Your answers never leave this device</p>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         ANALYSIS — Reality Report
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-results">
+      <div class="screen-content has-nav">
+        <header class="results-header">
+          <button class="back-btn ghost" onclick="navigateTo('screen-home')">‹ Home</button>
+          <h2 class="results-title">Your Reality Check</h2>
+          <div></div>
+        </header>
+
+        <div class="results-score-banner">
+          <div class="results-score-inner">
+            <span class="results-score-num" id="result-score-num">--</span>
+            <span class="results-score-lbl">Reality Score</span>
+          </div>
+          <div class="results-score-trend" id="result-trend"></div>
+        </div>
+
+        <!-- Waste punch -->
+        <div class="waste-summary-card" id="waste-summary-card">
+          <h3 class="waste-summary-title" id="waste-summary-title">Today's damage:</h3>
+          <div class="waste-summary-stats">
+            <div class="ws-stat">
+              <span class="ws-val" id="ws-time">—</span>
+              <span class="ws-lbl">wasted</span>
+            </div>
+            <div class="ws-stat">
+              <span class="ws-val" id="ws-money">—</span>
+              <span class="ws-lbl">burned</span>
+            </div>
+            <div class="ws-stat">
+              <span class="ws-val" id="ws-potential">—</span>
+              <span class="ws-lbl">below max</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="skill-breakdown-card" id="skill-breakdown-card">
+          <h3 class="skill-breakdown-title">Performance Breakdown</h3>
+          <p class="skill-breakdown-sub">Based on what you told us</p>
+          <div class="skill-bars">
+            <div class="skill-bar-row">
+              <div class="skill-bar-label"><span class="skill-dot" style="background:#60a5fa"></span><span>Execution</span></div>
+              <div class="skill-bar-track"><div class="skill-bar-fill execution-fill" id="skill-bar-execution" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-execution">0</span>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-label"><span class="skill-dot" style="background:#a855f7"></span><span>Reasoning</span></div>
+              <div class="skill-bar-track"><div class="skill-bar-fill reasoning-fill" id="skill-bar-reasoning" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-reasoning">0</span>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-label"><span class="skill-dot" style="background:#14b8a6"></span><span>Focus</span></div>
+              <div class="skill-bar-track"><div class="skill-bar-fill focus-fill" id="skill-bar-focus" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-focus">0</span>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-label"><span class="skill-dot" style="background:#d4af37"></span><span>Financial</span></div>
+              <div class="skill-bar-track"><div class="skill-bar-fill financial-fill" id="skill-bar-financial" style="width:0%"></div></div>
+              <span class="skill-bar-val" id="skill-val-financial">0</span>
+            </div>
+          </div>
+          <div class="input-summary" id="input-summary"></div>
+        </div>
+
+        <div class="insight-highlight" id="insight-highlight">
+          <h3 class="insight-highlight-title">⚠️ Key Finding</h3>
+          <p class="insight-highlight-body" id="insight-highlight-body">Complete your daily review to see insights.</p>
+        </div>
+
+        <div class="result-cards" id="result-cards">
+          <div class="result-card">
+            <h3 class="result-card-label">🔴 Biggest Mistake</h3>
+            <p class="result-body" id="res-mistake">Complete your daily review to see insights.</p>
+          </div>
+          <div class="result-card">
+            <h3 class="result-card-label">💸 Money Reality</h3>
+            <p class="result-body" id="res-money">—</p>
+          </div>
+          <div class="result-card">
+            <h3 class="result-card-label">🧠 Thinking Pattern</h3>
+            <p class="result-body" id="res-thinking">—</p>
+          </div>
+          <div class="result-card">
+            <h3 class="result-card-label">🚫 What You Missed</h3>
+            <p class="result-body" id="res-missed">—</p>
+          </div>
+          <div class="result-card result-card-action">
+            <h3 class="result-card-label">✅ Tomorrow's Fix</h3>
+            <ul class="result-fixes" id="res-fixes"><li>—</li></ul>
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="navigateTo('screen-missions')" style="margin:24px 0 8px">
+          Build Tomorrow's Plan →
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TOMORROW'S FIX (MISSIONS)
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-missions">
+      <div class="screen-content has-nav">
+        <header class="section-header-row">
+          <div>
+            <h2 class="page-title">Tomorrow's Fix</h2>
+            <p class="page-sub" id="missions-page-sub">Targeted at your weakest signals</p>
+          </div>
+        </header>
+
+        <div class="missions-empty" id="missions-empty">
+          <div class="missions-empty-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <h3 class="missions-empty-title">No plan yet</h3>
+          <p class="missions-empty-desc">Complete your daily review and I'll generate targeted missions based on your weakest areas.</p>
+          <button class="btn-primary" onclick="navigateTo('screen-review')" style="margin-top:16px">
+            Start Daily Review →
+          </button>
+        </div>
+
+        <div class="missions-list hidden" id="missions-list">
+          <div class="mission-item" id="mission-execution" data-pillar="execution">
+            <div class="mission-check" onclick="completeMission('execution')">
+              <div class="check-circle" id="check-execution"></div>
+            </div>
+            <div class="mission-info">
+              <div class="mission-meta">
+                <span class="mission-pillar execution-tag">Execution</span>
+                <span class="mission-time">~30 min</span>
+              </div>
+              <p class="mission-task" id="mission-execution-task">Ship one deliverable before noon</p>
+              <p class="mission-why" id="mission-execution-why">Your execution score was lowest yesterday</p>
+            </div>
+          </div>
+
+          <div class="mission-item" id="mission-reasoning" data-pillar="reasoning">
+            <div class="mission-check" onclick="completeMission('reasoning')">
+              <div class="check-circle" id="check-reasoning"></div>
+            </div>
+            <div class="mission-info">
+              <div class="mission-meta">
+                <span class="mission-pillar reasoning-tag">Reasoning</span>
+                <span class="mission-time">~15 min</span>
+              </div>
+              <p class="mission-task" id="mission-reasoning-task">Write down one decision you'd make differently</p>
+              <p class="mission-why" id="mission-reasoning-why">Strengthens pattern recognition</p>
+            </div>
+          </div>
+
+          <div class="mission-item stretch-mission" id="mission-focus" data-pillar="focus">
+            <div class="mission-check" onclick="completeMission('focus')">
+              <div class="check-circle" id="check-focus"></div>
+            </div>
+            <div class="mission-info">
+              <div class="mission-meta">
+                <span class="mission-pillar focus-tag">Focus</span>
+                <span class="stretch-badge">Stretch</span>
+                <span class="mission-time">~60 min</span>
+              </div>
+              <p class="mission-task" id="mission-focus-task">Work 60 minutes uninterrupted on your #1 priority</p>
+              <p class="mission-why" id="mission-focus-why">Optional challenge for extra growth</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="missions-status" id="missions-status">
+          <span class="missions-status-text" id="missions-status-text">0 of 3 completed</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         PROGRESS — Your Pattern
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-progress">
+      <div class="screen-content has-nav">
+        <header class="section-header-row">
+          <h2 class="page-title">Your Pattern</h2>
+        </header>
+
+        <div class="progress-summary-card" id="progress-summary">
+          <p class="progress-summary-text" id="progress-summary-text">Complete a few reviews to see your weekly pattern here.</p>
+        </div>
+
+        <!-- Cumulative waste -->
+        <div class="cumulative-waste" id="cumulative-waste">
+          <h3 class="section-title">This Week's Total Waste</h3>
+          <div class="cw-grid">
+            <div class="cw-item">
+              <span class="cw-val" id="cw-hours">0</span>
+              <span class="cw-lbl">Hours Wasted</span>
+            </div>
+            <div class="cw-item">
+              <span class="cw-val" id="cw-money">$0</span>
+              <span class="cw-lbl">Money Burned</span>
+            </div>
+            <div class="cw-item">
+              <span class="cw-val" id="cw-potential">0%</span>
+              <span class="cw-lbl">Avg Below Max</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="progress-stats-row">
+          <div class="progress-stat-card">
+            <span class="p-stat-num" id="prog-streak">0</span>
+            <span class="p-stat-lbl">Streak</span>
+          </div>
+          <div class="progress-stat-card">
+            <span class="p-stat-num" id="prog-avg">--</span>
+            <span class="p-stat-lbl">Avg Score</span>
+          </div>
+          <div class="progress-stat-card">
+            <span class="p-stat-num" id="prog-missions">0</span>
+            <span class="p-stat-lbl">Missions Done</span>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h3 class="chart-title">Reality Score Trend</h3>
+          <div class="chart-wrap"><canvas id="score-chart"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <h3 class="chart-title">Signal Breakdown</h3>
+          <div class="pillar-breakdown" id="pillar-breakdown-prog">
+            <div class="pb-row">
+              <span class="pb-label"><span class="pb-dot" style="background:#60a5fa"></span> Execution</span>
+              <div class="pb-bar-wrap"><div class="pb-bar execution-bar" id="pb-execution" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-execution-val">0</span>
+            </div>
+            <div class="pb-row">
+              <span class="pb-label"><span class="pb-dot" style="background:#a855f7"></span> Reasoning</span>
+              <div class="pb-bar-wrap"><div class="pb-bar reasoning-bar" id="pb-reasoning" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-reasoning-val">0</span>
+            </div>
+            <div class="pb-row">
+              <span class="pb-label"><span class="pb-dot" style="background:#14b8a6"></span> Focus</span>
+              <div class="pb-bar-wrap"><div class="pb-bar focus-bar" id="pb-focus" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-focus-val">0</span>
+            </div>
+            <div class="pb-row">
+              <span class="pb-label"><span class="pb-dot" style="background:#d4af37"></span> Financial</span>
+              <div class="pb-bar-wrap"><div class="pb-bar financial-bar" id="pb-financial" style="width:0%"></div></div>
+              <span class="pb-val" id="pb-financial-val">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         PROFILE / SETTINGS
+    ════════════════════════════════════════════ -->
+    <div class="screen" id="screen-profile">
+      <div class="screen-content has-nav">
+
+        <div class="profile-hero">
+          <div class="profile-avatar">
+            <span id="profile-avatar-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          </div>
+          <h2 class="profile-name" id="profile-user-type">Imperium User</h2>
+          <p class="profile-goal" id="profile-user-goal">Goal: —</p>
+          <div class="profile-badges">
+            <span class="badge" id="profile-streak-badge">0 day streak</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-heading">Account</h3>
+          <div class="settings-card">
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Email</span>
+                <span class="setting-desc" id="setting-email">Not signed in</span>
+              </div>
+            </div>
+            <div class="setting-row" onclick="showProModal()">
+              <div class="setting-info">
+                <span class="setting-label">Subscription</span>
+                <span class="setting-desc">Free plan</span>
+              </div>
+              <span class="setting-arrow">›</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-heading">Notifications</h3>
+          <div class="settings-card">
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Daily Review Reminder</span>
+                <span class="setting-desc">Every evening at 9 PM</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-review" checked />
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Mission Reminders</span>
+                <span class="setting-desc">Morning nudge for daily plan</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-missions" checked />
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-heading">Data &amp; Privacy</h3>
+          <div class="settings-card">
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Where is my data stored?</span>
+                <span class="setting-desc">100% local on this device. Nothing is uploaded. We never see your answers.</span>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">How does scoring work?</span>
+                <span class="setting-desc">Calculated locally from your answers. No external AI APIs.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-heading">Data Controls</h3>
+          <div class="settings-card">
+            <div class="setting-row" onclick="exportData()">
+              <div class="setting-info">
+                <span class="setting-label">Export My Data</span>
+                <span class="setting-desc">Download everything as JSON</span>
+              </div>
+              <span class="setting-arrow">›</span>
+            </div>
+            <div class="setting-row" onclick="resetApp()">
+              <div class="setting-info">
+                <span class="setting-label danger">Delete All Data</span>
+                <span class="setting-desc">Permanently clear everything</span>
+              </div>
+              <span class="setting-arrow">›</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pro-card">
+          <h3 class="pro-title">Imperium Pro</h3>
+          <p class="pro-subtitle">Deeper analysis for serious users</p>
+          <ul class="pro-features">
+            <li>Unlimited AI reviews per day</li>
+            <li>Advanced spending analysis</li>
+            <li>Weekly strategy summary</li>
+            <li>Custom mission builder</li>
+            <li>Export reports as PDF</li>
+          </ul>
+          <button class="btn-primary" onclick="showProModal()">Start Free Trial — $8/mo founding rate</button>
+          <p class="pro-note">First 100 members lock in $8/mo forever. Regular price $20/mo.</p>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-heading">App</h3>
+          <div class="settings-card">
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Version</span>
+                <span class="setting-desc">Imperium v3.0.0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-footer" id="profile-footer">
+          <p>Founded by <strong>Sanskaar</strong></p>
+          <p>Co-founded by <strong>Kashish</strong></p>
+          <p class="footer-copy">© 2026 Imperium. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         BOTTOM NAV
+    ════════════════════════════════════════════ -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <button class="nav-item active" onclick="navigateTo('screen-home')" id="nav-home">
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 14 15 14 15 21"/></svg></span>
+        <span class="nav-label">Today</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('screen-missions')" id="nav-missions">
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
+        <span class="nav-label">Fix</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('screen-results')" id="nav-results">
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></span>
+        <span class="nav-label">Report</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('screen-progress')" id="nav-progress">
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+        <span class="nav-label">Pattern</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('screen-profile')" id="nav-profile">
+        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+        <span class="nav-label">Settings</span>
+      </button>
+    </nav>
+
+    <!-- PRO MODAL -->
+    <div class="modal-overlay hidden" id="pro-modal" onclick="closeProModal()">
+      <div class="modal-sheet" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <h2 class="modal-title">Imperium Pro</h2>
+        <p class="modal-desc">Deeper analysis. Full history. Weekly strategy.</p>
+        <div class="modal-plans">
+          <div class="plan-card selected">
+            <span class="plan-label">Founding Monthly</span>
+            <span class="plan-price">$8</span>
+            <span class="plan-period">/month</span>
+          </div>
+          <div class="plan-card">
+            <span class="plan-label">Founding Yearly</span>
+            <span class="plan-price">$72</span>
+            <span class="plan-period">/year</span>
+            <span class="plan-save">Save 25%</span>
+          </div>
+        </div>
+        <p class="modal-founding-note">Founding rate for first 100 members. Locks in forever.</p>
+        <button class="btn-primary" onclick="closeProModal()">Start 7-Day Free Trial</button>
+        <p class="modal-footer-text">7-day free trial · Cancel anytime · Regular price $20/mo</p>
+      </div>
+    </div>
+
+    <footer class="app-footer">
+      <p>Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p>
+      <p class="footer-copy">© 2026 Imperium. All rights reserved.</p>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
