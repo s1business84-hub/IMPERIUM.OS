@@ -285,6 +285,7 @@ function initHomeData() {
   updateHomeGreeting();
   initParticles();
   initBeams();
+  initDottedGlow();
   // Show welcome message if first time, otherwise show context
   if (!homeChatHistory.length) {
     const now = new Date();
@@ -2279,6 +2280,105 @@ function initParticles() {
 }
 
 /* ── BEAMS CANVAS ─────────────────────────────────── */
+/* ── DOTTED GLOW BACKGROUND ──────────────────────── */
+function initDottedGlow() {
+  const canvas = document.getElementById('dotted-glow-canvas');
+  if (!canvas) return;
+  // Only init once — check if already running
+  if (canvas._dottedGlowRunning) return;
+  canvas._dottedGlowRunning = true;
+  const ctx = canvas.getContext('2d');
+  const GAP = 10;        // dot grid spacing (matches gap={10})
+  const RADIUS = 1.6;    // dot radius (matches radius={1.6})
+  const SPEED_MIN = 0.3; // min glow speed
+  const SPEED_MAX = 1.6; // max glow speed
+  let W, H, cols, rows;
+  let dots = [];
+
+  function resize() {
+    W = canvas.width = canvas.offsetWidth || window.innerWidth;
+    H = canvas.height = canvas.offsetHeight || window.innerHeight;
+    cols = Math.ceil(W / GAP) + 1;
+    rows = Math.ceil(H / GAP) + 1;
+    // Rebuild dot grid, preserve existing glow states where possible
+    dots = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        // Randomly seed some dots as glowing at start
+        const glowing = Math.random() < 0.04;
+        dots.push({
+          x: c * GAP,
+          y: r * GAP,
+          glow: glowing ? Math.random() : 0,   // current glow intensity 0–1
+          speed: SPEED_MIN + Math.random() * (SPEED_MAX - SPEED_MIN),
+          dir: 1,
+          active: glowing
+        });
+      }
+    }
+  }
+
+  resize();
+  const ro = new ResizeObserver(resize);
+  ro.observe(canvas.parentElement || document.body);
+
+  // Randomly activate new dots over time
+  function activateRandom() {
+    if (dots.length === 0) return;
+    const d = dots[Math.floor(Math.random() * dots.length)];
+    if (!d.active) { d.active = true; d.dir = 1; }
+  }
+
+  let lastActivate = 0;
+
+  function loop(ts) {
+    if (!canvas._dottedGlowRunning) return;
+    ctx.clearRect(0, 0, W, H);
+
+    // Activate a few random dots every ~120ms
+    if (ts - lastActivate > 120) {
+      for (let i = 0; i < 3; i++) activateRandom();
+      lastActivate = ts;
+    }
+
+    for (let i = 0; i < dots.length; i++) {
+      const d = dots[i];
+      if (d.active) {
+        d.glow += d.dir * d.speed * 0.016;
+        if (d.glow >= 1) { d.glow = 1; d.dir = -1; }
+        else if (d.glow <= 0) { d.glow = 0; d.dir = 1; d.active = false; }
+      }
+
+      if (d.glow <= 0.01) {
+        // Dim dot — base color rgba(163,163,163,0.25)
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(163,163,163,0.18)';
+        ctx.fill();
+      } else {
+        // Glowing dot — draw outer glow halo first, then bright center
+        const glowRadius = RADIUS + 4 * d.glow;
+        const grad = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, glowRadius);
+        // Sky-800 equivalent: #075985 → rgb(7,89,133)
+        grad.addColorStop(0, `rgba(56,189,248,${0.85 * d.glow})`);
+        grad.addColorStop(0.4, `rgba(14,165,233,${0.4 * d.glow})`);
+        grad.addColorStop(1, 'rgba(7,89,133,0)');
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, glowRadius, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        // Bright dot center
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(186,230,253,${0.6 + 0.4 * d.glow})`;
+        ctx.fill();
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
 function initBeams() {
   const canvas = document.getElementById('beams-canvas');
   if (!canvas) return;
