@@ -116,8 +116,6 @@ function navigateTo(id) {
   const navMap = {
     'screen-home': 'nb-home',
     'screen-brain': 'nb-brain',
-    'screen-track': 'nb-track',
-    'screen-insights': 'nb-insights',
     'screen-settings': 'nb-settings'
   };
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -278,96 +276,248 @@ function finishOnboarding() {
   initGlobalEffects();
 }
 
-/* ── HOME ─────────────────────────────────────────── */
+/* ── HOME — VOICE BOT HUB ─────────────────────────── */
+let homeVoiceActive = false;
+let homeRecognition = null;
+let homeChatHistory = [];
+
 function initHomeData() {
-  updateHomeScreen();
+  updateHomeGreeting();
   initParticles();
   initBeams();
+  // Show welcome message if first time, otherwise show context
+  if (!homeChatHistory.length) {
+    const now = new Date();
+    const mo = now.getMonth(); const yr = now.getFullYear();
+    const monthTx = S.transactions.filter(t => {
+      const d = new Date(t.date); return d.getMonth() === mo && d.getFullYear() === yr;
+    });
+    const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const exp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    let welcomeMsg;
+    if (!monthTx.length) {
+      welcomeMsg = `Hey ${S.user ? S.user.name.split(' ')[0] : 'there'} 👋 I'm your Imperium AI. Tell me what you spent or earned today, or ask me anything about your finances. I'll log it and analyse it for you.`;
+    } else if (exp > inc) {
+      welcomeMsg = `Welcome back. This month you've spent ${fmt(exp)} against ${fmt(inc)} income — you're in the red by ${fmt(exp - inc)}. Want me to break that down or log something new?`;
+    } else {
+      const margin = inc > 0 ? ((inc - exp) / inc * 100).toFixed(0) : 0;
+      welcomeMsg = `Welcome back. You're tracking well this month — ${margin}% profit margin with ${fmt(inc)} income logged. What would you like to do?`;
+    }
+    addHomeBotMessage('ai', welcomeMsg);
+  }
 }
 
-function updateHomeScreen() {
-  // Greeting
+function updateHomeGreeting() {
   const h = new Date().getHours();
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const name = S.user ? S.user.name.split(' ')[0] : 'there';
   const greetEl = document.getElementById('greeting');
-  if (greetEl) greetEl.textContent = greet + ', ' + name + ' 👋';
-
-  // Date
+  if (greetEl) greetEl.textContent = greet + ', ' + name;
   const dateEl = document.getElementById('top-date');
   if (dateEl) {
     const now = new Date();
-    dateEl.textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   }
-
-  // Snapshot
-  updateSnapshot();
-
-  // Tx feed (last 5)
-  const feed = document.getElementById('tx-feed-home');
-  if (feed) {
-    if (!S.transactions.length) {
-      feed.innerHTML = '<div class="tx-empty">No transactions yet. Tap <strong>Log Transaction</strong> to start.</div>';
-    } else {
-      const recent = [...S.transactions].reverse().slice(0, 5);
-      feed.innerHTML = recent.map(tx => txHTML(tx)).join('');
-    }
-  }
-
-  // AI prompt
-  updateAIPrompt();
 }
 
-function updateSnapshot() {
-  const now = new Date();
-  const mo = now.getMonth(); const yr = now.getFullYear();
-  const monthTx = S.transactions.filter(t => {
-    const d = new Date(t.date);
-    return d.getMonth() === mo && d.getFullYear() === yr;
-  });
-  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const spent = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const profit = inc - spent;
-  const runway = S.budget > 0 ? (S.budget - spent <= 0 ? 'Over!' : '$' + (S.budget - spent).toFixed(0)) : '—';
-
-  el('snap-income',  fmt(inc));
-  el('snap-spent',   fmt(spent));
-  el('snap-profit',  fmt(profit));
-  el('snap-runway',  runway);
+// Called every time we navigate back to home
+function updateHomeScreen() {
+  updateHomeGreeting();
 }
 
-function updateAIPrompt() {
-  const promptEl = document.getElementById('ai-prompt-text');
-  const actionsEl = document.getElementById('ai-prompt-actions');
-  if (!promptEl) return;
+function toggleHomeVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Voice not supported in this browser', 'error');
+    return;
+  }
+  if (homeVoiceActive) {
+    stopHomeVoice();
+    return;
+  }
+  homeVoiceActive = true;
+  const orbWrap = document.getElementById('home-orb-wrap');
+  const orbBtn = document.getElementById('home-orb-btn');
+  const label = document.getElementById('home-orb-label');
+  if (orbWrap) orbWrap.classList.add('listening');
+  if (orbBtn) orbBtn.classList.add('recording');
+  if (label) label.textContent = 'Listening…';
 
-  const now = new Date();
-  const mo = now.getMonth(); const yr = now.getFullYear();
-  const monthTx = S.transactions.filter(t => {
-    const d = new Date(t.date); return d.getMonth() === mo && d.getFullYear() === yr;
-  });
-  const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const spent = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  homeRecognition = new SR();
+  homeRecognition.lang = 'en-US';
+  homeRecognition.interimResults = false;
+  homeRecognition.maxAlternatives = 1;
+  homeRecognition.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    stopHomeVoice();
+    homeChat(text);
+  };
+  homeRecognition.onerror = () => { stopHomeVoice(); showToast('Could not hear you, try again', 'error'); };
+  homeRecognition.onend = () => { stopHomeVoice(); };
+  homeRecognition.start();
+}
 
-  let msg;
-  if (!monthTx.length) {
-    msg = "Welcome to Imperium OS. Start by logging a transaction — your AI Brain will analyse patterns and behaviour once it has data.";
-  } else if (inc === 0) {
-    msg = "No income logged this month. Log all income sources so your AI Brain can track your full financial picture.";
-  } else if (spent > inc) {
-    msg = `You've spent ${fmt(spent)} against ${fmt(inc)} income this month. Profit is negative. Open AI Brain for a deep analysis and action plan.`;
+function stopHomeVoice() {
+  homeVoiceActive = false;
+  if (homeRecognition) { try { homeRecognition.stop(); } catch(e){} homeRecognition = null; }
+  const orbWrap = document.getElementById('home-orb-wrap');
+  const orbBtn = document.getElementById('home-orb-btn');
+  const label = document.getElementById('home-orb-label');
+  if (orbWrap) orbWrap.classList.remove('listening');
+  if (orbBtn) orbBtn.classList.remove('recording');
+  if (label) label.textContent = 'Tap to speak · or type below';
+}
+
+function homeChat(q) {
+  const inputEl = document.getElementById('home-input');
+  const text = q || (inputEl ? inputEl.value.trim() : '');
+  if (!text) return;
+  if (inputEl && !q) inputEl.value = '';
+
+  addHomeBotMessage('user', text);
+
+  // Hide hints after first message
+  const hint = document.getElementById('home-orb-hint');
+  if (hint) hint.style.display = 'none';
+
+  // Check if it's a logging intent
+  const parsed = parseHomeTx(text);
+  if (parsed) {
+    logFromHomeBot(parsed, text);
   } else {
-    const margin = ((inc - spent) / inc * 100).toFixed(0);
-    msg = `${margin}% profit margin this month. ${inc > spent ? 'Strong. ' : ''}Your AI Brain has detected patterns — tap to explore.`;
+    generateHomeResponse(text);
   }
+}
 
-  promptEl.textContent = msg;
-  if (actionsEl) {
-    actionsEl.innerHTML = `
-      <button class="ai-action-chip" onclick="navigateTo('screen-brain')">🧠 AI Brain</button>
-      <button class="ai-action-chip" onclick="navigateTo('screen-insights')">📊 Full Insights</button>
-    `;
+function parseHomeTx(text) {
+  const t = text.toLowerCase();
+  // Income patterns
+  const incomeKw = ['got paid', 'received', 'earned', 'made', 'income', 'client paid', 'payment from', 'sold', 'revenue'];
+  const expenseKw = ['spent', 'bought', 'paid for', 'paid', 'spent on', 'cost', 'purchase'];
+  const isIncome = incomeKw.some(kw => t.includes(kw));
+  const isExpense = expenseKw.some(kw => t.includes(kw));
+  if (!isIncome && !isExpense) return null;
+  // Extract amount
+  const amtMatch = text.match(/[\$£€]?\s?(\d+(?:[.,]\d{1,2})?)/);
+  if (!amtMatch) return null;
+  const amount = parseFloat(amtMatch[1].replace(',', ''));
+  if (isNaN(amount) || amount <= 0) return null;
+  // Extract category
+  const catMap = {
+    coffee: 'coffee', cafe: 'coffee', starbucks: 'coffee',
+    food: 'food', eat: 'food', lunch: 'food', dinner: 'food', breakfast: 'food', restaurant: 'food', pizza: 'food', burger: 'food',
+    groceries: 'groceries', grocery: 'groceries', supermarket: 'groceries',
+    uber: 'transport', lyft: 'transport', taxi: 'transport', transport: 'transport', fuel: 'transport', gas: 'transport', bus: 'transport',
+    netflix: 'subscription', spotify: 'subscription', subscription: 'subscription',
+    gym: 'health', doctor: 'health', pharmacy: 'health', medicine: 'health',
+    rent: 'bills', electricity: 'bills', internet: 'bills', bill: 'bills', bills: 'bills',
+    shopping: 'shopping', amazon: 'shopping', clothes: 'shopping',
+    client: 'client', freelance: 'freelance', salary: 'salary', salary: 'salary'
+  };
+  let category = isIncome ? 'freelance' : 'other';
+  for (const [kw, cat] of Object.entries(catMap)) {
+    if (t.includes(kw)) { category = cat; break; }
   }
+  // Extract note from "on X" or "for X" or "from X"
+  const noteMatch = text.match(/(?:on|for|from|at)\s+(.+?)(?:\s*$)/i);
+  const note = noteMatch ? noteMatch[1].replace(/[$£€\d.,]/g, '').trim() : '';
+
+  return { amount, type: isIncome ? 'income' : 'expense', category, note };
+}
+
+function logFromHomeBot(parsed, originalText) {
+  const tx = {
+    id: Date.now().toString(),
+    type: parsed.type,
+    amount: parsed.amount,
+    category: parsed.category,
+    note: parsed.note || originalText,
+    date: new Date().toISOString()
+  };
+  S.transactions.push(tx);
+  saveState();
+  const sign = tx.type === 'income' ? '+' : '-';
+  const emoji = tx.type === 'income' ? '✅' : '📝';
+  addHomeBotMessage('ai', `${emoji} Logged! ${sign}${fmt(tx.amount)} · ${tx.category}${tx.note ? ' · ' + tx.note : ''}. Your AI Brain has been updated. Want to log another or see your summary?`);
+  homeChatHistory.push({ role: 'user', text: originalText });
+  homeChatHistory.push({ role: 'ai', text: 'Logged.' });
+}
+
+function generateHomeResponse(text) {
+  const t = text.toLowerCase();
+  const now = new Date();
+  const mo = now.getMonth(); const yr = now.getFullYear();
+  const monthTx = S.transactions.filter(tx => {
+    const d = new Date(tx.date); return d.getMonth() === mo && d.getFullYear() === yr;
+  });
+  const inc = monthTx.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0);
+  const exp = monthTx.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0);
+
+  let reply = '';
+  if (t.includes('summary') || t.includes('how am i') || t.includes('on track')) {
+    if (!monthTx.length) {
+      reply = "No transactions logged this month yet. Tell me what you've spent or earned and I'll start tracking.";
+    } else {
+      const margin = inc > 0 ? ((inc - exp) / inc * 100).toFixed(0) : 0;
+      const status = exp > inc ? '⚠️ You\'re in the red' : margin > 30 ? '💚 You\'re crushing it' : '📊 You\'re doing OK';
+      reply = `${status} this month.\n\n💰 Income: ${fmt(inc)}\n💸 Spent: ${fmt(exp)}\n📈 Profit: ${fmt(inc - exp)}\n🎯 Margin: ${margin}%\n\nTap Brain for deeper analysis.`;
+    }
+  } else if (t.includes('top spend') || t.includes('spent most') || t.includes('biggest expense')) {
+    const catMap = {};
+    monthTx.filter(tx => tx.type === 'expense').forEach(tx => { catMap[tx.category] = (catMap[tx.category] || 0) + tx.amount; });
+    const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+    if (!sorted.length) {
+      reply = "No expense data this month. Log some transactions first!";
+    } else {
+      reply = `Your top 3 spend categories this month:\n\n${sorted.slice(0, 3).map((e, i) => `${i + 1}. ${e[0]} — ${fmt(e[1])}`).join('\n')}\n\nWant me to help you cut any of these?`;
+    }
+  } else if (t.includes('income') || t.includes('earn') || t.includes('revenue')) {
+    const sources = {};
+    monthTx.filter(tx => tx.type === 'income').forEach(tx => { sources[tx.category] = (sources[tx.category] || 0) + tx.amount; });
+    const sorted = Object.entries(sources).sort((a, b) => b[1] - a[1]);
+    reply = sorted.length
+      ? `This month's income breakdown:\n\n${sorted.map(e => `• ${e[0]}: ${fmt(e[1])}`).join('\n')}\n\nTotal: ${fmt(inc)}`
+      : "No income logged this month. Tell me when you get paid — just say 'Got paid $X from client'.";
+  } else if (t.includes('budget')) {
+    const budget = S.budget || 0;
+    if (!budget) {
+      reply = "You haven't set a monthly budget yet. Go to Settings to set one, or tell me your budget and I'll set it. E.g. 'My budget is $2000 this month'.";
+    } else {
+      const remaining = budget - exp;
+      const pct = (exp / budget * 100).toFixed(0);
+      reply = remaining > 0
+        ? `Budget: ${fmt(budget)}\nSpent: ${fmt(exp)} (${pct}%)\nRemaining: ${fmt(remaining)} — ${remaining > budget * 0.3 ? "you're doing well!" : "getting tight, be careful."}`
+        : `⚠️ You've exceeded your budget by ${fmt(Math.abs(remaining))}. Time to pause discretionary spending.`;
+    }
+  } else if (t.includes('advice') || t.includes('help') || t.includes('what should')) {
+    if (!monthTx.length) {
+      reply = "Start by logging everything you spend and earn. Even one week of data gives me enough to give you personalised advice. Just tell me as you go!";
+    } else if (exp > inc) {
+      reply = `You're spending ${fmt(exp - inc)} more than you earn. My top 3 actions:\n\n1. Identify your top expense category and cut 20%\n2. Find one extra income source this week\n3. Open AI Brain → Patterns for the full breakdown`;
+    } else {
+      reply = `You're profitable this month. My advice:\n\n1. If you're not saving 20%+ of income, start now\n2. Open Brain → Behaviour for your full profile\n3. Your next goal should be adding another income stream`;
+    }
+  } else {
+    reply = `I can help you:\n\n• Log transactions ("Spent $40 on food")\n• Check your summary ("How am I doing?")\n• Find top spending ("What am I spending most on?")\n• Budget check ("How's my budget?")\n• Get advice ("What should I do?")\n\nOr tap 🧠 Brain for deep AI analysis.`;
+  }
+  addHomeBotMessage('ai', reply);
+  homeChatHistory.push({ role: 'user', text }, { role: 'ai', text: reply });
+}
+
+function addHomeBotMessage(role, text) {
+  const feed = document.getElementById('home-chat-feed');
+  if (!feed) return;
+  const div = document.createElement('div');
+  div.className = `hcm hcm-${role}`;
+  const icon = role === 'ai'
+    ? `<div class="hcm-av">🧠</div>`
+    : `<div class="hcm-av hcm-av-user">${S.user ? S.user.name[0].toUpperCase() : 'U'}</div>`;
+  const formattedText = text.replace(/\n/g, '<br>');
+  div.innerHTML = role === 'ai'
+    ? `${icon}<div class="hcm-bubble">${formattedText}</div>`
+    : `<div class="hcm-bubble">${formattedText}</div>${icon}`;
+  feed.appendChild(div);
+  feed.scrollTop = feed.scrollHeight;
 }
 
 /* ── TRANSACTION HELPERS ──────────────────────────── */
