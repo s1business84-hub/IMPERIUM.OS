@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════
-   IMPERIUM OS — v4.0.0 — styles.css
+   IMPERIUM OS — v5.0.0 — styles.css
 ════════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -439,6 +439,82 @@ a{color:inherit;text-decoration:none}ul{list-style:none}
 .home-pill{padding:7px 14px;border-radius:99px;font-size:.76rem;font-weight:600;background:var(--glass);border:1px solid var(--border);color:var(--text2);white-space:nowrap;transition:all .18s;cursor:pointer;flex-shrink:0}
 .home-pill:hover{border-color:rgba(59,130,246,.5);color:var(--text);background:rgba(59,130,246,.08)}
 .home-pill:active{transform:scale(.95)}
+
+/* COMMAND PALETTE */
+
+/* ══ CHECK-IN CARD ══════════════════════════════════ */
+.checkin-card{margin:0 16px 14px;padding:18px 16px;position:relative;z-index:1;overflow:hidden}
+.checkin-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.checkin-period-icon{font-size:1.8rem;flex-shrink:0}
+.checkin-header-text{flex:1;display:flex;flex-direction:column;gap:2px}
+.checkin-period{font-size:1rem;font-weight:800;color:var(--text)}
+.checkin-sub{font-size:.76rem;color:var(--text3);font-weight:500}
+.checkin-badge{padding:4px 12px;border-radius:99px;font-size:.7rem;font-weight:700;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);color:var(--blue2);white-space:nowrap;flex-shrink:0}
+.checkin-questions{display:flex;flex-direction:column;gap:14px}
+.checkin-done{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0 8px;text-align:center}
+.checkin-done-icon{font-size:2rem}
+.checkin-done-text{font-size:.88rem;color:var(--text2);line-height:1.5}
+
+/* Check-in Questions */
+.cq-item{display:flex;flex-direction:column;gap:8px}
+.cq-text{font-size:.88rem;font-weight:600;color:var(--text);line-height:1.4}
+.cq-input{width:100%;padding:11px 14px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;color:var(--text);transition:border-color .2s,box-shadow .2s}
+.cq-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12);outline:none}
+.cq-input::placeholder{color:var(--text3)}
+.cq-options{display:flex;gap:7px;flex-wrap:wrap}
+.cq-opt-btn{padding:8px 16px;border-radius:99px;font-size:.82rem;font-weight:600;background:var(--glass);border:1.5px solid var(--border);color:var(--text2);cursor:pointer;transition:all .18s;white-space:nowrap}
+.cq-opt-btn:active{transform:scale(.95)}
+.cq-opt-btn.selected{background:rgba(59,130,246,.15);border-color:var(--blue);color:var(--text);box-shadow:0 0 0 2px rgba(59,130,246,.1)}
+.checkin-submit{margin-top:6px}
+
+/* ══ PASSIVE DATA STRIP ═════════════════════════════ */
+.passive-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 16px 16px;position:relative;z-index:1}
+.passive-card{padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.passive-icon{font-size:1.2rem}
+.passive-val{font-size:1.05rem;font-weight:800;color:var(--text);line-height:1}
+.passive-label{font-size:.65rem;color:var(--text3);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.passive-src{font-size:.58rem;color:var(--green);font-weight:600;letter-spacing:.03em;margin-top:1px}
+.passive-card{cursor:pointer;transition:all .2s}
+.passive-card:active{transform:scale(.95)}
+
+/* Passive Sync Hint */
+.passive-sync-hint{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px 14px;font-size:.78rem;color:var(--cyan);font-weight:600;cursor:pointer;transition:all .2s;position:relative;z-index:1;animation:hintPulse 2s ease-in-out infinite}
+.passive-sync-hint:hover{color:var(--text)}
+.passive-sync-hint.hidden{display:none}
+@keyframes hintPulse{0%,100%{opacity:.7}50%{opacity:1}}
+
+/* Passive Data Input Modal */
+.pd-input-group{display:flex;flex-direction:column;gap:6px}
+.pd-label{font-size:.88rem;font-weight:700;color:var(--text)}
+.pd-input-row{display:flex;align-items:center;gap:8px}
+.pd-input{flex:1;padding:12px 14px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:1.1rem;font-weight:700;color:var(--text);transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.pd-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12);outline:none}
+.pd-input::placeholder{color:var(--text3);font-weight:400;font-size:.9rem}
+.pd-quick-btns{display:flex;gap:5px;flex-shrink:0}
+.pd-quick{padding:8px 12px;border-radius:8px;font-size:.76rem;font-weight:700;background:var(--glass2);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .15s}
+.pd-quick:active{transform:scale(.93)}
+.pd-quick:hover{border-color:var(--blue);color:var(--text)}
+.pd-hint{font-size:.7rem;color:var(--text3);font-style:italic;padding-left:2px}
+
+/* ══ INSIGHT SCORE CARD ═════════════════════════════ */
+.insight-score-card{margin:16px 16px 12px;padding:20px 18px}
+.isc-left{display:flex;flex-direction:column;gap:4px}
+.isc-score{font-size:2.8rem;font-weight:900;line-height:1;color:var(--text)}
+.isc-grade{font-size:.82rem;font-weight:600;color:var(--text2)}
+.isc-right{display:flex;gap:14px}
+.isc-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 12px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.isc-val{font-size:1rem;font-weight:800;color:var(--text)}
+.isc-stat small{font-size:.65rem;color:var(--text3);font-weight:500}
+.insight-score-card>.isc-left+.isc-right,
+.insight-score-card{display:flex;align-items:center;justify-content:space-between}
+
+/* ══ CHECK-IN HISTORY ═══════════════════════════════ */
+.history-card{padding:14px 16px;margin-bottom:8px}
+.hc-date{font-size:.82rem;font-weight:700;color:var(--text);margin-bottom:6px}
+.hc-periods{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.hc-period-pill{padding:3px 10px;border-radius:99px;font-size:.72rem;font-weight:600;background:var(--glass);border:1px solid var(--border);color:var(--text2);text-transform:capitalize}
+.hc-stats{font-size:.76rem;color:var(--text3);font-weight:500}
+.pattern-empty{font-size:.84rem;color:var(--text3);text-align:center;padding:20px 16px;line-height:1.6}
 
 /* COMMAND PALETTE */
 .cmd-overlay{position:fixed;inset:0;z-index:500;background:rgba(2,4,10,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:80px 20px 20px;animation:overlayIn .15s ease}

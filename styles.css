@@ -473,6 +473,28 @@ a{color:inherit;text-decoration:none}ul{list-style:none}
 .passive-icon{font-size:1.2rem}
 .passive-val{font-size:1.05rem;font-weight:800;color:var(--text);line-height:1}
 .passive-label{font-size:.65rem;color:var(--text3);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.passive-src{font-size:.58rem;color:var(--green);font-weight:600;letter-spacing:.03em;margin-top:1px}
+.passive-card{cursor:pointer;transition:all .2s}
+.passive-card:active{transform:scale(.95)}
+
+/* Passive Sync Hint */
+.passive-sync-hint{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px 14px;font-size:.78rem;color:var(--cyan);font-weight:600;cursor:pointer;transition:all .2s;position:relative;z-index:1;animation:hintPulse 2s ease-in-out infinite}
+.passive-sync-hint:hover{color:var(--text)}
+.passive-sync-hint.hidden{display:none}
+@keyframes hintPulse{0%,100%{opacity:.7}50%{opacity:1}}
+
+/* Passive Data Input Modal */
+.pd-input-group{display:flex;flex-direction:column;gap:6px}
+.pd-label{font-size:.88rem;font-weight:700;color:var(--text)}
+.pd-input-row{display:flex;align-items:center;gap:8px}
+.pd-input{flex:1;padding:12px 14px;background:var(--glass);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:1.1rem;font-weight:700;color:var(--text);transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.pd-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12);outline:none}
+.pd-input::placeholder{color:var(--text3);font-weight:400;font-size:.9rem}
+.pd-quick-btns{display:flex;gap:5px;flex-shrink:0}
+.pd-quick{padding:8px 12px;border-radius:8px;font-size:.76rem;font-weight:700;background:var(--glass2);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .15s}
+.pd-quick:active{transform:scale(.93)}
+.pd-quick:hover{border-color:var(--blue);color:var(--text)}
+.pd-hint{font-size:.7rem;color:var(--text3);font-style:italic;padding-left:2px}
 
 /* ══ INSIGHT SCORE CARD ═════════════════════════════ */
 .insight-score-card{margin:16px 16px 12px;padding:20px 18px}

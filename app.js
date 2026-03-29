@@ -313,8 +313,8 @@ function submitCheckin() {
   grantXP(30, period + ' check-in');
   checkAchievements();
 
-  // Generate passive data for today if not exists
-  generatePassiveData();
+  // Recalculate today's score (check-in completion affects it)
+  recalcTodayScore();
 
   // Refresh card
   initCheckinCard();
@@ -376,29 +376,54 @@ function generateCheckinInsight(period, answers) {
   return "Check-in logged. Keep going.";
 }
 
-/* ── PASSIVE DATA (Simulated HealthKit) ───────────── */
-function generatePassiveData() {
+/* ── PASSIVE DATA (Real Input from Apple Health/Watch) ─ */
+function openPassiveModal() {
+  const modal = document.getElementById('passive-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+
+  // Pre-fill with existing data if already entered today
   const today = new Date().toDateString();
-  if (S.passiveData[today]) return;
+  const data = S.passiveData[today];
+  if (data && data.source === 'user') {
+    const stepsEl = document.getElementById('pd-steps');
+    const sleepEl = document.getElementById('pd-sleep');
+    const screenEl = document.getElementById('pd-screen');
+    if (stepsEl) stepsEl.value = data.steps || '';
+    if (sleepEl) sleepEl.value = data.sleep || '';
+    if (screenEl) screenEl.value = data.screenTime || '';
+  }
+}
 
-  // Simulate Apple Health-like data
-  // In future: integrate with HealthKit / Health Connect API
-  const h = new Date().getHours();
-  const baseSteps = 2000 + Math.floor(Math.random() * 6000) + (h * 300);
-  const sleepHrs = (5 + Math.random() * 4).toFixed(1);
-  const screenMins = Math.floor(60 + Math.random() * 300);
+function closePassiveModal() {
+  const modal = document.getElementById('passive-modal');
+  if (modal) modal.classList.add('hidden');
+}
 
-  // Score derived from passive data + check-ins
+function savePassiveData() {
+  const steps = parseInt(document.getElementById('pd-steps').value) || 0;
+  const sleep = parseFloat(document.getElementById('pd-sleep').value) || 0;
+  const screenTime = parseInt(document.getElementById('pd-screen').value) || 0;
+
+  if (steps === 0 && sleep === 0 && screenTime === 0) {
+    showToast('Enter at least one value', 'error');
+    return;
+  }
+
+  const today = new Date().toDateString();
+
+  // Calculate real score from actual data
   let score = 50;
-  if (parseFloat(sleepHrs) >= 7) score += 15;
-  else if (parseFloat(sleepHrs) >= 6) score += 5;
-  else score -= 10;
-  if (baseSteps >= 8000) score += 15;
-  else if (baseSteps >= 5000) score += 5;
-  if (screenMins < 120) score += 10;
-  else if (screenMins > 240) score -= 10;
+  if (sleep >= 7) score += 15;
+  else if (sleep >= 6) score += 5;
+  else if (sleep > 0) score -= 10;
+  if (steps >= 8000) score += 15;
+  else if (steps >= 5000) score += 5;
+  else if (steps > 0 && steps < 3000) score -= 5;
+  if (screenTime > 0 && screenTime < 120) score += 10;
+  else if (screenTime > 240) score -= 10;
 
-  // Add check-in quality bonus
+  // Check-in completion bonus
   const todayCI = S.checkins[today] || {};
   const completedPeriods = Object.keys(todayCI).length;
   score += completedPeriods * 5;
@@ -406,31 +431,93 @@ function generatePassiveData() {
   score = Math.max(0, Math.min(100, score));
 
   S.passiveData[today] = {
-    steps: baseSteps,
-    sleep: parseFloat(sleepHrs),
-    screenTime: screenMins,
-    score: score
+    steps: steps,
+    sleep: sleep,
+    screenTime: screenTime,
+    score: score,
+    source: 'user',
+    syncedAt: new Date().toISOString()
   };
+  saveState();
+
+  closePassiveModal();
+  updatePassiveStrip();
+  showToast('Real data synced ✓', 'success');
+  grantXP(10, 'data sync');
+}
+
+function recalcTodayScore() {
+  const today = new Date().toDateString();
+  const data = S.passiveData[today];
+  if (!data) return;
+
+  let score = 50;
+  if (data.sleep >= 7) score += 15;
+  else if (data.sleep >= 6) score += 5;
+  else if (data.sleep > 0) score -= 10;
+  if (data.steps >= 8000) score += 15;
+  else if (data.steps >= 5000) score += 5;
+  else if (data.steps > 0 && data.steps < 3000) score -= 5;
+  if (data.screenTime > 0 && data.screenTime < 120) score += 10;
+  else if (data.screenTime > 240) score -= 10;
+
+  const todayCI = S.checkins[today] || {};
+  score += Object.keys(todayCI).length * 5;
+  data.score = Math.max(0, Math.min(100, score));
   saveState();
 }
 
 function updatePassiveStrip() {
   const today = new Date().toDateString();
-  generatePassiveData();
   const data = S.passiveData[today];
-  if (!data) return;
+  const hint = document.getElementById('passive-sync-hint');
 
   const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-  el('passive-steps-val', data.steps >= 1000 ? (data.steps / 1000).toFixed(1) + 'K' : data.steps);
-  el('passive-sleep-val', data.sleep + 'h');
-  el('passive-screen-val', data.screenTime >= 60 ? Math.floor(data.screenTime / 60) + 'h' + (data.screenTime % 60 > 0 ? data.screenTime % 60 + 'm' : '') : data.screenTime + 'm');
+
+  if (!data || !data.source) {
+    // No real data yet — show tap to sync
+    el('passive-steps-val', '—');
+    el('passive-sleep-val', '—');
+    el('passive-screen-val', '—');
+    el('passive-score-val', '—');
+    el('passive-steps-src', '');
+    el('passive-sleep-src', '');
+    el('passive-screen-src', '');
+    el('passive-score-src', '');
+    if (hint) hint.classList.remove('hidden');
+    return;
+  }
+
+  // Real data exists
+  if (hint) hint.classList.add('hidden');
+
+  el('passive-steps-val', data.steps >= 1000 ? (data.steps / 1000).toFixed(1) + 'K' : data.steps || '0');
+  el('passive-sleep-val', data.sleep ? data.sleep + 'h' : '0h');
+  el('passive-screen-val', data.screenTime >= 60 ? Math.floor(data.screenTime / 60) + 'h' + (data.screenTime % 60 > 0 ? data.screenTime % 60 + 'm' : '') : (data.screenTime || 0) + 'm');
+
+  // Recalc score with latest check-in data
+  recalcTodayScore();
   el('passive-score-val', data.score);
+
+  // Source labels
+  el('passive-steps-src', '✓ real');
+  el('passive-sleep-src', '✓ real');
+  el('passive-screen-src', '✓ real');
+  el('passive-score-src', 'auto');
 
   // Color code score
   const scoreEl = document.getElementById('passive-score-val');
   if (scoreEl) {
     scoreEl.style.color = data.score >= 70 ? '#10b981' : data.score >= 40 ? '#f59e0b' : '#ef4444';
   }
+
+  // Color code individual values
+  const stepsEl = document.getElementById('passive-steps-val');
+  if (stepsEl && data.steps) stepsEl.style.color = data.steps >= 8000 ? '#10b981' : data.steps >= 5000 ? '#f0f4ff' : '#f59e0b';
+  const sleepEl = document.getElementById('passive-sleep-val');
+  if (sleepEl && data.sleep) sleepEl.style.color = data.sleep >= 7 ? '#10b981' : data.sleep >= 6 ? '#f0f4ff' : '#ef4444';
+  const screenEl = document.getElementById('passive-screen-val');
+  if (screenEl && data.screenTime) screenEl.style.color = data.screenTime <= 120 ? '#10b981' : data.screenTime <= 240 ? '#f0f4ff' : '#ef4444';
 }
 
 /* ── BOOT SEQUENCE ────────────────────────────────── */
