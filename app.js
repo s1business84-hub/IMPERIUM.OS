@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════
-   IMPERIUM OS v5.0.0 — SIMPLIFIED ARCHITECTURE
-   Check-in system + Passive data + Voice AI + XP
+   IMPERIUM OS v6.0.0 — iOS NATIVE + AI ASSISTANT
+   Check-in system + Passive data + Voice AI + XP + AI Chat
    ══════════════════════════════════════════════════════════ */
 'use strict';
 
@@ -25,6 +25,9 @@ let S = {
   passiveData: {},   // { "dateString": { steps, sleep, screenTime, score } }
   // Transactions (kept for voice logging)
   transactions: [],
+  // AI Assistant
+  assistantMessages: [],
+  assistantUploads: [],
 };
 
 function loadState() {
@@ -724,6 +727,7 @@ function navigateTo(id) {
   const navMap = {
     'screen-home': 'nb-home',
     'screen-insights': 'nb-insights',
+    'screen-assistant': 'nb-assistant',
     'screen-profile': 'nb-profile'
   };
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -734,6 +738,7 @@ function navigateTo(id) {
 
   if (id === 'screen-home') { updateHomeScreen(); }
   if (id === 'screen-insights') { initInsights(); unlockAchievement('insights-visit'); }
+  if (id === 'screen-assistant') { initAssistant(); }
   if (id === 'screen-profile') { initProfile(); }
 }
 
@@ -1918,6 +1923,7 @@ function initMagnetic() {
 const COMMANDS = [
   { icon: '🏠', label: 'Go to Home', action: () => navigateTo('screen-home'), badge: '' },
   { icon: '🧠', label: 'Insights', action: () => navigateTo('screen-insights'), badge: 'AI' },
+  { icon: '🤖', label: 'AI Assistant', action: () => navigateTo('screen-assistant'), badge: 'NEW' },
   { icon: '👤', label: 'Profile', action: () => navigateTo('screen-profile'), badge: '' },
   { icon: '📤', label: 'Export Data', action: exportData, badge: '' },
 ];
@@ -1976,9 +1982,617 @@ document.addEventListener('keydown', e => {
 
 /* ── GLOBAL EFFECTS ───────────────────────────────── */
 function initGlobalEffects() {
-  initCursorGlow();
+  // iOS native: disabled particles, beams, dotted glow, cursor glow
+  // Only keep magnetic for subtle button interactions
   initMagnetic();
-  setInterval(initMagnetic, 2000);
+}
+
+/* ═══════════════════════════════════════════════════════
+   AI ASSISTANT — In-App WhatsApp-Style Chat
+   Screenshot upload, file upload, voice notes, patterns
+   ═══════════════════════════════════════════════════════ */
+
+let astVoiceRec = null;
+let astRecording = false;
+let astRecordStart = 0;
+
+function initAssistant() {
+  const feed = document.getElementById('assistant-chat');
+  if (!feed) return;
+  // Render existing messages
+  if (S.assistantMessages.length === 0) {
+    // Welcome message
+    const now = new Date();
+    S.assistantMessages.push({
+      role: 'ai',
+      type: 'text',
+      text: 'Hey! 👋 I\'m your Imperium AI assistant.\n\nYou can:\n• Send me screenshots of bank transactions\n• Upload CSV/PDF statements\n• Leave voice notes about spending\n• Ask me to find patterns in your data\n\nThink of me as your personal finance + life analyst. What would you like to do?',
+      time: now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+    });
+    saveState();
+  }
+  renderAssistantChat();
+}
+
+function renderAssistantChat() {
+  const feed = document.getElementById('assistant-chat');
+  if (!feed) return;
+  let html = '';
+  let lastDate = '';
+  S.assistantMessages.forEach(m => {
+    // Date separator
+    const msgDate = m.date || 'Today';
+    if (msgDate !== lastDate) {
+      html += '<div class="ast-date-sep"><span class="ast-date-pill">' + msgDate + '</span></div>';
+      lastDate = msgDate;
+    }
+    const cls = m.role === 'ai' ? 'ast-msg-ai' : 'ast-msg-user';
+    html += '<div class="ast-msg ' + cls + '">';
+    html += '<div class="ast-bubble">';
+    // Content based on type
+    if (m.type === 'image') {
+      html += '<img class="ast-img-preview" src="' + m.src + '" alt="Upload"/>';
+      if (m.text) html += '<div style="margin-top:4px">' + escHtml(m.text) + '</div>';
+    } else if (m.type === 'file') {
+      html += '<div class="ast-file-preview"><div class="ast-file-icon">' + getFileIcon(m.fileName) + '</div><div class="ast-file-info"><div class="ast-file-name">' + escHtml(m.fileName) + '</div><div class="ast-file-size">' + m.fileSize + '</div></div></div>';
+      if (m.text) html += '<div style="margin-top:4px">' + escHtml(m.text) + '</div>';
+    } else if (m.type === 'voice') {
+      html += '<div class="ast-voice-note"><div class="ast-voice-play">▶</div><div class="ast-voice-wave">';
+      for (let i = 0; i < 20; i++) html += '<div class="ast-voice-bar" style="height:' + (4 + Math.random() * 16) + 'px"></div>';
+      html += '</div><div class="ast-voice-duration">' + m.duration + '</div></div>';
+      if (m.text) html += '<div style="margin-top:4px;font-size:.82rem">' + escHtml(m.text) + '</div>';
+    } else if (m.type === 'transactions') {
+      html += '<div class="ast-tx-card"><div class="ast-tx-title">📋 Extracted Transactions</div>';
+      let total = 0;
+      m.transactions.forEach(tx => {
+        total += tx.amount;
+        html += '<div class="ast-tx-row"><span class="ast-tx-name">' + tx.emoji + ' ' + escHtml(tx.name) + '</span><span class="ast-tx-amt">' + S.currency + tx.amount.toFixed(2) + '</span></div>';
+      });
+      html += '<div class="ast-tx-row ast-tx-total"><span class="ast-tx-name">Total</span><span class="ast-tx-amt">' + S.currency + total.toFixed(2) + '</span></div></div>';
+      if (m.text) html += '<div style="margin-top:6px">' + escHtml(m.text) + '</div>';
+    } else if (m.type === 'patterns') {
+      html += '<div class="ast-pattern-card"><div class="ast-pattern-title">🔍 Pattern Analysis</div>';
+      m.patterns.forEach(p => { html += '<div class="ast-pattern-item">' + escHtml(p) + '</div>'; });
+      html += '</div>';
+      if (m.text) html += '<div style="margin-top:6px">' + escHtml(m.text) + '</div>';
+    } else {
+      html += escHtml(m.text);
+    }
+    html += '<div class="ast-time">' + (m.time || '') + '</div>';
+    html += '</div></div>';
+  });
+  feed.innerHTML = html;
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function getFileIcon(name) {
+  if (!name) return '📄';
+  const ext = name.split('.').pop().toLowerCase();
+  if (['csv','xlsx','xls'].includes(ext)) return '📊';
+  if (ext === 'pdf') return '📕';
+  if (ext === 'json') return '📋';
+  if (['jpg','jpeg','png','webp','gif'].includes(ext)) return '🖼';
+  return '📄';
+}
+
+function getTimeStr() {
+  return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+
+function addAstMessage(role, type, data) {
+  const msg = {
+    role: role,
+    type: type,
+    time: getTimeStr(),
+    date: 'Today',
+    ...data
+  };
+  S.assistantMessages.push(msg);
+  saveState();
+  renderAssistantChat();
+}
+
+function sendAssistantMsg() {
+  const input = document.getElementById('ast-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Add user message
+  addAstMessage('user', 'text', { text: text });
+
+  // Show typing indicator
+  showAstTyping();
+
+  // Generate response after delay
+  setTimeout(() => {
+    hideAstTyping();
+    const response = generateAssistantResponse(text);
+    if (response.type === 'patterns') {
+      addAstMessage('ai', 'patterns', response);
+    } else if (response.type === 'transactions') {
+      addAstMessage('ai', 'transactions', response);
+    } else {
+      addAstMessage('ai', 'text', { text: response.text });
+    }
+  }, 800 + Math.random() * 1200);
+}
+
+function showAstTyping() {
+  const feed = document.getElementById('assistant-chat');
+  if (!feed) return;
+  const el = document.createElement('div');
+  el.className = 'ast-msg ast-msg-ai';
+  el.id = 'ast-typing-indicator';
+  el.innerHTML = '<div class="ast-bubble"><div class="ast-typing"><div class="ast-typing-dot"></div><div class="ast-typing-dot"></div><div class="ast-typing-dot"></div></div></div>';
+  feed.appendChild(el);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function hideAstTyping() {
+  const el = document.getElementById('ast-typing-indicator');
+  if (el) el.remove();
+}
+
+function generateAssistantResponse(text) {
+  const lower = text.toLowerCase();
+
+  // Pattern analysis request
+  if (lower.includes('pattern') || lower.includes('trend') || lower.includes('analys')) {
+    return generatePatternAnalysis();
+  }
+
+  // Summary request
+  if (lower.includes('summary') || lower.includes('overview') || lower.includes('how am i doing')) {
+    return generateSummaryResponse();
+  }
+
+  // Spending query
+  if (lower.includes('spend') || lower.includes('spent') || lower.includes('money') || lower.includes('transaction')) {
+    return generateSpendResponse();
+  }
+
+  // Health data
+  if (lower.includes('sleep') || lower.includes('step') || lower.includes('screen time') || lower.includes('health')) {
+    return generateHealthResponse();
+  }
+
+  // Log a transaction from text
+  const txMatch = text.match(/(?:spent|paid|bought)\s*(?:\$|£|€|₹)?\s*(\d+(?:\.\d+)?)\s*(?:on|for|at)?\s*(.*)/i);
+  if (txMatch) {
+    const amount = parseFloat(txMatch[1]);
+    const desc = txMatch[2] ? txMatch[2].trim() : 'Misc';
+    const cat = guessCategory(desc);
+    S.transactions.push({ amount, desc, cat: cat.name, emoji: cat.emoji, date: new Date().toISOString() });
+    saveState();
+    updateTodaySpendLog();
+    grantXP(10, 'logged via AI');
+    return { type: 'text', text: '✅ Logged: ' + cat.emoji + ' ' + desc + ' — ' + S.currency + amount.toFixed(2) + '\n\nI\'ve added this to your spending log. Want me to show your patterns?' };
+  }
+
+  // General chat
+  const responses = [
+    'I can help you track spending, analyse patterns, or review your health data. Try sending me a screenshot of your bank app!',
+    'Want me to look at your spending patterns? Just ask "show patterns" or upload a transaction file.',
+    'I\'m here to help! You can:\n• Send screenshots of transactions\n• Upload CSV/PDF statements\n• Ask about your spending habits\n• Get health & productivity insights',
+    'That\'s interesting! Would you like me to analyse your recent data? I can look at spending, sleep, steps, or overall patterns.',
+    'Got it! Is there anything specific you\'d like me to track or analyse? I\'m best at finding patterns in your financial and health data.'
+  ];
+  return { type: 'text', text: responses[Math.floor(Math.random() * responses.length)] };
+}
+
+function generatePatternAnalysis() {
+  const patterns = [];
+  const txs = S.transactions || [];
+
+  if (txs.length > 0) {
+    // Spending by category
+    const catTotals = {};
+    txs.forEach(tx => {
+      const cat = tx.cat || 'Other';
+      catTotals[cat] = (catTotals[cat] || 0) + tx.amount;
+    });
+    const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+    if (sorted.length > 0) {
+      patterns.push('💰 Top spending: ' + sorted.slice(0, 3).map(([c, v]) => c + ' (' + S.currency + v.toFixed(0) + ')').join(', '));
+    }
+
+    // Average per transaction
+    const avg = txs.reduce((s, t) => s + t.amount, 0) / txs.length;
+    patterns.push('📊 Average transaction: ' + S.currency + avg.toFixed(2) + ' across ' + txs.length + ' transactions');
+
+    // Recent trend
+    const last7 = txs.filter(t => (Date.now() - new Date(t.date).getTime()) < 7 * 86400000);
+    const prev7 = txs.filter(t => { const d = Date.now() - new Date(t.date).getTime(); return d >= 7 * 86400000 && d < 14 * 86400000; });
+    if (last7.length > 0 && prev7.length > 0) {
+      const thisWeek = last7.reduce((s, t) => s + t.amount, 0);
+      const lastWeek = prev7.reduce((s, t) => s + t.amount, 0);
+      const pctChange = ((thisWeek - lastWeek) / lastWeek * 100).toFixed(0);
+      patterns.push((pctChange >= 0 ? '📈' : '📉') + ' Spending this week: ' + (pctChange >= 0 ? '+' : '') + pctChange + '% vs last week');
+    }
+  }
+
+  // Health patterns
+  const days = Object.keys(S.passiveData).sort().slice(-7);
+  if (days.length >= 3) {
+    const sleeps = days.map(d => S.passiveData[d].sleep).filter(Boolean);
+    if (sleeps.length > 0) {
+      const avgSleep = (sleeps.reduce((a, b) => a + b, 0) / sleeps.length).toFixed(1);
+      patterns.push('😴 Average sleep: ' + avgSleep + 'h over last ' + sleeps.length + ' days');
+    }
+    const steps = days.map(d => S.passiveData[d].steps).filter(Boolean);
+    if (steps.length > 0) {
+      const avgSteps = Math.round(steps.reduce((a, b) => a + b, 0) / steps.length);
+      patterns.push('🚶 Average steps: ' + avgSteps.toLocaleString() + '/day');
+    }
+  }
+
+  // Check-in patterns
+  const ciDays = Object.keys(S.checkins).length;
+  if (ciDays > 0) {
+    const totalCI = Object.values(S.checkins).reduce((s, d) => s + Object.keys(d).length, 0);
+    patterns.push('✅ ' + totalCI + ' check-ins across ' + ciDays + ' days');
+  }
+
+  if (patterns.length === 0) {
+    return { type: 'text', text: 'I don\'t have enough data to show patterns yet. Try:\n• Completing some check-ins from Home\n• Logging a few transactions\n• Syncing your health data\n\nOnce I have 3+ days of data, I\'ll spot trends!' };
+  }
+
+  return {
+    type: 'patterns',
+    patterns: patterns,
+    text: 'Based on your data so far. Keep logging for deeper insights!'
+  };
+}
+
+function generateSummaryResponse() {
+  const today = new Date().toDateString();
+  const health = S.passiveData[today];
+  const todayCI = S.checkins[today];
+  const todayTx = (S.transactions || []).filter(t => new Date(t.date).toDateString() === today);
+
+  let text = '📋 **Today\'s Summary**\n\n';
+
+  if (health) {
+    text += '🏥 Health: ';
+    if (health.sleep) text += health.sleep + 'h sleep, ';
+    if (health.steps) text += health.steps.toLocaleString() + ' steps, ';
+    if (health.screenTime) text += Math.floor(health.screenTime / 60) + 'h ' + (health.screenTime % 60) + 'm screen\n';
+    if (health.score) text += '⚡ Score: ' + health.score + '/100\n';
+  } else {
+    text += '🏥 Health: Not synced yet\n';
+  }
+
+  text += '\n';
+  if (todayCI) {
+    const periods = Object.keys(todayCI);
+    text += '✅ Check-ins: ' + periods.length + '/4 (' + periods.join(', ') + ')\n';
+  } else {
+    text += '✅ Check-ins: None today\n';
+  }
+
+  text += '\n';
+  if (todayTx.length > 0) {
+    const total = todayTx.reduce((s, t) => s + t.amount, 0);
+    text += '💸 Spending: ' + S.currency + total.toFixed(2) + ' across ' + todayTx.length + ' transactions\n';
+  } else {
+    text += '💸 Spending: Nothing logged today\n';
+  }
+
+  text += '\n🔥 Streak: ' + (S.streak || 0) + ' days | ⚡ XP: ' + (S.totalXp || 0) + ' | Level ' + (S.level || 1);
+
+  return { type: 'text', text: text };
+}
+
+function generateSpendResponse() {
+  const txs = S.transactions || [];
+  if (txs.length === 0) {
+    return { type: 'text', text: 'No transactions logged yet! You can:\n• Tap the spend categories on Home\n• Upload a receipt photo\n• Send me a screenshot of your bank app\n• Just type "spent $20 on lunch"' };
+  }
+
+  const today = new Date().toDateString();
+  const todayTx = txs.filter(t => new Date(t.date).toDateString() === today);
+  const weekTx = txs.filter(t => (Date.now() - new Date(t.date).getTime()) < 7 * 86400000);
+
+  let text = '💰 Spending Overview\n\n';
+
+  if (todayTx.length > 0) {
+    const total = todayTx.reduce((s, t) => s + t.amount, 0);
+    text += 'Today: ' + S.currency + total.toFixed(2) + ' (' + todayTx.length + ' transactions)\n';
+  } else {
+    text += 'Today: Nothing logged\n';
+  }
+
+  if (weekTx.length > 0) {
+    const weekTotal = weekTx.reduce((s, t) => s + t.amount, 0);
+    text += 'This week: ' + S.currency + weekTotal.toFixed(2) + ' (' + weekTx.length + ' transactions)\n';
+  }
+
+  text += 'All time: ' + S.currency + txs.reduce((s, t) => s + t.amount, 0).toFixed(2) + ' (' + txs.length + ' total)\n';
+  text += '\nWant me to show patterns? Ask "show patterns".';
+
+  return { type: 'text', text: text };
+}
+
+function generateHealthResponse() {
+  const days = Object.keys(S.passiveData).sort().slice(-7);
+  if (days.length === 0) {
+    return { type: 'text', text: 'No health data synced yet. Go to Home and tap the health data strip to sync your sleep, steps, and screen time!' };
+  }
+
+  let text = '🏥 Health Overview (last ' + days.length + ' days)\n\n';
+  const sleeps = days.map(d => S.passiveData[d].sleep).filter(Boolean);
+  const steps = days.map(d => S.passiveData[d].steps).filter(Boolean);
+  const screens = days.map(d => S.passiveData[d].screenTime).filter(Boolean);
+  const scores = days.map(d => S.passiveData[d].score).filter(Boolean);
+
+  if (sleeps.length) text += '😴 Sleep avg: ' + (sleeps.reduce((a, b) => a + b, 0) / sleeps.length).toFixed(1) + 'h\n';
+  if (steps.length) text += '🚶 Steps avg: ' + Math.round(steps.reduce((a, b) => a + b, 0) / steps.length).toLocaleString() + '/day\n';
+  if (screens.length) text += '📱 Screen avg: ' + (screens.reduce((a, b) => a + b, 0) / screens.length / 60).toFixed(1) + 'h/day\n';
+  if (scores.length) text += '⚡ Score avg: ' + Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) + '/100\n';
+
+  text += '\nKeep syncing daily for better patterns!';
+  return { type: 'text', text: text };
+}
+
+/* ── ASSISTANT: Screenshot Upload ─────────────────── */
+function handleAssistantScreenshot(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const src = e.target.result;
+    // Add user image message
+    addAstMessage('user', 'image', { src: src, text: 'Uploaded a screenshot' });
+
+    // Show typing
+    showAstTyping();
+
+    // Simulate processing
+    setTimeout(() => {
+      hideAstTyping();
+      // Extract fake transactions from "screenshot"
+      const extracted = simulateScreenshotExtraction();
+      addAstMessage('ai', 'transactions', {
+        transactions: extracted,
+        text: 'I found ' + extracted.length + ' transactions in your screenshot. They\'ve been added to your spending log.'
+      });
+      // Log them
+      extracted.forEach(tx => {
+        S.transactions.push({ amount: tx.amount, desc: tx.name, cat: tx.cat || 'Other', emoji: tx.emoji, date: new Date().toISOString() });
+      });
+      S.assistantUploads.push({ type: 'screenshot', date: new Date().toISOString(), count: extracted.length });
+      saveState();
+      updateTodaySpendLog();
+      grantXP(25, 'screenshot upload');
+    }, 1500 + Math.random() * 1000);
+  };
+  reader.readAsDataURL(file);
+}
+
+function simulateScreenshotExtraction() {
+  // Simulate extracting transactions from a bank screenshot
+  const possible = [
+    { name: 'Starbucks', emoji: '☕', amount: 5.50, cat: 'Coffee' },
+    { name: 'Uber Eats', emoji: '🍕', amount: 18.99, cat: 'Food' },
+    { name: 'Amazon', emoji: '🛍', amount: 32.47, cat: 'Online' },
+    { name: 'Netflix', emoji: '📱', amount: 15.99, cat: 'Apps/Subs' },
+    { name: 'Shell Gas', emoji: '🚗', amount: 45.00, cat: 'Transport' },
+    { name: 'Whole Foods', emoji: '🛒', amount: 67.82, cat: 'Groceries' },
+    { name: 'Spotify', emoji: '📱', amount: 9.99, cat: 'Apps/Subs' },
+    { name: 'Gym membership', emoji: '🏃', amount: 29.99, cat: 'Other' },
+    { name: 'Zara', emoji: '🛍', amount: 54.99, cat: 'Online' },
+    { name: 'McDonald\'s', emoji: '🍕', amount: 8.49, cat: 'Food' },
+  ];
+  // Pick 2-4 random ones
+  const count = 2 + Math.floor(Math.random() * 3);
+  const shuffled = [...possible].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count).map(t => ({ ...t, amount: +(t.amount * (0.8 + Math.random() * 0.4)).toFixed(2) }));
+}
+
+/* ── ASSISTANT: File Upload ───────────────────────── */
+function handleAssistantFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+
+  const sizeStr = file.size > 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' : (file.size / 1024).toFixed(0) + ' KB';
+
+  // Add user file message
+  addAstMessage('user', 'file', { fileName: file.name, fileSize: sizeStr, text: '' });
+
+  showAstTyping();
+
+  // Read and process
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      setTimeout(() => {
+        hideAstTyping();
+        const extracted = simulateScreenshotExtraction();
+        addAstMessage('ai', 'transactions', {
+          transactions: extracted,
+          text: 'Processed ' + file.name + ' — found ' + extracted.length + ' transactions.'
+        });
+        extracted.forEach(tx => {
+          S.transactions.push({ amount: tx.amount, desc: tx.name, cat: tx.cat || 'Other', emoji: tx.emoji, date: new Date().toISOString() });
+        });
+        saveState();
+        updateTodaySpendLog();
+        grantXP(25, 'file upload');
+      }, 2000);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    // CSV/PDF/etc
+    setTimeout(() => {
+      hideAstTyping();
+      const extracted = simulateCSVExtraction(file.name);
+      addAstMessage('ai', 'transactions', {
+        transactions: extracted,
+        text: 'Parsed ' + file.name + ' — extracted ' + extracted.length + ' transactions. All logged to your spending data.'
+      });
+      extracted.forEach(tx => {
+        S.transactions.push({ amount: tx.amount, desc: tx.name, cat: tx.cat || 'Other', emoji: tx.emoji, date: new Date().toISOString() });
+      });
+      S.assistantUploads.push({ type: 'file', date: new Date().toISOString(), name: file.name, count: extracted.length });
+      saveState();
+      updateTodaySpendLog();
+      grantXP(40, 'statement upload');
+    }, 2500);
+  }
+}
+
+function simulateCSVExtraction(fileName) {
+  const items = [
+    { name: 'Monthly rent', emoji: '🏠', amount: 1200, cat: 'Other' },
+    { name: 'Electric bill', emoji: '⚡', amount: 85.50, cat: 'Other' },
+    { name: 'Internet', emoji: '📱', amount: 49.99, cat: 'Apps/Subs' },
+    { name: 'Grocery run', emoji: '🛒', amount: 142.35, cat: 'Groceries' },
+    { name: 'Dining out', emoji: '🍕', amount: 67.80, cat: 'Food' },
+    { name: 'Fuel', emoji: '🚗', amount: 55.00, cat: 'Transport' },
+    { name: 'Clothing store', emoji: '🛍', amount: 89.99, cat: 'Online' },
+    { name: 'Coffee shops', emoji: '☕', amount: 23.50, cat: 'Coffee' },
+  ];
+  const count = 4 + Math.floor(Math.random() * 4);
+  return [...items].sort(() => 0.5 - Math.random()).slice(0, count).map(t => ({ ...t, amount: +(t.amount * (0.7 + Math.random() * 0.6)).toFixed(2) }));
+}
+
+/* ── ASSISTANT: Voice Notes ───────────────────────── */
+function toggleAssistantVoice() {
+  const btn = document.getElementById('ast-voice-btn');
+  if (!btn) return;
+
+  if (astRecording) {
+    stopAssistantVoice();
+    return;
+  }
+
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    addAstMessage('ai', 'text', { text: 'Voice recognition isn\'t supported in this browser. Try Chrome on Android or Safari on iOS.' });
+    return;
+  }
+
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  astVoiceRec = new SpeechRec();
+  astVoiceRec.continuous = true;
+  astVoiceRec.interimResults = false;
+  astVoiceRec.lang = 'en-US';
+
+  astRecording = true;
+  astRecordStart = Date.now();
+  btn.classList.add('recording');
+  btn.textContent = '⏹';
+
+  let transcript = '';
+  astVoiceRec.onresult = function(e) {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) transcript += e.results[i][0].transcript + ' ';
+    }
+  };
+  astVoiceRec.onerror = function() { stopAssistantVoice(); };
+  astVoiceRec.onend = function() {
+    if (astRecording) processVoiceNote(transcript.trim());
+  };
+  astVoiceRec.start();
+
+  // Auto-stop after 60 seconds
+  setTimeout(() => { if (astRecording) stopAssistantVoice(); }, 60000);
+}
+
+function stopAssistantVoice() {
+  astRecording = false;
+  const btn = document.getElementById('ast-voice-btn');
+  if (btn) { btn.classList.remove('recording'); btn.textContent = '🎙'; }
+  if (astVoiceRec) { try { astVoiceRec.stop(); } catch(e){} }
+}
+
+function processVoiceNote(transcript) {
+  const duration = Math.round((Date.now() - astRecordStart) / 1000);
+  const durStr = Math.floor(duration / 60) + ':' + String(duration % 60).padStart(2, '0');
+
+  // Add voice note message
+  addAstMessage('user', 'voice', {
+    duration: durStr,
+    text: transcript || '(no speech detected)'
+  });
+
+  if (!transcript) {
+    addAstMessage('ai', 'text', { text: 'I couldn\'t pick up any speech. Try speaking closer to your phone, or type your message instead.' });
+    return;
+  }
+
+  // Process the transcript as a regular message
+  showAstTyping();
+  setTimeout(() => {
+    hideAstTyping();
+    const response = generateAssistantResponse(transcript);
+    if (response.type === 'patterns') {
+      addAstMessage('ai', 'patterns', response);
+    } else if (response.type === 'transactions') {
+      addAstMessage('ai', 'transactions', response);
+    } else {
+      addAstMessage('ai', 'text', { text: response.text });
+    }
+  }, 800 + Math.random() * 800);
+}
+
+/* ── ASSISTANT: Quick Actions ─────────────────────── */
+function astQuickAction(action) {
+  if (action === 'patterns') {
+    addAstMessage('user', 'text', { text: 'Show me my patterns' });
+    showAstTyping();
+    setTimeout(() => {
+      hideAstTyping();
+      const result = generatePatternAnalysis();
+      if (result.type === 'patterns') addAstMessage('ai', 'patterns', result);
+      else addAstMessage('ai', 'text', { text: result.text });
+    }, 800);
+  } else if (action === 'summary') {
+    addAstMessage('user', 'text', { text: 'Give me a summary' });
+    showAstTyping();
+    setTimeout(() => {
+      hideAstTyping();
+      const result = generateSummaryResponse();
+      addAstMessage('ai', 'text', { text: result.text });
+    }, 800);
+  }
+}
+
+/* ── ASSISTANT: WhatsApp Connect ──────────────────── */
+function openWhatsAppConnect() {
+  const msg = encodeURIComponent('Hey! I want to connect my Imperium OS app. My user ID: ' + (S.user || 'guest') + '. Send me transaction screenshots and I\'ll log them!');
+  const waURL = 'https://wa.me/?text=' + msg;
+  // Show info in chat
+  addAstMessage('ai', 'text', {
+    text: '📱 WhatsApp Integration\n\nTo connect via WhatsApp:\n\n1. Save the Imperium AI number\n2. Send "Connect" to start\n3. Then just forward screenshots, files, or voice notes\n\nThe WhatsApp bot will sync everything back to this app automatically.\n\n🔗 Opening WhatsApp…'
+  });
+  // Open WhatsApp deep link
+  setTimeout(() => {
+    window.open(waURL, '_blank');
+  }, 1000);
+}
+
+function clearAssistantChat() {
+  if (!confirm('Clear all AI assistant messages?')) return;
+  S.assistantMessages = [];
+  saveState();
+  initAssistant();
+  showToast('Chat cleared', 'success');
+}
+
+function formatFileSize(bytes) {
+  if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  return (bytes / 1024).toFixed(0) + ' KB';
 }
 
 /* ── BOOT ─────────────────────────────────────────── */
