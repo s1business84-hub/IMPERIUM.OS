@@ -376,43 +376,150 @@ function generateCheckinInsight(period, answers) {
   return "Check-in logged. Keep going.";
 }
 
-/* ── PASSIVE DATA (Real Input from Apple Health/Watch) ─ */
-function openPassiveModal() {
-  const modal = document.getElementById('passive-modal');
-  if (!modal) return;
-  modal.classList.remove('hidden');
+/* ── HEALTH DATA SYNC — Step-by-step flow ─────────── */
+let syncCurrentStep = 0;
+let healthPermissionGranted = false;
 
-  // Pre-fill with existing data if already entered today
+function openSyncFlow() {
+  const overlay = document.getElementById('sync-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+
+  // Check if permission already granted (skip to step 1)
+  healthPermissionGranted = localStorage.getItem('imp_health_permission') === 'granted';
+
+  // Pre-fill with existing data if already synced today
   const today = new Date().toDateString();
   const data = S.passiveData[today];
+
   if (data && data.source === 'user') {
-    const stepsEl = document.getElementById('pd-steps');
-    const sleepEl = document.getElementById('pd-sleep');
-    const screenEl = document.getElementById('pd-screen');
-    if (stepsEl) stepsEl.value = data.steps || '';
-    if (sleepEl) sleepEl.value = data.sleep || '';
-    if (screenEl) screenEl.value = data.screenTime || '';
+    // Already synced — go straight to sleep with pre-filled values
+    const slider = document.getElementById('sync-sleep-slider');
+    if (slider) slider.value = data.sleep || 7;
+    syncUpdateSliderVal('sleep');
+    const stepsInput = document.getElementById('sync-steps-input');
+    if (stepsInput) stepsInput.value = data.steps || '';
+    syncUpdateStepsQuality();
+    const hrsEl = document.getElementById('sync-screen-hrs');
+    const minsEl = document.getElementById('sync-screen-mins');
+    if (hrsEl) hrsEl.value = data.screenTime ? Math.floor(data.screenTime / 60) : '';
+    if (minsEl) minsEl.value = data.screenTime ? data.screenTime % 60 : '';
+    syncUpdateScreenQuality();
+    syncGoStep(1);
+  } else if (healthPermissionGranted) {
+    syncGoStep(1);
+  } else {
+    syncGoStep(0);
   }
 }
 
-function closePassiveModal() {
-  const modal = document.getElementById('passive-modal');
-  if (modal) modal.classList.add('hidden');
+function syncGoStep(step) {
+  syncCurrentStep = step;
+  for (let i = 0; i <= 4; i++) {
+    const el = document.getElementById('sync-step-' + i);
+    if (!el) continue;
+    el.classList.remove('active', 'exit-left', 'enter-right');
+    if (i === step) {
+      el.classList.add('active');
+    } else if (i < step) {
+      el.classList.add('exit-left');
+    } else {
+      el.classList.add('enter-right');
+    }
+  }
 }
 
-function savePassiveData() {
-  const steps = parseInt(document.getElementById('pd-steps').value) || 0;
-  const sleep = parseFloat(document.getElementById('pd-sleep').value) || 0;
-  const screenTime = parseInt(document.getElementById('pd-screen').value) || 0;
+function syncGrantPermission() {
+  healthPermissionGranted = true;
+  localStorage.setItem('imp_health_permission', 'granted');
+  showToast('Health data access granted ✓', 'success');
+  syncGoStep(1);
+}
 
-  if (steps === 0 && sleep === 0 && screenTime === 0) {
+function syncSkipPermission() {
+  healthPermissionGranted = true;
+  localStorage.setItem('imp_health_permission', 'manual');
+  syncGoStep(1);
+}
+
+function syncUpdateSliderVal(type) {
+  if (type === 'sleep') {
+    const slider = document.getElementById('sync-sleep-slider');
+    const valEl = document.getElementById('sync-sleep-val');
+    const qualEl = document.getElementById('sync-sleep-quality');
+    if (!slider) return;
+    const v = parseFloat(slider.value);
+    if (valEl) valEl.textContent = v + 'h';
+    if (qualEl) {
+      if (v >= 7 && v <= 9) { qualEl.textContent = '✅ Optimal — great recovery'; qualEl.style.color = '#10b981'; }
+      else if (v >= 6) { qualEl.textContent = '⚠️ OK but could be better'; qualEl.style.color = '#f59e0b'; }
+      else if (v > 0) { qualEl.textContent = '❌ Sleep deprived — impacts everything'; qualEl.style.color = '#ef4444'; }
+      else { qualEl.textContent = 'Slide to set your sleep hours'; qualEl.style.color = 'rgba(240,244,255,0.35)'; }
+    }
+  }
+}
+
+function syncSetVal(type, val) {
+  if (type === 'sleep') {
+    const slider = document.getElementById('sync-sleep-slider');
+    if (slider) { slider.value = val; syncUpdateSliderVal('sleep'); }
+  }
+}
+
+function syncSetInput(type, val) {
+  if (type === 'steps') {
+    const input = document.getElementById('sync-steps-input');
+    if (input) { input.value = val; syncUpdateStepsQuality(); }
+  }
+}
+
+function syncUpdateStepsQuality() {
+  const input = document.getElementById('sync-steps-input');
+  const qualEl = document.getElementById('sync-steps-quality');
+  if (!input || !qualEl) return;
+  const v = parseInt(input.value) || 0;
+  if (v >= 10000) { qualEl.textContent = '🏆 Excellent — well above target'; qualEl.style.color = '#10b981'; }
+  else if (v >= 8000) { qualEl.textContent = '✅ Great — hitting your goal'; qualEl.style.color = '#10b981'; }
+  else if (v >= 5000) { qualEl.textContent = '👍 Decent — room to move more'; qualEl.style.color = '#f59e0b'; }
+  else if (v > 0) { qualEl.textContent = '⚠️ Low movement today'; qualEl.style.color = '#ef4444'; }
+  else { qualEl.textContent = 'Enter your steps from today'; qualEl.style.color = 'rgba(240,244,255,0.35)'; }
+}
+
+function syncSetScreen(hrs, mins) {
+  const hrsEl = document.getElementById('sync-screen-hrs');
+  const minsEl = document.getElementById('sync-screen-mins');
+  if (hrsEl) hrsEl.value = hrs;
+  if (minsEl) minsEl.value = mins;
+  syncUpdateScreenQuality();
+}
+
+function syncUpdateScreenQuality() {
+  const hrs = parseInt(document.getElementById('sync-screen-hrs').value) || 0;
+  const mins = parseInt(document.getElementById('sync-screen-mins').value) || 0;
+  const total = hrs * 60 + mins;
+  const qualEl = document.getElementById('sync-screen-quality');
+  if (!qualEl) return;
+  if (total > 0 && total <= 120) { qualEl.textContent = '✅ Under 2h — strong digital discipline'; qualEl.style.color = '#10b981'; }
+  else if (total <= 240) { qualEl.textContent = '⚠️ Moderate — could cut non-essential time'; qualEl.style.color = '#f59e0b'; }
+  else if (total > 240) { qualEl.textContent = '❌ Over 4h — that\'s ' + Math.round(total * 7 / 60) + 'h/week consumed'; qualEl.style.color = '#ef4444'; }
+  else { qualEl.textContent = 'Enter your screen time'; qualEl.style.color = 'rgba(240,244,255,0.35)'; }
+}
+
+function syncSaveAll() {
+  const sleep = parseFloat(document.getElementById('sync-sleep-slider').value) || 0;
+  const steps = parseInt(document.getElementById('sync-steps-input').value) || 0;
+  const screenHrs = parseInt(document.getElementById('sync-screen-hrs').value) || 0;
+  const screenMins = parseInt(document.getElementById('sync-screen-mins').value) || 0;
+  const screenTime = screenHrs * 60 + screenMins;
+
+  if (sleep === 0 && steps === 0 && screenTime === 0) {
     showToast('Enter at least one value', 'error');
     return;
   }
 
   const today = new Date().toDateString();
 
-  // Calculate real score from actual data
+  // Calculate score from real data
   let score = 50;
   if (sleep >= 7) score += 15;
   else if (sleep >= 6) score += 5;
@@ -423,11 +530,8 @@ function savePassiveData() {
   if (screenTime > 0 && screenTime < 120) score += 10;
   else if (screenTime > 240) score -= 10;
 
-  // Check-in completion bonus
   const todayCI = S.checkins[today] || {};
-  const completedPeriods = Object.keys(todayCI).length;
-  score += completedPeriods * 5;
-
+  score += Object.keys(todayCI).length * 5;
   score = Math.max(0, Math.min(100, score));
 
   S.passiveData[today] = {
@@ -440,10 +544,45 @@ function savePassiveData() {
   };
   saveState();
 
-  closePassiveModal();
+  // Show score reveal
+  const scoreNum = document.getElementById('sync-score-num');
+  const scoreGrade = document.getElementById('sync-score-grade');
+  const breakdown = document.getElementById('sync-score-breakdown');
+  if (scoreNum) {
+    scoreNum.textContent = '0';
+    scoreNum.style.color = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+  }
+  if (scoreGrade) {
+    scoreGrade.textContent = score >= 80 ? 'Crushing it today' : score >= 60 ? 'Good day — keep pushing' : score >= 40 ? 'Room for improvement' : 'Rough day — reset tomorrow';
+  }
+  if (breakdown) {
+    breakdown.innerHTML =
+      '<div class="sync-bd-row"><span>😴 Sleep</span><span>' + sleep + 'h</span><span class="' + (sleep >= 7 ? 'text-green' : sleep >= 6 ? 'text-amber' : 'text-red') + '">' + (sleep >= 7 ? '+15' : sleep >= 6 ? '+5' : '-10') + '</span></div>' +
+      '<div class="sync-bd-row"><span>🚶 Steps</span><span>' + (steps >= 1000 ? (steps/1000).toFixed(1) + 'K' : steps) + '</span><span class="' + (steps >= 8000 ? 'text-green' : steps >= 5000 ? 'text-amber' : 'text-red') + '">' + (steps >= 8000 ? '+15' : steps >= 5000 ? '+5' : steps > 0 ? '-5' : '0') + '</span></div>' +
+      '<div class="sync-bd-row"><span>📱 Screen</span><span>' + screenHrs + 'h' + (screenMins > 0 ? screenMins + 'm' : '') + '</span><span class="' + (screenTime < 120 ? 'text-green' : screenTime <= 240 ? 'text-amber' : 'text-red') + '">' + (screenTime < 120 ? '+10' : screenTime > 240 ? '-10' : '0') + '</span></div>' +
+      '<div class="sync-bd-row sync-bd-total"><span>⚡ Total</span><span></span><span>' + score + '/100</span></div>';
+  }
+
+  syncGoStep(4);
+
+  // Animate score count-up
+  let current = 0;
+  const increment = Math.ceil(score / 30);
+  const timer = setInterval(() => {
+    current += increment;
+    if (current >= score) { current = score; clearInterval(timer); }
+    if (scoreNum) scoreNum.textContent = current;
+  }, 30);
+
+  grantXP(10, 'health sync');
   updatePassiveStrip();
-  showToast('Real data synced ✓', 'success');
-  grantXP(10, 'data sync');
+}
+
+function syncClose() {
+  const overlay = document.getElementById('sync-overlay');
+  if (overlay) overlay.classList.add('hidden');
+  // Reset steps to permission/step1 for next time
+  syncCurrentStep = 0;
 }
 
 function recalcTodayScore() {
@@ -475,7 +614,6 @@ function updatePassiveStrip() {
   const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
 
   if (!data || !data.source) {
-    // No real data yet — show tap to sync
     el('passive-steps-val', '—');
     el('passive-sleep-val', '—');
     el('passive-screen-val', '—');
@@ -488,30 +626,23 @@ function updatePassiveStrip() {
     return;
   }
 
-  // Real data exists
   if (hint) hint.classList.add('hidden');
 
-  el('passive-steps-val', data.steps >= 1000 ? (data.steps / 1000).toFixed(1) + 'K' : data.steps || '0');
   el('passive-sleep-val', data.sleep ? data.sleep + 'h' : '0h');
+  el('passive-steps-val', data.steps >= 1000 ? (data.steps / 1000).toFixed(1) + 'K' : data.steps || '0');
   el('passive-screen-val', data.screenTime >= 60 ? Math.floor(data.screenTime / 60) + 'h' + (data.screenTime % 60 > 0 ? data.screenTime % 60 + 'm' : '') : (data.screenTime || 0) + 'm');
 
-  // Recalc score with latest check-in data
   recalcTodayScore();
   el('passive-score-val', data.score);
 
-  // Source labels
-  el('passive-steps-src', '✓ real');
-  el('passive-sleep-src', '✓ real');
-  el('passive-screen-src', '✓ real');
+  el('passive-sleep-src', '✓ synced');
+  el('passive-steps-src', '✓ synced');
+  el('passive-screen-src', '✓ synced');
   el('passive-score-src', 'auto');
 
-  // Color code score
+  // Color code
   const scoreEl = document.getElementById('passive-score-val');
-  if (scoreEl) {
-    scoreEl.style.color = data.score >= 70 ? '#10b981' : data.score >= 40 ? '#f59e0b' : '#ef4444';
-  }
-
-  // Color code individual values
+  if (scoreEl) scoreEl.style.color = data.score >= 70 ? '#10b981' : data.score >= 40 ? '#f59e0b' : '#ef4444';
   const stepsEl = document.getElementById('passive-steps-val');
   if (stepsEl && data.steps) stepsEl.style.color = data.steps >= 8000 ? '#10b981' : data.steps >= 5000 ? '#f0f4ff' : '#f59e0b';
   const sleepEl = document.getElementById('passive-sleep-val');

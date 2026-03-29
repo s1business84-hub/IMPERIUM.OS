@@ -167,21 +167,21 @@
         <div class="home-orb-label" id="home-orb-label">Tap to talk · voice log anything</div>
       </div>
 
-      <!-- Passive Data Strip (tap to sync real data) -->
-      <div class="passive-strip" id="passive-strip">
-        <div class="passive-card glass-card" onclick="openPassiveModal()">
-          <div class="passive-icon">🚶</div>
-          <div class="passive-val" id="passive-steps-val">—</div>
-          <div class="passive-label">Steps</div>
-          <div class="passive-src" id="passive-steps-src"></div>
-        </div>
-        <div class="passive-card glass-card" onclick="openPassiveModal()">
+      <!-- Passive Data Strip -->
+      <div class="passive-strip" id="passive-strip" onclick="openSyncFlow()">
+        <div class="passive-card glass-card">
           <div class="passive-icon">😴</div>
           <div class="passive-val" id="passive-sleep-val">—</div>
           <div class="passive-label">Sleep</div>
           <div class="passive-src" id="passive-sleep-src"></div>
         </div>
-        <div class="passive-card glass-card" onclick="openPassiveModal()">
+        <div class="passive-card glass-card">
+          <div class="passive-icon">🚶</div>
+          <div class="passive-val" id="passive-steps-val">—</div>
+          <div class="passive-label">Steps</div>
+          <div class="passive-src" id="passive-steps-src"></div>
+        </div>
+        <div class="passive-card glass-card">
           <div class="passive-icon">📱</div>
           <div class="passive-val" id="passive-screen-val">—</div>
           <div class="passive-label">Screen</div>
@@ -191,11 +191,11 @@
           <div class="passive-icon">⚡</div>
           <div class="passive-val" id="passive-score-val">—</div>
           <div class="passive-label">Score</div>
-          <div class="passive-src" id="passive-score-src">auto</div>
+          <div class="passive-src" id="passive-score-src"></div>
         </div>
       </div>
-      <div class="passive-sync-hint" id="passive-sync-hint" onclick="openPassiveModal()">
-        <span>📲</span> Tap to sync today's real data from Apple Health / Watch
+      <div class="passive-sync-hint" id="passive-sync-hint" onclick="openSyncFlow()">
+        <span>📲</span> Tap to sync today's health data
       </div>
 
       <!-- Chat feed -->
@@ -287,58 +287,118 @@
     <button class="nav-btn" id="nb-profile" onclick="navigateTo('screen-profile')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></button>
   </nav>
 
-  <!-- PASSIVE DATA INPUT MODAL -->
-  <div class="modal-bg hidden" id="passive-modal" onclick="if(event.target===this)closePassiveModal()">
-    <div class="modal-box">
-      <div class="modal-pill"></div>
-      <div class="modal-title">📲 Sync Today's Data</div>
-      <div class="modal-desc">Enter your real numbers from Apple Health, Apple Watch, or Screen Time settings.</div>
+  <!-- HEALTH DATA SYNC — Step-by-step flow -->
+  <div class="sync-overlay hidden" id="sync-overlay">
 
-      <div class="pd-input-group">
-        <label class="pd-label">🚶 Steps</label>
-        <div class="pd-input-row">
-          <input type="number" class="pd-input" id="pd-steps" placeholder="e.g. 6500" inputmode="numeric"/>
-          <div class="pd-quick-btns">
-            <button class="pd-quick" onclick="document.getElementById('pd-steps').value='3000'">3K</button>
-            <button class="pd-quick" onclick="document.getElementById('pd-steps').value='5000'">5K</button>
-            <button class="pd-quick" onclick="document.getElementById('pd-steps').value='8000'">8K</button>
-            <button class="pd-quick" onclick="document.getElementById('pd-steps').value='10000'">10K</button>
-          </div>
+    <!-- Step 0: Permission Request -->
+    <div class="sync-step active" id="sync-step-0">
+      <div class="sync-step-inner">
+        <div class="sync-perm-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="url(#permGrad)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><defs><linearGradient id="permGrad" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs></svg>
         </div>
-        <div class="pd-hint">Open Apple Health → Steps → Today's total</div>
-      </div>
-
-      <div class="pd-input-group">
-        <label class="pd-label">😴 Sleep (hours)</label>
-        <div class="pd-input-row">
-          <input type="number" step="0.5" class="pd-input" id="pd-sleep" placeholder="e.g. 7.5" inputmode="decimal"/>
-          <div class="pd-quick-btns">
-            <button class="pd-quick" onclick="document.getElementById('pd-sleep').value='5'">5h</button>
-            <button class="pd-quick" onclick="document.getElementById('pd-sleep').value='6.5'">6.5h</button>
-            <button class="pd-quick" onclick="document.getElementById('pd-sleep').value='7.5'">7.5h</button>
-            <button class="pd-quick" onclick="document.getElementById('pd-sleep').value='9'">9h</button>
-          </div>
+        <div class="sync-perm-title">Imperium wants to access your Health Data</div>
+        <div class="sync-perm-sub">We'll ask for your sleep, steps, and screen time to calculate your daily performance score. Your data stays on-device.</div>
+        <div class="sync-perm-items">
+          <div class="sync-perm-item"><span>😴</span> Sleep duration</div>
+          <div class="sync-perm-item"><span>🚶</span> Step count</div>
+          <div class="sync-perm-item"><span>📱</span> Screen time</div>
         </div>
-        <div class="pd-hint">Apple Health → Sleep → Last night's duration</div>
+        <button class="btn-primary sync-allow-btn" onclick="syncGrantPermission()">Allow Access →</button>
+        <button class="sync-skip-btn" onclick="syncSkipPermission()">Enter manually instead</button>
       </div>
-
-      <div class="pd-input-group">
-        <label class="pd-label">📱 Screen Time (minutes)</label>
-        <div class="pd-input-row">
-          <input type="number" class="pd-input" id="pd-screen" placeholder="e.g. 180" inputmode="numeric"/>
-          <div class="pd-quick-btns">
-            <button class="pd-quick" onclick="document.getElementById('pd-screen').value='60'">1h</button>
-            <button class="pd-quick" onclick="document.getElementById('pd-screen').value='120'">2h</button>
-            <button class="pd-quick" onclick="document.getElementById('pd-screen').value='180'">3h</button>
-            <button class="pd-quick" onclick="document.getElementById('pd-screen').value='300'">5h</button>
-          </div>
-        </div>
-        <div class="pd-hint">Settings → Screen Time → Today's total</div>
-      </div>
-
-      <button class="btn-primary" onclick="savePassiveData()">Save Real Data →</button>
-      <div class="modal-foot">Score auto-calculates from your real data + check-ins</div>
     </div>
+
+    <!-- Step 1: Sleep -->
+    <div class="sync-step" id="sync-step-1">
+      <div class="sync-step-inner">
+        <button class="sync-back-btn" onclick="syncGoStep(0)">← Back</button>
+        <div class="sync-step-progress"><div class="sync-prog-fill" style="width:33%"></div></div>
+        <div class="sync-step-emoji">😴</div>
+        <div class="sync-step-title">How long did you sleep?</div>
+        <div class="sync-step-sub">Last night's total sleep from Apple Health or your Watch</div>
+        <div class="sync-slider-wrap">
+          <input type="range" class="sync-slider" id="sync-sleep-slider" min="0" max="12" step="0.5" value="7" oninput="syncUpdateSliderVal('sleep')"/>
+          <div class="sync-slider-val" id="sync-sleep-val">7h</div>
+        </div>
+        <div class="sync-presets">
+          <button class="sync-preset" onclick="syncSetVal('sleep',4)">4h</button>
+          <button class="sync-preset" onclick="syncSetVal('sleep',5.5)">5.5h</button>
+          <button class="sync-preset" onclick="syncSetVal('sleep',7)">7h</button>
+          <button class="sync-preset" onclick="syncSetVal('sleep',8.5)">8.5h</button>
+          <button class="sync-preset" onclick="syncSetVal('sleep',10)">10h</button>
+        </div>
+        <div class="sync-quality" id="sync-sleep-quality">Good — within healthy range</div>
+        <button class="btn-primary" onclick="syncGoStep(2)">Next → Steps</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Steps -->
+    <div class="sync-step" id="sync-step-2">
+      <div class="sync-step-inner">
+        <button class="sync-back-btn" onclick="syncGoStep(1)">← Back</button>
+        <div class="sync-step-progress"><div class="sync-prog-fill" style="width:66%"></div></div>
+        <div class="sync-step-emoji">🚶</div>
+        <div class="sync-step-title">How many steps today?</div>
+        <div class="sync-step-sub">Check Apple Health → Steps → Today</div>
+        <div class="sync-num-input-wrap">
+          <input type="number" class="sync-num-input" id="sync-steps-input" placeholder="0" inputmode="numeric" oninput="syncUpdateStepsQuality()"/>
+          <span class="sync-num-unit">steps</span>
+        </div>
+        <div class="sync-presets">
+          <button class="sync-preset" onclick="syncSetInput('steps',2000)">2K</button>
+          <button class="sync-preset" onclick="syncSetInput('steps',5000)">5K</button>
+          <button class="sync-preset" onclick="syncSetInput('steps',8000)">8K</button>
+          <button class="sync-preset" onclick="syncSetInput('steps',10000)">10K</button>
+          <button class="sync-preset" onclick="syncSetInput('steps',15000)">15K</button>
+        </div>
+        <div class="sync-quality" id="sync-steps-quality">Enter your steps from today</div>
+        <button class="btn-primary" onclick="syncGoStep(3)">Next → Screen Time</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Screen Time -->
+    <div class="sync-step" id="sync-step-3">
+      <div class="sync-step-inner">
+        <button class="sync-back-btn" onclick="syncGoStep(2)">← Back</button>
+        <div class="sync-step-progress"><div class="sync-prog-fill" style="width:100%"></div></div>
+        <div class="sync-step-emoji">📱</div>
+        <div class="sync-step-title">Screen time today?</div>
+        <div class="sync-step-sub">Settings → Screen Time → Today's total</div>
+        <div class="sync-time-row">
+          <div class="sync-time-col">
+            <input type="number" class="sync-time-input" id="sync-screen-hrs" placeholder="0" min="0" max="24" inputmode="numeric" oninput="syncUpdateScreenQuality()"/>
+            <span class="sync-time-label">hours</span>
+          </div>
+          <span class="sync-time-colon">:</span>
+          <div class="sync-time-col">
+            <input type="number" class="sync-time-input" id="sync-screen-mins" placeholder="0" min="0" max="59" step="5" inputmode="numeric" oninput="syncUpdateScreenQuality()"/>
+            <span class="sync-time-label">minutes</span>
+          </div>
+        </div>
+        <div class="sync-presets">
+          <button class="sync-preset" onclick="syncSetScreen(1,0)">1h</button>
+          <button class="sync-preset" onclick="syncSetScreen(2,0)">2h</button>
+          <button class="sync-preset" onclick="syncSetScreen(3,30)">3.5h</button>
+          <button class="sync-preset" onclick="syncSetScreen(5,0)">5h</button>
+          <button class="sync-preset" onclick="syncSetScreen(7,0)">7h</button>
+        </div>
+        <div class="sync-quality" id="sync-screen-quality">Enter your screen time</div>
+        <button class="btn-primary sync-final-btn" onclick="syncSaveAll()">Save & Calculate Score →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Score Reveal -->
+    <div class="sync-step" id="sync-step-4">
+      <div class="sync-step-inner sync-score-reveal">
+        <div class="sync-score-burst" id="sync-score-burst">⚡</div>
+        <div class="sync-score-label">TODAY'S SCORE</div>
+        <div class="sync-score-num" id="sync-score-num">0</div>
+        <div class="sync-score-grade" id="sync-score-grade">Calculating…</div>
+        <div class="sync-score-breakdown" id="sync-score-breakdown"></div>
+        <button class="btn-primary" onclick="syncClose()">Done →</button>
+      </div>
+    </div>
+
   </div>
 
   <!-- COMMAND PALETTE -->
