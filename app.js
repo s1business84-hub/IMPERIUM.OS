@@ -20,7 +20,12 @@ let S = {
   notifDaily: true,
   notifBudget: true,
   currentScreen: 'screen-boot',
-  cards: []
+  cards: [],
+  xp: 0,
+  level: 1,
+  totalXp: 0,
+  achievements: [],
+  dayLogs: {}
 };
 
 /* ── PERSIST ──────────────────────────────────────── */
@@ -32,6 +37,167 @@ function loadState() {
     const raw = localStorage.getItem('imperium_state');
     if (raw) S = Object.assign({}, S, JSON.parse(raw));
   } catch(e) {}
+}
+
+/* ── XP & GAMIFICATION SYSTEM ─────────────────────── */
+const LEVELS = [
+  { level: 1,  title: 'Beginner',    xpNeeded: 0    },
+  { level: 2,  title: 'Focused',     xpNeeded: 100  },
+  { level: 3,  title: 'Disciplined', xpNeeded: 250  },
+  { level: 4,  title: 'Strategic',   xpNeeded: 500  },
+  { level: 5,  title: 'Consistent',  xpNeeded: 900  },
+  { level: 6,  title: 'Systematic',  xpNeeded: 1400 },
+  { level: 7,  title: 'Operator',    xpNeeded: 2100 },
+  { level: 8,  title: 'Elite',       xpNeeded: 3000 },
+  { level: 9,  title: 'Architect',   xpNeeded: 4200 },
+  { level: 10, title: 'Imperium',    xpNeeded: 6000 }
+];
+
+const ACHIEVEMENTS = [
+  { id: 'first-log',     icon: '📝', name: 'First Log',      desc: 'Log your first transaction',        xp: 50  },
+  { id: 'streak-3',      icon: '🔥', name: '3-Day Streak',   desc: 'Log in 3 days in a row',            xp: 75  },
+  { id: 'streak-7',      icon: '💎', name: 'Week Warrior',   desc: '7-day login streak',                xp: 150 },
+  { id: 'tx-10',         icon: '💰', name: 'Tracker',        desc: 'Log 10 transactions',               xp: 100 },
+  { id: 'tx-30',         icon: '🏆', name: 'Money Master',   desc: 'Log 30 transactions',               xp: 200 },
+  { id: 'brain-visit',   icon: '🧠', name: 'Brain Tap',      desc: 'Visit AI Brain for the first time', xp: 50  },
+  { id: 'budget-set',    icon: '🎯', name: 'Budgeted',       desc: 'Set a monthly budget',              xp: 75  },
+  { id: 'day-log-1',     icon: '☀️', name: 'Day One',        desc: 'Complete your first day log',       xp: 30  },
+  { id: 'day-log-5',     icon: '🌟', name: 'Habit Builder',  desc: 'Complete 5 day logs',               xp: 100 },
+  { id: 'income-logged', icon: '💸', name: 'Earner',         desc: 'Log your first income',             xp: 60  },
+];
+
+function grantXP(amount, reason) {
+  if (!S.xp) S.xp = 0;
+  if (!S.totalXp) S.totalXp = 0;
+  const prevLevel = S.level || 1;
+  S.xp += amount;
+  S.totalXp += amount;
+  const newLevel = computeLevel(S.xp);
+  S.level = newLevel;
+  saveState();
+  showToast('+' + amount + ' XP' + (reason ? ' · ' + reason : ''), 'success');
+  updateHomeXPChip();
+  if (newLevel > prevLevel) {
+    setTimeout(() => showLevelUpOverlay(newLevel), 600);
+  }
+}
+
+function computeLevel(xp) {
+  let lv = 1;
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (xp >= LEVELS[i].xpNeeded) { lv = LEVELS[i].level; break; }
+  }
+  return lv;
+}
+
+function getLevelInfo(level) {
+  return LEVELS.find(l => l.level === level) || LEVELS[0];
+}
+
+function getXPForNextLevel(level) {
+  const next = LEVELS.find(l => l.level === level + 1);
+  return next ? next.xpNeeded : null;
+}
+
+function updateHomeXPChip() {
+  const lvEl = document.getElementById('home-xp-lvl');
+  const barEl = document.getElementById('home-xp-bar');
+  if (!lvEl || !barEl) return;
+  const lv = S.level || 1;
+  const xp = S.xp || 0;
+  const curr = getLevelInfo(lv);
+  const nextXp = getXPForNextLevel(lv);
+  const pct = nextXp ? Math.min(100, ((xp - curr.xpNeeded) / (nextXp - curr.xpNeeded)) * 100) : 100;
+  lvEl.textContent = 'Lv ' + lv;
+  barEl.style.width = pct + '%';
+}
+
+function showLevelUpOverlay(level) {
+  const info = getLevelInfo(level);
+  const nextXp = getXPForNextLevel(level);
+  const elById = (id) => document.getElementById(id);
+  if (elById('xp-ov-level')) elById('xp-ov-level').textContent = 'Level ' + level;
+  if (elById('xp-ov-title')) elById('xp-ov-title').textContent = info.title;
+  if (elById('xp-ov-sub'))   elById('xp-ov-sub').textContent = nextXp ? ((S.xp - info.xpNeeded) + ' / ' + (nextXp - info.xpNeeded) + ' XP to Level ' + (level + 1)) : 'MAX LEVEL';
+  const overlay = document.getElementById('xp-overlay');
+  if (overlay) {
+    overlay.classList.remove('hidden');
+    setTimeout(() => { const b = document.getElementById('xp-ov-bar'); if (b) b.style.width = '0%'; }, 50);
+  }
+}
+
+function closeXPOverlay() {
+  const overlay = document.getElementById('xp-overlay');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+function unlockAchievement(id) {
+  if (!S.achievements) S.achievements = [];
+  if (S.achievements.includes(id)) return;
+  const ach = ACHIEVEMENTS.find(a => a.id === id);
+  if (!ach) return;
+  S.achievements.push(id);
+  saveState();
+  if (ach.xp) grantXP(ach.xp, ach.name);
+  showToast('🏆 Achievement: ' + ach.name, 'success');
+}
+
+function checkAchievements() {
+  if (!S.achievements) S.achievements = [];
+  if (S.transactions && S.transactions.length >= 1) unlockAchievement('first-log');
+  if (S.transactions && S.transactions.length >= 10) unlockAchievement('tx-10');
+  if (S.transactions && S.transactions.length >= 30) unlockAchievement('tx-30');
+  if (S.transactions && S.transactions.some(t => t.type === 'income')) unlockAchievement('income-logged');
+  if (S.streak >= 3) unlockAchievement('streak-3');
+  if (S.streak >= 7) unlockAchievement('streak-7');
+  if (S.budget > 0) unlockAchievement('budget-set');
+  const dayLogCount = S.dayLogs ? Object.keys(S.dayLogs).length : 0;
+  if (dayLogCount >= 1) unlockAchievement('day-log-1');
+  if (dayLogCount >= 5) unlockAchievement('day-log-5');
+}
+
+/* ── DAY LOG ──────────────────────────────────────── */
+function logDayActivity(btn) {
+  const act = btn.dataset.act;
+  const today = new Date().toDateString();
+  if (!S.dayLogs) S.dayLogs = {};
+  if (!S.dayLogs[today]) S.dayLogs[today] = [];
+
+  const alreadyLogged = S.dayLogs[today].includes(act);
+  if (alreadyLogged) {
+    S.dayLogs[today] = S.dayLogs[today].filter(a => a !== act);
+    btn.classList.remove('selected');
+    saveState();
+    return;
+  }
+
+  S.dayLogs[today].push(act);
+  btn.classList.add('selected');
+  saveState();
+  grantXP(20, act.replace(/-/g, ' '));
+  checkAchievements();
+
+  const followUps = {
+    'studied':      'Nice — what did you study? Understanding how your learning compounds over time is part of your Imperium picture.',
+    'worked-out':   'Physical output drives mental output. Log any money moves today too — disciplined bodies, disciplined money.',
+    'worked':       'Work logged. Tie it to income: did you produce anything billable today? Tell me and I\'ll log it.',
+    'built':        'You built something today — that\'s compounding. Did it have revenue potential? Tell me more and I\'ll track it.',
+    'social-media': 'Noted. Research shows social media time inversely correlates with income focus. Keep it to a hard limit.',
+    'idea':         'Ideas are assets. Describe it and I\'ll log it to your Brain patterns. What was the idea?',
+    'earned':       'You earned today — tell me exactly how much and from what: "Earned $X from [source]" and I\'ll log it now.',
+    'wasted':       'Awareness is the first step. What pulled your attention? We can build a pattern around this in your Brain.'
+  };
+  const reply = followUps[act] || 'Logged your day activity.';
+  addHomeBotMessage('ai', reply);
+}
+
+function restoreTodayDayChips() {
+  const today = new Date().toDateString();
+  if (!S.dayLogs || !S.dayLogs[today]) return;
+  S.dayLogs[today].forEach(act => {
+    const btn = document.querySelector(`.day-chip[data-act="${act}"]`);
+    if (btn) btn.classList.add('selected');
+  });
 }
 
 /* ── BOOT SEQUENCE ────────────────────────────────── */
@@ -126,7 +292,7 @@ function navigateTo(id) {
 
   // Init screens
   if (id === 'screen-home')     { updateHomeScreen(); }
-  if (id === 'screen-brain')    { initBrain(); }
+  if (id === 'screen-brain')    { initBrain(); unlockAchievement('brain-visit'); }
   if (id === 'screen-insights') { initInsights(); }
   if (id === 'screen-calendar') { renderCalendar(); updateMonthStats(); }
   if (id === 'screen-settings') { initSettings(); }
@@ -271,6 +437,7 @@ function finishOnboarding() {
   saveState();
   showBottomNav();
   updateStreak();
+  grantXP(100, 'System Activated');
   navigateTo('screen-home');
   initHomeData();
   initGlobalEffects();
@@ -286,6 +453,8 @@ function initHomeData() {
   initParticles();
   initBeams();
   initDottedGlow();
+  updateHomeXPChip();
+  restoreTodayDayChips();
   // Show welcome message if first time, otherwise show context
   if (!homeChatHistory.length) {
     const now = new Date();
@@ -1303,6 +1472,8 @@ function saveTransaction() {
   }
 
   saveState();
+  grantXP(30, 'transaction logged');
+  checkAchievements();
   amtEl.value = '';
   document.getElementById('tx-note').value = '';
   if (document.getElementById('card-name')) document.getElementById('card-name').value = '';
@@ -2129,14 +2300,50 @@ function initSettings() {
     const av = document.getElementById('pav-icon');
     if (av && S.user.name) av.textContent = S.user.name[0].toUpperCase();
   }
-  el('p-sub', 'Goal: ' + (S.goal || '—'));
-  el('p-streak', S.streak + ' day streak 🔥');
+  // Level + XP
+  const lv = S.level || 1;
+  const xp = S.xp || 0;
+  const info = getLevelInfo(lv);
+  const nextXp = getXPForNextLevel(lv);
+  const pct = nextXp ? Math.min(100, ((xp - info.xpNeeded) / (nextXp - info.xpNeeded)) * 100) : 100;
+  el('p-level-badge', 'Lv ' + lv);
+  el('p-level-title', info.title);
+  el('p-xp-label', (nextXp ? (xp - info.xpNeeded) + ' / ' + (nextXp - info.xpNeeded) : xp) + ' XP');
+  el('p-streak-val', S.streak || 0);
+  el('p-total-xp', S.totalXp || 0);
+  el('p-tx-count', S.transactions ? S.transactions.length : 0);
+  const xpBar = document.getElementById('p-xp-bar');
+  if (xpBar) xpBar.style.width = pct + '%';
+  // Streak ring
+  const ring = document.getElementById('streak-ring-fill');
+  if (ring) {
+    const maxStreak = 30;
+    const ringPct = Math.min(1, (S.streak || 0) / maxStreak);
+    ring.style.strokeDashoffset = 226.2 * (1 - ringPct);
+  }
+  // Budget + currency
   el('s-budget', S.budget > 0 ? fmt(S.budget) + '/mo' : 'Not set');
-  el('s-currency', S.currency + ' ' + (S.currency === '$' ? 'USD' : S.currency === '€' ? 'EUR' : 'GBP'));
+  el('s-currency', S.currency + ' ' + (S.currency === '$' ? 'USD' : S.currency === '€' ? 'EUR' : S.currency === '£' ? 'GBP' : S.currency));
   const nd = document.getElementById('n-daily');
-  const nb = document.getElementById('n-budget');
+  const nb2 = document.getElementById('n-budget');
   if (nd) nd.checked = S.notifDaily;
-  if (nb) nb.checked = S.notifBudget;
+  if (nb2) nb2.checked = S.notifBudget;
+  // Achievements
+  renderAchievements();
+}
+
+function renderAchievements() {
+  const grid = document.getElementById('achievements-grid');
+  if (!grid) return;
+  const unlocked = S.achievements || [];
+  grid.innerHTML = ACHIEVEMENTS.map(a => {
+    const done = unlocked.includes(a.id);
+    return `<div class="ach-item ${done ? '' : 'ach-locked'}" title="${a.desc}">
+      <div class="ach-icon">${done ? a.icon : '🔒'}</div>
+      <div class="ach-name">${a.name}</div>
+      <div class="ach-xp">+${a.xp} XP</div>
+    </div>`;
+  }).join('');
 }
 
 function openBudgetModal() {
@@ -2189,7 +2396,7 @@ function updateStreak() {
   if (S.lastLogin) {
     const last = new Date(S.lastLogin);
     const diff = (new Date(today) - last) / 86400000;
-    if (diff <= 1.5) S.streak++;
+    if (diff <= 1.5) { S.streak++; grantXP(50, 'daily streak'); }
     else S.streak = 1;
   } else {
     S.streak = 1;
