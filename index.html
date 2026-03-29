@@ -198,6 +198,31 @@
         <span>📲</span> Tap to sync today's health data
       </div>
 
+      <!-- Smart Spend Nudge Card -->
+      <div class="spend-nudge-card glass-card" id="spend-nudge-card">
+        <div class="spend-nudge-header">
+          <div class="spend-nudge-icon">💸</div>
+          <div class="spend-nudge-text">
+            <div class="spend-nudge-title" id="spend-nudge-title">Any spending today?</div>
+            <div class="spend-nudge-sub" id="spend-nudge-sub">Tap a category or upload a receipt</div>
+          </div>
+          <div class="spend-nudge-total" id="spend-nudge-total"></div>
+        </div>
+        <div class="spend-cat-grid" id="spend-cat-grid">
+          <button class="spend-cat-btn" onclick="quickSpend('food')"><span>🍕</span>Food</button>
+          <button class="spend-cat-btn" onclick="quickSpend('coffee')"><span>☕</span>Coffee</button>
+          <button class="spend-cat-btn" onclick="quickSpend('transport')"><span>🚗</span>Transport</button>
+          <button class="spend-cat-btn" onclick="quickSpend('groceries')"><span>🛒</span>Groceries</button>
+          <button class="spend-cat-btn" onclick="quickSpend('online')"><span>🛍</span>Online</button>
+          <button class="spend-cat-btn" onclick="quickSpend('apps')"><span>📱</span>Apps/Subs</button>
+        </div>
+        <div class="spend-actions-row">
+          <button class="spend-upload-btn" onclick="openReceiptUpload()">📸 Upload receipt</button>
+          <button class="spend-missed-btn" onclick="spendMissedPrompt()">🔍 Anything I missed?</button>
+        </div>
+        <div class="spend-today-log" id="spend-today-log"></div>
+      </div>
+
       <!-- Chat feed -->
       <div class="home-chat-feed" id="home-chat-feed"></div>
 
@@ -286,6 +311,59 @@
     <button class="nav-btn" id="nb-insights" onclick="navigateTo('screen-insights')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2C8 2 5 5 5 8c0 1.5.5 2.8 1.4 3.8C5.6 12.5 5 13.7 5 15c0 2.2 1.8 4 4 4h6c2.2 0 4-1.8 4-4 0-1.3-.6-2.5-1.4-3.2C18.5 10.8 19 9.5 19 8c0-3-2.7-6-7-6z"/><line x1="12" y1="11" x2="12" y2="19"/><line x1="9" y1="14" x2="15" y2="14"/></svg><span>Insights</span></button>
     <button class="nav-btn" id="nb-profile" onclick="navigateTo('screen-profile')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></button>
   </nav>
+
+  <!-- QUICK SPEND AMOUNT MODAL -->
+  <div class="spend-amount-overlay hidden" id="spend-amount-overlay">
+    <div class="spend-amount-card glass-card">
+      <div class="spend-amount-header">
+        <span class="spend-amount-emoji" id="spend-amount-emoji">🍕</span>
+        <span class="spend-amount-cat" id="spend-amount-cat">Food</span>
+        <button class="spend-amount-close" onclick="closeSpendAmount()">✕</button>
+      </div>
+      <div class="spend-amount-input-wrap">
+        <span class="spend-amount-currency" id="spend-amount-currency">$</span>
+        <input type="number" class="spend-amount-input" id="spend-amount-input" placeholder="0" inputmode="decimal" autofocus/>
+      </div>
+      <div class="spend-amount-presets" id="spend-amount-presets">
+        <button class="spend-amt-preset" onclick="setSpendAmount(5)">$5</button>
+        <button class="spend-amt-preset" onclick="setSpendAmount(10)">$10</button>
+        <button class="spend-amt-preset" onclick="setSpendAmount(20)">$20</button>
+        <button class="spend-amt-preset" onclick="setSpendAmount(50)">$50</button>
+        <button class="spend-amt-preset" onclick="setSpendAmount(100)">$100</button>
+      </div>
+      <input type="text" class="spend-note-input" id="spend-note-input" placeholder="Add a note (optional)…"/>
+      <button class="btn-primary spend-confirm-btn" onclick="confirmQuickSpend()">Log Spend →</button>
+    </div>
+  </div>
+
+  <!-- RECEIPT UPLOAD OVERLAY -->
+  <div class="receipt-overlay hidden" id="receipt-overlay">
+    <div class="receipt-card glass-card">
+      <div class="receipt-header">
+        <span>📸 Upload Receipt or Wallet Screenshot</span>
+        <button class="receipt-close" onclick="closeReceiptUpload()">✕</button>
+      </div>
+      <div class="receipt-drop-zone" id="receipt-drop-zone" onclick="document.getElementById('receipt-file-input').click()">
+        <div class="receipt-drop-icon">📷</div>
+        <div class="receipt-drop-text">Tap to take a photo or choose an image</div>
+        <div class="receipt-drop-sub">I'll scan it and extract your spending</div>
+        <input type="file" id="receipt-file-input" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptFile(event)"/>
+      </div>
+      <div class="receipt-preview hidden" id="receipt-preview">
+        <img id="receipt-img" class="receipt-img"/>
+        <div class="receipt-scanning" id="receipt-scanning">
+          <div class="receipt-scan-bar"></div>
+          <div class="receipt-scan-text">Scanning receipt…</div>
+        </div>
+      </div>
+      <div class="receipt-results hidden" id="receipt-results">
+        <div class="receipt-results-title">Found transactions:</div>
+        <div class="receipt-items-list" id="receipt-items-list"></div>
+        <button class="btn-primary" onclick="confirmReceiptItems()">Log All →</button>
+        <button class="receipt-retry-btn" onclick="retryReceipt()">Try another photo</button>
+      </div>
+    </div>
+  </div>
 
   <!-- HEALTH DATA SYNC — Step-by-step flow -->
   <div class="sync-overlay hidden" id="sync-overlay">

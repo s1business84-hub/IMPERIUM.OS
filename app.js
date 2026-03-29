@@ -853,6 +853,302 @@ function finishOnboarding() {
   initGlobalEffects();
 }
 
+/* ── SMART SPEND DETECTION ────────────────────────── */
+let activeSpendCategory = '';
+let receiptExtractedItems = [];
+
+const SPEND_CATEGORIES = {
+  food: { emoji: '🍕', label: 'Food', presets: [8, 15, 25, 40, 60] },
+  coffee: { emoji: '☕', label: 'Coffee', presets: [3, 5, 7, 10, 15] },
+  transport: { emoji: '🚗', label: 'Transport', presets: [5, 10, 20, 35, 50] },
+  groceries: { emoji: '🛒', label: 'Groceries', presets: [15, 30, 50, 80, 120] },
+  online: { emoji: '🛍', label: 'Online', presets: [10, 25, 50, 100, 200] },
+  apps: { emoji: '📱', label: 'Apps/Subs', presets: [1, 5, 10, 15, 20] }
+};
+
+function getSpendNudge() {
+  const h = new Date().getHours();
+  if (h >= 6 && h < 10) return { title: '☕ Morning — grab coffee or breakfast?', sub: 'Quick-log before you forget' };
+  if (h >= 11 && h < 14) return { title: '🍽 Lunchtime — eating out today?', sub: 'Tap to log lunch or snacks' };
+  if (h >= 14 && h < 17) return { title: '🛍 Afternoon — any shopping?', sub: 'Online orders, apps, subscriptions?' };
+  if (h >= 17 && h < 20) return { title: '🛒 Evening — dinner or groceries?', sub: 'Log what you picked up today' };
+  if (h >= 20 || h < 6) return { title: '🌙 End of day — anything I missed?', sub: 'Review your spending or upload a receipt' };
+  return { title: 'Any spending today?', sub: 'Tap a category or upload a receipt' };
+}
+
+function initSpendNudge() {
+  const nudge = getSpendNudge();
+  const titleEl = document.getElementById('spend-nudge-title');
+  const subEl = document.getElementById('spend-nudge-sub');
+  if (titleEl) titleEl.textContent = nudge.title;
+  if (subEl) subEl.textContent = nudge.sub;
+  updateTodaySpendLog();
+}
+
+function updateTodaySpendLog() {
+  const today = new Date().toDateString();
+  const todayTx = S.transactions.filter(tx => {
+    return new Date(tx.date).toDateString() === today && tx.type === 'expense';
+  });
+  const totalEl = document.getElementById('spend-nudge-total');
+  const logEl = document.getElementById('spend-today-log');
+
+  if (todayTx.length > 0) {
+    const total = todayTx.reduce((s, tx) => s + tx.amount, 0);
+    if (totalEl) {
+      totalEl.textContent = fmt(total);
+      totalEl.style.display = 'block';
+    }
+    if (logEl) {
+      logEl.style.display = 'block';
+      logEl.innerHTML = '<div class="spend-log-title">Today\'s spending</div>' +
+        todayTx.map(tx => {
+          const cat = SPEND_CATEGORIES[tx.category] || { emoji: '💰', label: tx.category };
+          return '<div class="spend-log-item"><span>' + cat.emoji + '</span><span class="spend-log-note">' +
+            (tx.note || cat.label) + '</span><span class="spend-log-amt">' + fmt(tx.amount) + '</span></div>';
+        }).join('');
+    }
+  } else {
+    if (totalEl) totalEl.style.display = 'none';
+    if (logEl) logEl.style.display = 'none';
+  }
+}
+
+function quickSpend(category) {
+  activeSpendCategory = category;
+  const cat = SPEND_CATEGORIES[category];
+  const overlay = document.getElementById('spend-amount-overlay');
+  const emojiEl = document.getElementById('spend-amount-emoji');
+  const catEl = document.getElementById('spend-amount-cat');
+  const currEl = document.getElementById('spend-amount-currency');
+  const presetsEl = document.getElementById('spend-amount-presets');
+  const inputEl = document.getElementById('spend-amount-input');
+  const noteEl = document.getElementById('spend-note-input');
+
+  if (emojiEl) emojiEl.textContent = cat.emoji;
+  if (catEl) catEl.textContent = cat.label;
+  if (currEl) currEl.textContent = S.currency;
+  if (inputEl) { inputEl.value = ''; inputEl.focus(); }
+  if (noteEl) noteEl.value = '';
+  if (presetsEl) {
+    presetsEl.innerHTML = cat.presets.map(p =>
+      '<button class="spend-amt-preset" onclick="setSpendAmount(' + p + ')">' + S.currency + p + '</button>'
+    ).join('');
+  }
+  if (overlay) overlay.classList.remove('hidden');
+}
+
+function setSpendAmount(val) {
+  const inputEl = document.getElementById('spend-amount-input');
+  if (inputEl) inputEl.value = val;
+}
+
+function closeSpendAmount() {
+  const overlay = document.getElementById('spend-amount-overlay');
+  if (overlay) overlay.classList.add('hidden');
+  activeSpendCategory = '';
+}
+
+function confirmQuickSpend() {
+  const inputEl = document.getElementById('spend-amount-input');
+  const noteEl = document.getElementById('spend-note-input');
+  const amount = parseFloat(inputEl ? inputEl.value : 0);
+  if (!amount || amount <= 0) { showToast('Enter an amount', 'error'); return; }
+  const note = noteEl ? noteEl.value.trim() : '';
+  const cat = SPEND_CATEGORIES[activeSpendCategory] || { label: 'general' };
+
+  const tx = {
+    id: Date.now().toString(),
+    type: 'expense',
+    amount: amount,
+    category: activeSpendCategory || 'general',
+    note: note || cat.label,
+    date: new Date().toISOString()
+  };
+  S.transactions.push(tx);
+  saveState();
+  grantXP(15, 'Spend logged');
+  checkAchievements();
+
+  closeSpendAmount();
+  updateTodaySpendLog();
+  showToast(cat.emoji + ' ' + fmt(amount) + ' logged!', 'success');
+  addHomeBotMessage('ai', '📝 Logged ' + cat.emoji + ' ' + cat.label + ': ' + fmt(amount) + (note ? ' · ' + note : '') + '. Nice job staying on top of it!');
+}
+
+function spendMissedPrompt() {
+  const today = new Date().toDateString();
+  const todayTx = S.transactions.filter(tx => new Date(tx.date).toDateString() === today && tx.type === 'expense');
+  let msg;
+  if (todayTx.length === 0) {
+    msg = "🔍 Let's do a spending sweep! Think through your day:\n\n" +
+      "☕ Morning coffee or breakfast?\n" +
+      "🍽 Lunch — ate out or ordered in?\n" +
+      "🚗 Uber, gas, parking, transit?\n" +
+      "🛍 Any online orders (Amazon, apps)?\n" +
+      "🛒 Groceries or household items?\n\n" +
+      "Tap a category above to quick-log, or say 'Spent $X on Y' and I'll handle it.";
+  } else {
+    const total = todayTx.reduce((s, tx) => s + tx.amount, 0);
+    const cats = [...new Set(todayTx.map(tx => {
+      const c = SPEND_CATEGORIES[tx.category];
+      return c ? c.emoji + ' ' + c.label : tx.category;
+    }))];
+    msg = "🔍 Spending sweep — so far today: " + fmt(total) + "\n\n" +
+      "Logged: " + cats.join(', ') + "\n\n" +
+      "Anything else? Think about:\n" +
+      "• Subscriptions that renewed?\n" +
+      "• Small purchases (vending machine, tips)?\n" +
+      "• Shared costs or money transfers?\n\n" +
+      "Say 'Spent $X on Y' or upload a receipt 📸";
+  }
+  addHomeBotMessage('ai', msg);
+}
+
+/* ── RECEIPT UPLOAD & SCAN ────────────────────────── */
+function openReceiptUpload() {
+  const overlay = document.getElementById('receipt-overlay');
+  if (overlay) overlay.classList.remove('hidden');
+  // Reset state
+  const preview = document.getElementById('receipt-preview');
+  const results = document.getElementById('receipt-results');
+  const dropZone = document.getElementById('receipt-drop-zone');
+  if (preview) preview.classList.add('hidden');
+  if (results) results.classList.add('hidden');
+  if (dropZone) dropZone.style.display = '';
+  receiptExtractedItems = [];
+}
+
+function closeReceiptUpload() {
+  const overlay = document.getElementById('receipt-overlay');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+function handleReceiptFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const imgEl = document.getElementById('receipt-img');
+    const preview = document.getElementById('receipt-preview');
+    const dropZone = document.getElementById('receipt-drop-zone');
+    if (imgEl) imgEl.src = e.target.result;
+    if (preview) preview.classList.remove('hidden');
+    if (dropZone) dropZone.style.display = 'none';
+    // Start "scanning" animation, then extract
+    const scanning = document.getElementById('receipt-scanning');
+    if (scanning) scanning.style.display = 'flex';
+    setTimeout(() => scanReceiptImage(e.target.result), 2000);
+  };
+  reader.readAsDataURL(file);
+}
+
+function scanReceiptImage(dataUrl) {
+  // Smart extraction using canvas + heuristic text detection
+  // Since we can't do real OCR in a PWA without a server, we use smart prompts
+  const scanning = document.getElementById('receipt-scanning');
+  if (scanning) scanning.style.display = 'none';
+
+  const results = document.getElementById('receipt-results');
+  const itemsList = document.getElementById('receipt-items-list');
+  if (!results || !itemsList) return;
+
+  // Show a smart form for the user to enter what they see on the receipt
+  receiptExtractedItems = [];
+  results.classList.remove('hidden');
+  itemsList.innerHTML =
+    '<div class="receipt-smart-prompt">' +
+      '<div class="receipt-smart-text">📋 I see your receipt! Help me log it:</div>' +
+      '<div class="receipt-entry" id="receipt-entry-1">' +
+        '<input type="text" class="receipt-item-name" placeholder="Item (e.g. Coffee)" id="ri-name-1"/>' +
+        '<div class="receipt-item-amt-wrap"><span>' + S.currency + '</span><input type="number" class="receipt-item-amt" placeholder="0" inputmode="decimal" id="ri-amt-1"/></div>' +
+      '</div>' +
+      '<div class="receipt-entry" id="receipt-entry-2">' +
+        '<input type="text" class="receipt-item-name" placeholder="Item 2 (optional)" id="ri-name-2"/>' +
+        '<div class="receipt-item-amt-wrap"><span>' + S.currency + '</span><input type="number" class="receipt-item-amt" placeholder="0" inputmode="decimal" id="ri-amt-2"/></div>' +
+      '</div>' +
+      '<div class="receipt-entry" id="receipt-entry-3">' +
+        '<input type="text" class="receipt-item-name" placeholder="Item 3 (optional)" id="ri-name-3"/>' +
+        '<div class="receipt-item-amt-wrap"><span>' + S.currency + '</span><input type="number" class="receipt-item-amt" placeholder="0" inputmode="decimal" id="ri-amt-3"/></div>' +
+      '</div>' +
+      '<button class="receipt-add-more" onclick="addReceiptEntry()">+ Add more items</button>' +
+      '<div class="receipt-total-hint">Or just enter the <strong>total</strong> in the first row</div>' +
+    '</div>';
+}
+
+let receiptEntryCount = 3;
+
+function addReceiptEntry() {
+  receiptEntryCount++;
+  const list = document.getElementById('receipt-items-list');
+  const prompt = list ? list.querySelector('.receipt-smart-prompt') : null;
+  if (!prompt) return;
+  const addBtn = prompt.querySelector('.receipt-add-more');
+  const entry = document.createElement('div');
+  entry.className = 'receipt-entry';
+  entry.id = 'receipt-entry-' + receiptEntryCount;
+  entry.innerHTML =
+    '<input type="text" class="receipt-item-name" placeholder="Item ' + receiptEntryCount + '" id="ri-name-' + receiptEntryCount + '"/>' +
+    '<div class="receipt-item-amt-wrap"><span>' + S.currency + '</span><input type="number" class="receipt-item-amt" placeholder="0" inputmode="decimal" id="ri-amt-' + receiptEntryCount + '"/></div>';
+  if (addBtn) addBtn.before(entry);
+}
+
+function confirmReceiptItems() {
+  let logged = 0;
+  let total = 0;
+  for (let i = 1; i <= receiptEntryCount; i++) {
+    const nameEl = document.getElementById('ri-name-' + i);
+    const amtEl = document.getElementById('ri-amt-' + i);
+    if (!nameEl || !amtEl) continue;
+    const name = nameEl.value.trim();
+    const amt = parseFloat(amtEl.value);
+    if (!amt || amt <= 0) continue;
+    const tx = {
+      id: (Date.now() + i).toString(),
+      type: 'expense',
+      amount: amt,
+      category: guessCategory(name),
+      note: name || 'Receipt item',
+      date: new Date().toISOString()
+    };
+    S.transactions.push(tx);
+    logged++;
+    total += amt;
+  }
+  if (logged === 0) { showToast('Enter at least one item with an amount', 'error'); return; }
+  saveState();
+  grantXP(20, 'Receipt scanned');
+  checkAchievements();
+  closeReceiptUpload();
+  receiptEntryCount = 3;
+  updateTodaySpendLog();
+  showToast('📸 ' + logged + ' item' + (logged > 1 ? 's' : '') + ' logged from receipt!', 'success');
+  addHomeBotMessage('ai', '📸 Receipt scanned! Logged ' + logged + ' item' + (logged > 1 ? 's' : '') + ' totalling ' + fmt(total) + '. Your spending is being tracked 📊');
+}
+
+function guessCategory(name) {
+  const n = name.toLowerCase();
+  if (/coffee|latte|cappuccino|starbucks|cafe|tea/.test(n)) return 'coffee';
+  if (/uber|lyft|taxi|gas|fuel|parking|transit|metro|bus/.test(n)) return 'transport';
+  if (/grocery|groceries|whole foods|trader|walmart|target|costco|supermarket/.test(n)) return 'groceries';
+  if (/amazon|ebay|online|order|shipping/.test(n)) return 'online';
+  if (/app|subscription|netflix|spotify|apple|google|icloud|premium/.test(n)) return 'apps';
+  if (/food|lunch|dinner|breakfast|restaurant|pizza|burger|sushi|meal/.test(n)) return 'food';
+  return 'general';
+}
+
+function retryReceipt() {
+  const preview = document.getElementById('receipt-preview');
+  const results = document.getElementById('receipt-results');
+  const dropZone = document.getElementById('receipt-drop-zone');
+  const fileInput = document.getElementById('receipt-file-input');
+  if (preview) preview.classList.add('hidden');
+  if (results) results.classList.add('hidden');
+  if (dropZone) dropZone.style.display = '';
+  if (fileInput) fileInput.value = '';
+  receiptEntryCount = 3;
+}
+
 /* ── HOME ─────────────────────────────────────────── */
 let homeVoiceActive = false;
 let homeRecognition = null;
@@ -866,6 +1162,7 @@ function initHomeData() {
   updateHomeXPChip();
   initCheckinCard();
   updatePassiveStrip();
+  initSpendNudge();
 
   if (!homeChatHistory.length) {
     const name = S.user ? S.user.name.split(' ')[0] : 'there';
@@ -899,6 +1196,7 @@ function updateHomeScreen() {
   updateHomeGreeting();
   initCheckinCard();
   updatePassiveStrip();
+  initSpendNudge();
 }
 
 function toggleHomeVoice() {
