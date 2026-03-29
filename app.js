@@ -25,7 +25,9 @@ let S = {
   level: 1,
   totalXp: 0,
   achievements: [],
-  dayLogs: {}
+  dayLogs: {},
+  reflections: [],
+  dashInput: {}
 };
 
 /* ── PERSIST ──────────────────────────────────────── */
@@ -200,6 +202,319 @@ function restoreTodayDayChips() {
   });
 }
 
+/* ── DASHBOARD — PERFORMANCE SYSTEM ───────────────── */
+let dashInputState = {};
+let dashAIStep = 0;
+let dashAIAnswers = {};
+
+function dashPick(field, btn) {
+  const row = btn.parentElement;
+  row.querySelectorAll('.dash-opt-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  dashInputState[field] = btn.dataset.val;
+}
+
+function initDashboard() {
+  // Restore today's reflection if exists
+  const today = new Date().toDateString();
+  const todayRef = (S.reflections || []).find(r => r.date === today);
+  if (todayRef) {
+    renderDashAnalysis(todayRef);
+    renderDashPattern();
+  }
+  updateDashHeader();
+}
+
+function updateDashHeader() {
+  const lv = S.level || 1;
+  const xp = S.xp || 0;
+  const info = getLevelInfo(lv);
+  const nextXp = getXPForNextLevel(lv);
+  const pct = nextXp ? Math.min(100, ((xp - info.xpNeeded) / (nextXp - info.xpNeeded)) * 100) : 100;
+  const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  el('dash-level', 'Lv ' + lv);
+  el('dash-level-title', info.title);
+  el('dash-xp-label', (nextXp ? (xp - info.xpNeeded) + ' / ' + (nextXp - info.xpNeeded) : xp) + ' XP');
+  el('dash-streak', '🔥 ' + (S.streak || 0));
+  const bar = document.getElementById('dash-xp-bar');
+  if (bar) bar.style.width = pct + '%';
+}
+
+function submitDailyLog() {
+  const focus = parseInt(document.getElementById('dash-focus').value) || 5;
+  const moneyAmt = parseFloat(document.getElementById('dash-money-amt').value) || 0;
+  const moneyCat = (document.getElementById('dash-money-cat').value || '').trim();
+  const extra = (document.getElementById('dash-extra').value || '').trim();
+
+  if (!dashInputState.productivity) { showToast('Select productivity level.', 'error'); return; }
+  if (!dashInputState.wasted) { showToast('Did you waste time?', 'error'); return; }
+
+  const entry = {
+    date: new Date().toDateString(),
+    timestamp: new Date().toISOString(),
+    productivity: dashInputState.productivity || 'medium',
+    focus: focus,
+    wasted: dashInputState.wasted === 'yes',
+    idea: dashInputState.idea === 'yes',
+    action: dashInputState.action === 'yes',
+    moneySpent: moneyAmt,
+    moneyCategory: moneyCat,
+    extra: extra,
+    dayActivities: S.dayLogs ? (S.dayLogs[new Date().toDateString()] || []) : []
+  };
+
+  // Generate analysis
+  const analysis = analyseDay(entry);
+  entry.score = analysis.score;
+  entry.diagnosis = analysis.diagnosis;
+  entry.leak = analysis.leak;
+  entry.missed = analysis.missed;
+  entry.directive = analysis.directive;
+  entry.xpGained = analysis.xpGained;
+
+  // Save
+  if (!S.reflections) S.reflections = [];
+  const existIdx = S.reflections.findIndex(r => r.date === entry.date);
+  if (existIdx >= 0) S.reflections[existIdx] = entry;
+  else S.reflections.push(entry);
+  saveState();
+
+  // Grant XP
+  grantXP(analysis.xpGained, 'daily reflection');
+
+  // Render
+  renderDashAnalysis(entry);
+  renderDashPattern();
+  updateDashHeader();
+
+  // Start AI debrief
+  startDashAI(entry);
+}
+
+function analyseDay(e) {
+  let score = 50;
+  let diagnosis = '';
+  let leak = '';
+  let missed = '';
+  let directive = '';
+
+  // Productivity scoring
+  if (e.productivity === 'high') { score += 25; diagnosis = 'High output day. Execution was present.'; }
+  else if (e.productivity === 'medium') { score += 10; diagnosis = 'Moderate output. You functioned but didn\'t push.'; }
+  else { score -= 15; diagnosis = 'Low output. Most of the day was consumed, not invested.'; }
+
+  // Focus scoring
+  if (e.focus >= 8) score += 15;
+  else if (e.focus >= 5) score += 5;
+  else { score -= 10; diagnosis += ' Focus was below threshold.'; }
+
+  // Wasted time
+  if (e.wasted) {
+    score -= 20;
+    const activities = e.dayActivities || [];
+    if (activities.includes('social-media')) {
+      leak = 'Social media consumed time that could have been allocated to income or skill development.';
+    } else if (activities.includes('wasted')) {
+      leak = 'You acknowledged wasting time. Hours lost cannot be recovered — only patterns can be broken.';
+    } else {
+      leak = 'Time was burned without output. No revenue, no skill, no progress.';
+    }
+  } else {
+    leak = 'No significant time leak detected today.';
+    score += 5;
+  }
+
+  // Idea + action
+  if (e.idea && !e.action) {
+    score -= 10;
+    missed = 'Idea generated but zero action taken. Ideas decay — this one is already losing value.';
+  } else if (e.idea && e.action) {
+    score += 15;
+    missed = 'Idea generated AND acted on. Rare. This is how compounding begins.';
+  } else if (!e.idea && e.action) {
+    score += 10;
+    missed = 'Execution without new ideas. Solid, but innovation is stalling.';
+  } else {
+    missed = 'No ideas, no action on anything important. Coasting.';
+  }
+
+  // Money spending context
+  if (e.moneySpent > 0) {
+    const cat = e.moneyCategory.toLowerCase();
+    const wasteCats = ['entertainment', 'shopping', 'clothes', 'takeout', 'junk', 'impulse'];
+    if (wasteCats.some(c => cat.includes(c))) {
+      score -= 10;
+      leak += ' Discretionary spending on ' + e.moneyCategory + ' (' + S.currency + e.moneySpent + ') — evaluate if this was necessary.';
+    }
+  }
+
+  // Clamp
+  score = Math.max(0, Math.min(100, score));
+
+  // Directive
+  if (score >= 75) {
+    directive = 'Protect this momentum. Tomorrow: identify ONE high-leverage task and execute before noon.';
+  } else if (score >= 50) {
+    directive = 'Mediocre day. Tomorrow: eliminate the #1 distraction and replace it with 90 minutes of focused work.';
+  } else if (score >= 30) {
+    directive = 'Below baseline. Tomorrow: no screens for first 60 minutes. Log one income-producing action by 2pm.';
+  } else {
+    directive = 'System failure. Tomorrow: pick ONE thing. Only one. Do that before anything else. Report back.';
+  }
+
+  // XP calculation
+  let xpGained = Math.round(score * 0.8);
+  if (e.productivity === 'high' && !e.wasted) xpGained += 20;
+  if (e.idea && e.action) xpGained += 15;
+
+  return { score, diagnosis, leak, missed, directive, xpGained };
+}
+
+function renderDashAnalysis(entry) {
+  const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  const scoreEl = document.getElementById('dash-score');
+  if (scoreEl) {
+    scoreEl.textContent = entry.score;
+    scoreEl.className = 'dash-score-num ' + (entry.score >= 70 ? 'score-good' : entry.score >= 40 ? 'score-mid' : 'score-bad');
+  }
+  el('dash-score-diag', entry.diagnosis.split('.')[0] + '.');
+  el('dash-diagnosis-body', entry.diagnosis);
+  el('dash-leak-body', entry.leak);
+  el('dash-missed-body', entry.missed);
+  el('dash-directive-body', entry.directive);
+
+  // XP feedback card
+  const lvInfo = getLevelInfo(S.level || 1);
+  el('dash-xp-body', '+' + entry.xpGained + ' XP · Level ' + (S.level || 1) + ' — ' + lvInfo.title);
+}
+
+function renderDashPattern() {
+  const refs = S.reflections || [];
+  if (refs.length < 2) {
+    const card = document.getElementById('dash-pattern-card');
+    if (card) card.classList.add('hidden');
+    return;
+  }
+
+  const card = document.getElementById('dash-pattern-card');
+  if (card) card.classList.remove('hidden');
+
+  const recent = refs.slice(-7);
+  const avgScore = recent.reduce((s, r) => s + (r.score || 0), 0) / recent.length;
+  const wastedDays = recent.filter(r => r.wasted).length;
+  const ideaNoAction = recent.filter(r => r.idea && !r.action).length;
+  const lowProd = recent.filter(r => r.productivity === 'low').length;
+
+  let pattern = '', risk = '', fix = '';
+
+  if (wastedDays >= Math.ceil(recent.length * 0.5)) {
+    pattern = wastedDays + ' of last ' + recent.length + ' days had wasted time. This is a recurring leak, not an accident.';
+    risk = 'At this rate, you lose ~' + (wastedDays * 3) + '+ hours/week to non-productive activity. That\'s ' + (wastedDays * 3 * 4) + ' hours/month of potential output gone.';
+    fix = 'Implement a hard rule: no passive consumption before noon. Track the trigger that leads to time waste and eliminate it.';
+  } else if (ideaNoAction >= 2) {
+    pattern = ideaNoAction + ' ideas generated with zero execution across ' + recent.length + ' days. Ideas without action are entertainment.';
+    risk = 'You\'re building a habit of thinking without doing. This erodes self-trust and kills compounding.';
+    fix = 'Next idea you have: spend 15 minutes on it immediately. Not tomorrow. Not later. Now or never.';
+  } else if (lowProd >= Math.ceil(recent.length * 0.4)) {
+    pattern = 'Productivity consistently low — ' + lowProd + ' of ' + recent.length + ' days below threshold.';
+    risk = 'Low output is becoming your default state. Comfort is replacing ambition.';
+    fix = 'Tomorrow morning: write down ONE deliverable. Complete it. That\'s the entire day\'s purpose.';
+  } else if (avgScore >= 65) {
+    pattern = 'Average score: ' + avgScore.toFixed(0) + ' — consistent above baseline.';
+    risk = 'Plateau risk. Consistency without escalation leads to stagnation.';
+    fix = 'Raise the bar. Add ONE new discipline this week that makes tomorrow harder than today.';
+  } else {
+    pattern = 'Average score: ' + avgScore.toFixed(0) + ' across ' + recent.length + ' days. Below system threshold.';
+    risk = 'Compounding is working against you. Each weak day makes the next one more likely.';
+    fix = 'Break the cycle: one high-output day resets momentum. Schedule it. Protect it. Execute.';
+  }
+
+  const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  el('dash-pattern-body', pattern);
+  el('dash-pattern-risk', risk);
+  el('dash-pattern-fix', fix);
+}
+
+/* ── DASHBOARD AI DEBRIEF ─────────────────────────── */
+function startDashAI(entry) {
+  dashAIStep = 0;
+  dashAIAnswers = {};
+  const feed = document.getElementById('dash-ai-feed');
+  const inputRow = document.getElementById('dash-ai-input-row');
+  if (feed) feed.innerHTML = '';
+  if (inputRow) inputRow.classList.remove('hidden');
+
+  // First question
+  const q1 = entry.score < 50
+    ? 'Your score is ' + entry.score + '. What specifically did you do today — not what you planned, what you actually did?'
+    : 'Score: ' + entry.score + '. What was the single most valuable thing you did today?';
+  addDashAIMsg('ai', q1);
+  dashAIStep = 1;
+}
+
+function answerDashAI() {
+  const input = document.getElementById('dash-ai-input');
+  const text = input ? input.value.trim() : '';
+  if (!text) return;
+  if (input) input.value = '';
+
+  addDashAIMsg('user', text);
+  dashAIAnswers['step' + dashAIStep] = text;
+
+  // Vague answer detection
+  const vague = text.length < 10 || /^(idk|not sure|nothing|stuff|things|idk man|yeah|ok|fine)$/i.test(text);
+
+  if (dashAIStep === 1) {
+    if (vague) {
+      addDashAIMsg('ai', 'That\'s not an answer. Be specific. What did you actually produce, learn, or execute today?');
+      return; // Stay on step 1
+    }
+    addDashAIMsg('ai', 'How focused were you during that? Scale of 1-10, with context — what pulled your attention?');
+    dashAIStep = 2;
+  } else if (dashAIStep === 2) {
+    addDashAIMsg('ai', 'Where exactly did you waste time today? Be honest. I\'m tracking the pattern.');
+    dashAIStep = 3;
+  } else if (dashAIStep === 3) {
+    const today = (S.reflections || []).find(r => r.date === new Date().toDateString());
+    const hadIdea = today && today.idea;
+    if (hadIdea) {
+      addDashAIMsg('ai', 'You said you had an idea today. Did you act on it? What exactly did you do with it?');
+      dashAIStep = 4;
+    } else {
+      finishDashAI();
+    }
+  } else if (dashAIStep === 4) {
+    finishDashAI();
+  }
+}
+
+function finishDashAI() {
+  const inputRow = document.getElementById('dash-ai-input-row');
+  if (inputRow) inputRow.classList.add('hidden');
+
+  const today = (S.reflections || []).find(r => r.date === new Date().toDateString());
+  let finalMsg = '';
+  if (today && today.score >= 70) {
+    finalMsg = 'Debrief complete. You performed above baseline. Don\'t celebrate — protect it. Tomorrow\'s target: repeat or exceed. Dismissed.';
+  } else if (today && today.score >= 40) {
+    finalMsg = 'Debrief logged. Today was mediocre. The system doesn\'t reward survival — it rewards output. Tomorrow needs to be different. Not slightly. Actually different.';
+  } else {
+    finalMsg = 'Debrief logged. Today was a loss. Every day like this compounds against you. Tomorrow: one task, total focus, zero excuses. The system is watching.';
+  }
+  addDashAIMsg('ai', finalMsg);
+  grantXP(15, 'AI debrief completed');
+}
+
+function addDashAIMsg(role, text) {
+  const feed = document.getElementById('dash-ai-feed');
+  if (!feed) return;
+  const div = document.createElement('div');
+  div.className = 'dash-ai-msg dash-ai-' + role;
+  div.textContent = text;
+  feed.appendChild(div);
+  feed.scrollTop = feed.scrollHeight;
+}
+
 /* ── BOOT SEQUENCE ────────────────────────────────── */
 const BOOT_LOGS = [
   'Initialising kernel modules…',
@@ -281,6 +596,7 @@ function navigateTo(id) {
   // Update nav
   const navMap = {
     'screen-home': 'nb-home',
+    'screen-dashboard': 'nb-dashboard',
     'screen-brain': 'nb-brain',
     'screen-settings': 'nb-settings'
   };
@@ -292,6 +608,7 @@ function navigateTo(id) {
 
   // Init screens
   if (id === 'screen-home')     { updateHomeScreen(); }
+  if (id === 'screen-dashboard') { initDashboard(); }
   if (id === 'screen-brain')    { initBrain(); unlockAchievement('brain-visit'); }
   if (id === 'screen-insights') { initInsights(); }
   if (id === 'screen-calendar') { renderCalendar(); updateMonthStats(); }

@@ -728,3 +728,78 @@ a{color:inherit;text-decoration:none}ul{list-style:none}
 .ach-icon{font-size:1.5rem}
 .ach-name{font-size:.62rem;font-weight:700;color:var(--text);line-height:1.2}
 .ach-xp{font-size:.6rem;color:var(--text3);font-weight:600}
+
+/* ══ DASHBOARD — PERFORMANCE SYSTEM ═════════════════ */
+.dash-header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:52px 16px 12px;background:linear-gradient(to bottom,var(--bg),rgba(2,4,10,.95));backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.dash-header-left{display:flex;align-items:center;gap:8px}
+.dash-level{padding:3px 10px;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:99px;font-size:.7rem;font-weight:800;color:white;letter-spacing:.03em}
+.dash-level-title{font-size:.78rem;font-weight:700;color:var(--text2)}
+.dash-header-center{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 12px}
+.dash-xp-bar-wrap{width:100%;max-width:120px;height:4px;background:var(--glass2);border-radius:99px;overflow:hidden}
+.dash-xp-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:99px;transition:width .5s var(--tr);width:0%}
+.dash-xp-label{font-size:.6rem;color:var(--text3);font-weight:600}
+.dash-header-right{display:flex;align-items:center}
+.dash-streak{font-size:.82rem;font-weight:800;color:var(--text)}
+
+/* Score Card */
+.dash-score-card{display:flex;flex-direction:column;align-items:center;padding:32px 20px 24px;margin:16px;text-align:center;background:rgba(255,255,255,.02);border:1px solid var(--border2);border-radius:20px}
+.dash-score-num{font-size:5rem;font-weight:900;line-height:1;letter-spacing:-3px;color:var(--text);transition:color .3s}
+.dash-score-num.score-good{color:#10b981}
+.dash-score-num.score-mid{color:#f59e0b}
+.dash-score-num.score-bad{color:#ef4444}
+.dash-score-diag{font-size:.82rem;color:var(--text3);margin-top:8px;font-weight:500}
+
+/* Analysis Cards Stack */
+.dash-cards-stack{padding:0 16px;display:flex;flex-direction:column;gap:10px}
+.dash-card{padding:14px 16px;border-radius:14px;background:var(--glass);border:1px solid var(--border)}
+.dash-card-tag{font-size:.6rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--blue2);margin-bottom:6px}
+.dash-card-tag.tag-red{color:#ef4444}
+.dash-card-tag.tag-yellow{color:#f59e0b}
+.dash-card-tag.tag-green{color:#10b981}
+.dash-card-tag.tag-purple{color:#a855f7}
+.dash-card-body{font-size:.82rem;color:var(--text);line-height:1.5;font-weight:500}
+
+/* Pattern Card */
+.dash-pattern-card{margin:16px;padding:18px 16px;border-radius:16px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.04)}
+.dash-pattern-body,.dash-pattern-risk,.dash-pattern-fix{font-size:.82rem;color:var(--text);line-height:1.5;font-weight:500}
+
+/* Daily Input Section */
+.dash-input-section{margin:24px 16px 16px;padding:20px 16px;background:var(--glass);border:1px solid var(--border);border-radius:18px}
+.dash-input-title{font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--blue2);margin-bottom:16px}
+.dash-input-group{margin-bottom:14px}
+.dash-label{font-size:.76rem;font-weight:700;color:var(--text2);margin-bottom:6px;display:block}
+.dash-focus-val{color:var(--blue2);font-weight:800}
+.dash-btn-row{display:flex;gap:8px}
+.dash-opt-btn{flex:1;padding:8px 0;border-radius:10px;font-size:.76rem;font-weight:700;background:var(--bg3);border:1.5px solid var(--border);color:var(--text2);cursor:pointer;transition:all .18s}
+.dash-opt-btn:active{transform:scale(.95)}
+.dash-opt-btn.selected{background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(168,85,247,.1));border-color:rgba(59,130,246,.5);color:var(--text)}
+
+/* Slider */
+.dash-slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:var(--glass2);outline:none;transition:all .2s}
+.dash-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));cursor:pointer;border:2px solid var(--bg);box-shadow:0 2px 8px rgba(59,130,246,.3)}
+
+/* Money row */
+.dash-money-row{display:flex;align-items:center;gap:6px}
+.dash-money-sym{font-size:.9rem;font-weight:800;color:var(--text3)}
+.dash-money-input{flex:1;padding:8px 10px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:.82rem;font-weight:600;outline:none}
+.dash-money-input:focus{border-color:rgba(59,130,246,.4)}
+.dash-money-cat{flex:1;padding:8px 10px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:.82rem;font-weight:600;outline:none}
+.dash-money-cat:focus{border-color:rgba(59,130,246,.4)}
+
+/* Text input + submit */
+.dash-text-input{width:100%;padding:8px 12px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:.82rem;font-weight:500;outline:none;box-sizing:border-box}
+.dash-text-input:focus{border-color:rgba(59,130,246,.4)}
+.dash-submit{margin-top:16px;width:100%}
+
+/* AI Debrief Section */
+.dash-ai-section{margin:16px;padding:16px;background:var(--glass);border:1px solid var(--border);border-radius:16px}
+.dash-ai-title{font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.dash-ai-feed{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;margin-bottom:10px}
+.dash-ai-msg{padding:10px 14px;border-radius:14px;font-size:.82rem;line-height:1.45;font-weight:500;max-width:88%;animation:fadeIn .2s ease}
+.dash-ai-ai{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.dash-ai-user{background:var(--bg3);border:1px solid var(--border);color:var(--text2);align-self:flex-end;border-bottom-right-radius:4px}
+.dash-ai-input-row{display:flex;gap:8px}
+.dash-ai-input{flex:1;padding:8px 12px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:.82rem;outline:none}
+.dash-ai-input:focus{border-color:rgba(59,130,246,.4)}
+.dash-ai-send{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--purple));color:white;font-size:1rem;font-weight:800;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.dash-ai-send:active{transform:scale(.9)}
