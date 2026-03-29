@@ -1,1168 +1,951 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#050a1a" media="(prefers-color-scheme: dark)" />
-  <meta name="theme-color" content="#050a1a" />
-  <meta name="color-scheme" content="dark" />
-
-  <!-- Universal PWA — works on macOS, iOS, iPadOS, Android, Windows -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Imperium" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="application-name" content="Imperium" />
-  <meta name="description" content="A 2-minute daily review that turns your day into AI-powered feedback and tomorrow's action plan" />
-
-  <!-- Open Graph — for link previews -->
-  <meta property="og:title" content="Imperium — Your Daily Operating System" />
-  <meta property="og:description" content="A 2-minute daily review that turns your day into AI-powered feedback and tomorrow's action plan" />
-  <meta property="og:type" content="website" />
-  <title>Imperium</title>
-
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json" />
-
-  <!-- Icons — all platforms -->
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
-  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
-
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="styles.css" />
-
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#02040a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Imperium OS</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+<div id="app">
 
-  <!-- ──────────────── APP SHELL ──────────────── -->
-  <div id="app">
+  <!-- AMBIENT LAYER -->
+  <canvas id="particle-canvas"></canvas>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div id="cursor-glow"></div>
 
-    <!-- Particle canvas background -->
-    <canvas id="particle-canvas"></canvas>
-    <!-- Extra ambient orbs -->
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-    <div class="orb orb-4"></div>
-
-    <!-- ═══════════════════════════════════════════
-         SCREEN LANDING — Animated Intro
-    ════════════════════════════════════════════ -->
-    <div class="screen active" id="screen-landing">
-      <!-- Background beams canvas -->
-      <canvas id="beams-canvas"></canvas>
-      <div class="landing-wrap">
-
-        <!-- Animated logo -->
-        <div class="landing-logo">
-          <div class="landing-orb-ring">
-            <div class="landing-orb-ring-inner"></div>
-          </div>
-          <div class="landing-icon-wrap">
-            <span class="landing-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-          </div>
+  <!-- ══════════════════════════════════════════
+       BOOT SCREEN
+  ══════════════════════════════════════════ -->
+  <div class="screen active" id="screen-boot">
+    <div class="boot-wrap">
+      <canvas id="boot-canvas"></canvas>
+      <div class="boot-content">
+        <div class="boot-logo">
+          <svg width="64" height="64" viewBox="0 0 44 44" fill="none">
+            <rect width="44" height="44" rx="12" fill="url(#lgBoot)"/>
+            <path d="M22 8 L35 13 L35 22 Q35 33 22 38 Q9 33 9 22 L9 13 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+            <path d="M22 14 L22 30 M16 19 L28 19 M17 24 L27 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="lgBoot" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/>
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
-
-        <!-- Headline -->
-        <div class="landing-text">
-          <h1 class="landing-brand">Imperium</h1>
-          <p class="landing-sub">A daily review system that turns your day into AI feedback and tomorrow's action plan.</p>
-          <p class="landing-sub-2">Built for students, founders, and closers who want measurable daily gains.</p>
+        <div class="boot-name">IMPERIUM<span>OS</span></div>
+        <div class="boot-version">v4.0.0 — INITIALISING</div>
+        <div class="boot-bar-wrap">
+          <div class="boot-bar" id="boot-bar"></div>
         </div>
-
-        <!-- Who it's for -->
-        <div class="landing-audience">
-          <span class="audience-tag">🎓 Students</span>
-          <span class="audience-tag">🚀 Founders</span>
-          <span class="audience-tag">💼 Sales Reps</span>
-          <span class="audience-tag">🎯 Creators</span>
-        </div>
-
-        <!-- Live demo score animation -->
-        <div class="landing-demo">
-          <div class="demo-ring">
-            <svg class="demo-ring-svg" viewBox="0 0 100 100">
-              <defs>
-                <linearGradient id="demoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#60a5fa"/>
-                  <stop offset="50%" stop-color="#818cf8"/>
-                  <stop offset="100%" stop-color="#f5e27a"/>
-                </linearGradient>
-              </defs>
-              <circle class="demo-ring-bg" cx="50" cy="50" r="42" />
-              <circle class="demo-ring-progress" cx="50" cy="50" r="42" />
-            </svg>
-            <span class="demo-score" id="demo-score">0</span>
-          </div>
-          <div class="demo-pillars">
-            <div class="demo-pillar"><span class="demo-p-label">Execution</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:78%"></div></div></div>
-            <div class="demo-pillar"><span class="demo-p-label">Reasoning</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:65%"></div></div></div>
-            <div class="demo-pillar"><span class="demo-p-label">Focus</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:52%"></div></div></div>
-            <div class="demo-pillar"><span class="demo-p-label">Financial</span><div class="demo-p-bar"><div class="demo-p-fill" style="--target:89%"></div></div></div>
-          </div>
-        </div>
-
-        <!-- How it works — 3 steps showing transformation -->
-        <div class="landing-steps">
-          <div class="landing-step" style="--d:0.3s">
-            <div class="step-num">1</div>
-            <div class="step-content">
-              <h4>2-minute daily check-in</h4>
-              <p>Answer 7 questions about what you did, avoided, spent, and missed</p>
-            </div>
-          </div>
-          <div class="landing-step" style="--d:0.5s">
-            <div class="step-num">2</div>
-            <div class="step-content">
-              <h4>AI breaks down your day</h4>
-              <p>Get scored on 4 pillars — Execution, Reasoning, Focus, Financial — with evidence from your answers</p>
-            </div>
-          </div>
-          <div class="landing-step" style="--d:0.7s">
-            <div class="step-num">3</div>
-            <div class="step-content">
-              <h4>Wake up with a plan</h4>
-              <p>Personalised missions based on yesterday's weak spots, not generic advice</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sample Output Preview -->
-        <div class="sample-output-section">
-          <h3 class="sample-output-title">Here's what a real review looks like</h3>
-          <div class="sample-cards">
-            <div class="sample-card sample-input">
-              <span class="sample-label">📝 Your Input</span>
-              <p class="sample-text">"Spent 2 hours on social media. Avoided the pitch deck. Earned $0. Discipline was low."</p>
-            </div>
-            <div class="sample-card sample-insight">
-              <span class="sample-label">🧠 AI Insight</span>
-              <p class="sample-text">"You rated discipline low and reported 2+ hours of low-value time. That's a reactive day — responding instead of designing. Your pitch deck avoidance is compounding."</p>
-            </div>
-            <div class="sample-card sample-mission">
-              <span class="sample-label">🎯 Tomorrow's Mission</span>
-              <p class="sample-text">"Ship one section of the pitch deck before 10 AM. Block 90 minutes, phone in another room."</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Expandable feature pills -->
-        <div class="landing-features">
-          <div class="landing-pill" style="--d:0.2s" onclick="toggleLandingPill(this)">
-            <div class="pill-header">
-              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 2 1.1 3.4 2.7 4.2.4.2.6.6.6 1V13h1.4v-1.8c0-.4.2-.8.6-1C14.9 9.4 16 8 16 6a4 4 0 0 0-4-4z"/><line x1="10" y1="17" x2="14" y2="17"/><line x1="10" y1="21" x2="14" y2="21"/><line x1="10" y1="17" x2="10" y2="21"/><line x1="14" y1="17" x2="14" y2="21"/></svg>
-              <span>Evidence-Based Analysis</span>
-              <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="pill-body">
-              <p>Every insight references your actual answers. "You avoided X while wasting Y hours" — not generic advice, but your real patterns.</p>
-            </div>
-          </div>
-          <div class="landing-pill" style="--d:0.4s" onclick="toggleLandingPill(this)">
-            <div class="pill-header">
-              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              <span>4-Pillar Operating Score</span>
-              <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="pill-body">
-              <p>Scored daily across Execution, Reasoning, Focus &amp; Financial. Track trends, spot correlations, and prove you're improving.</p>
-            </div>
-          </div>
-          <div class="landing-pill" style="--d:0.6s" onclick="toggleLandingPill(this)">
-            <div class="pill-header">
-              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-              <span>Adaptive Missions</span>
-              <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="pill-body">
-              <p>Missions are generated from yesterday's weakest areas. Bad focus? Tomorrow's mission targets focus specifically. Not arbitrary challenges.</p>
-            </div>
-          </div>
-          <div class="landing-pill" style="--d:0.8s" onclick="toggleLandingPill(this)">
-            <div class="pill-header">
-              <svg class="pill-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></svg>
-              <span>Your Data, Your Device</span>
-              <svg class="pill-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="pill-body">
-              <p>All data stored locally on your device. No cloud uploads of personal reflections. Export or delete anytime. We never sell your data.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- CTA buttons -->
-        <div class="landing-cta">
-          <button class="btn-primary landing-btn-main" onclick="continueAsGuest()">
-            Try a Free Review — No signup
-          </button>
-          <button class="landing-btn-guest" onclick="skipToAuth()">
-            Create Account
-          </button>
-        </div>
-
-        <!-- Trust bar -->
-        <div class="trust-bar">
-          <span class="trust-item">🔒 Data stays on your device</span>
-          <span class="trust-item">⚡ 2 min daily</span>
-          <span class="trust-item">🚫 No credit card</span>
-        </div>
-
-        <!-- Footer credits -->
-        <div class="landing-credits">
-          <span class="credits-label">Founded by</span>
-          <span class="credits-name">Sanskaar</span>
-          <span class="credits-label" style="margin-top:2px">Co-founded by</span>
-          <span class="credits-name">Kashish Devnani</span>
-        </div>
-
+        <div class="boot-log" id="boot-log"></div>
       </div>
     </div>
+  </div>
 
-    <!-- ═══════════════════════════════════════════
-         SCREEN 0 — AUTH (Login / Sign Up)
-    ════════════════════════════════════════════ -->
-    <div class="screen" id="screen-auth">
-      <div class="auth-wrap">
+  <!-- ══════════════════════════════════════════
+       AUTH
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="screen-auth">
+    <div class="auth-wrap">
+      <div class="auth-logo-mark">
+        <svg width="48" height="48" viewBox="0 0 44 44" fill="none">
+          <rect width="44" height="44" rx="12" fill="url(#lgAuth)"/>
+          <path d="M22 8 L35 13 L35 22 Q35 33 22 38 Q9 33 9 22 L9 13 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M22 14 L22 30 M16 19 L28 19 M17 24 L27 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+          <defs><linearGradient id="lgAuth" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
+        </svg>
+      </div>
+      <h1 class="auth-brand">Imperium<span>OS</span></h1>
+      <p class="auth-tagline">Your AI that tracks, analyses, and guides your money — by voice.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Log In</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+      <form id="form-login" class="auth-form" onsubmit="handleLogin(event)">
+        <input class="auth-input" type="email" id="login-email" placeholder="Email" required autocomplete="email"/>
+        <div class="pw-wrap">
+          <input class="auth-input" type="password" id="login-password" placeholder="Password" required autocomplete="current-password"/>
+          <button type="button" class="pw-eye" onclick="togglePw('login-password')">👁</button>
+        </div>
+        <button class="btn-primary" type="submit">Log In →</button>
+      </form>
+      <form id="form-signup" class="auth-form hidden" onsubmit="handleSignup(event)">
+        <input class="auth-input" type="text" id="signup-name" placeholder="Full name" required autocomplete="name"/>
+        <input class="auth-input" type="email" id="signup-email" placeholder="Email" required autocomplete="email"/>
+        <div class="pw-wrap">
+          <input class="auth-input" type="password" id="signup-password" placeholder="Password (min 6)" required autocomplete="new-password" minlength="6"/>
+          <button type="button" class="pw-eye" onclick="togglePw('signup-password')">👁</button>
+        </div>
+        <button class="btn-primary" type="submit">Create Account →</button>
+      </form>
+      <div class="auth-or"><span>or</span></div>
+      <button class="btn-ghost w-full" onclick="continueAsGuest()">Enter as Guest</button>
+      <p class="auth-msg" id="auth-msg"></p>
+      <p class="auth-footer">Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p>
+    </div>
+  </div>
 
-        <!-- Logo -->
-        <div class="auth-logo">
-          <span class="auth-logo-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-          <h1 class="auth-brand">Imperium</h1>
-          <p class="auth-tagline">Your Daily Operating System</p>
+  <!-- ══════════════════════════════════════════
+       ONBOARDING
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="screen-onboarding">
+    <div class="ob-shell">
+
+      <!-- Top bar -->
+      <div class="ob-topbar">
+        <button class="ob-back-btn" id="ob-back" onclick="obBack()" style="visibility:hidden">‹ Back</button>
+        <div class="ob-dots">
+          <span class="ob-dot active" id="ob-dot-1"></span>
+          <span class="ob-dot" id="ob-dot-2"></span>
+          <span class="ob-dot" id="ob-dot-3"></span>
+        </div>
+        <span class="ob-step-label" id="ob-step-label">1 of 3</span>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="ob-progress-bar"><div class="ob-progress-fill" id="ob-fill" style="width:33%"></div></div>
+
+      <!-- Slides container -->
+      <div class="ob-slides" id="ob-slides">
+
+        <!-- STEP 1 — Situation -->
+        <div class="ob-slide ob-slide-active" id="ob-1">
+          <div class="ob-hero">🧠</div>
+          <div class="ob-text">
+            <h2 class="ob-title">How do you make your money?</h2>
+            <p class="ob-sub">Your AI will personalise every insight to your situation.</p>
+          </div>
+          <div class="ob-options">
+            <button class="ob-opt" data-v="freelancer" onclick="pickSituation(this)">
+              <span class="ob-opt-icon">💻</span>
+              <span class="ob-opt-text"><b>Freelancer / Consultant</b><small>Client work, variable income</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="business" onclick="pickSituation(this)">
+              <span class="ob-opt-icon">🚀</span>
+              <span class="ob-opt-text"><b>Business owner</b><small>Revenue, expenses, margins</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="employed" onclick="pickSituation(this)">
+              <span class="ob-opt-icon">💼</span>
+              <span class="ob-opt-text"><b>Employed</b><small>Salary + side income tracking</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="mixed" onclick="pickSituation(this)">
+              <span class="ob-opt-icon">⚡</span>
+              <span class="ob-opt-text"><b>Mixed streams</b><small>Multiple income sources</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+          </div>
+          <button class="ob-next-btn" id="ob-next-1" onclick="goObStep(2)" disabled>Continue →</button>
         </div>
 
-        <!-- Tab Toggle -->
-        <div class="auth-tabs">
-          <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</button>
-          <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</button>
-          <button class="auth-tab" id="tab-guest" onclick="switchAuthTab('guest')">Guest</button>
+        <!-- STEP 2 — Goal -->
+        <div class="ob-slide" id="ob-2">
+          <div class="ob-hero">🎯</div>
+          <div class="ob-text">
+            <h2 class="ob-title">What do you want from your AI?</h2>
+            <p class="ob-sub">This shapes every insight, alert, and suggestion.</p>
+          </div>
+          <div class="ob-options">
+            <button class="ob-opt" data-v="know-where" onclick="pickGoal(this)">
+              <span class="ob-opt-icon">🔍</span>
+              <span class="ob-opt-text"><b>Know where my money goes</b><small>No more financial blind spots</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="stop-leaking" onclick="pickGoal(this)">
+              <span class="ob-opt-icon">🚿</span>
+              <span class="ob-opt-text"><b>Stop leaking money</b><small>Cut waste, keep more</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="grow-savings" onclick="pickGoal(this)">
+              <span class="ob-opt-icon">📈</span>
+              <span class="ob-opt-text"><b>Grow my savings/profit</b><small>Make every pound work harder</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="stay-on-track" onclick="pickGoal(this)">
+              <span class="ob-opt-icon">🎯</span>
+              <span class="ob-opt-text"><b>Stay on track daily</b><small>Accountability, streaks, habits</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+          </div>
+          <button class="ob-next-btn" id="ob-next-2" onclick="goObStep(3)" disabled>Continue →</button>
         </div>
 
-        <!-- Login Form -->
-        <div class="auth-form active" id="form-login">
-          <div class="auth-field-wrap">
-            <label class="auth-label">Email</label>
-            <div class="auth-input-row">
-              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
-              <input type="email" class="auth-input" id="login-email" placeholder="you@example.com" autocomplete="email" />
-            </div>
+        <!-- STEP 3 — Income -->
+        <div class="ob-slide" id="ob-3">
+          <div class="ob-hero">💬</div>
+          <div class="ob-text">
+            <h2 class="ob-title">How do you prefer to log?</h2>
+            <p class="ob-sub">Imperium adapts to how you naturally track money.</p>
           </div>
-          <div class="auth-field-wrap">
-            <label class="auth-label">Password</label>
-            <div class="auth-input-row">
-              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-              <input type="password" class="auth-input" id="login-password" placeholder="Enter password" autocomplete="current-password" />
-              <button class="auth-eye-btn" onclick="togglePassword('login-password', this)" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
-            </div>
+          <div class="ob-options">
+            <button class="ob-opt" data-v="0" onclick="pickIncome(this)">
+              <span class="ob-opt-icon">🎙️</span>
+              <span class="ob-opt-text"><b>By voice</b><small>Just say what you spent or earned</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="1000" onclick="pickIncome(this)">
+              <span class="ob-opt-icon">⌨️</span>
+              <span class="ob-opt-text"><b>By typing</b><small>Quick messages to the AI</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="5000" onclick="pickIncome(this)">
+              <span class="ob-opt-icon">📋</span>
+              <span class="ob-opt-text"><b>Manual form</b><small>Prefer filling in details</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
+            <button class="ob-opt" data-v="15000" onclick="pickIncome(this)">
+              <span class="ob-opt-icon">🔄</span>
+              <span class="ob-opt-text"><b>Whatever's fastest</b><small>Just make it easy</small></span>
+              <span class="ob-opt-check">✓</span>
+            </button>
           </div>
-          <button class="auth-forgot" onclick="showAuthMessage('Reset link sent to your email!')">Forgot password?</button>
-          <button class="btn-primary auth-submit-btn" onclick="handleLogin()">
-            <span>Log In</span><span class="auth-btn-arrow">→</span>
-          </button>
-          <div class="auth-or"><span>or continue with</span></div>
-          <button class="auth-social-btn" onclick="handleSocialAuth('Google')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Continue with Google
-          </button>
-          <button class="auth-social-btn" onclick="handleSocialAuth('Apple')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.33-3.14-2.57C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> Continue with Apple
-          </button>
+          <button class="ob-next-btn ob-next-final" id="ob-next-3" onclick="finishOnboarding()" disabled>Activate My AI →</button>
         </div>
 
-        <!-- Sign Up Form -->
-        <div class="auth-form" id="form-signup">
-          <div class="auth-field-wrap">
-            <label class="auth-label">Full Name</label>
-            <div class="auth-input-row">
-              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-              <input type="text" class="auth-input" id="signup-name" placeholder="Your name" autocomplete="name" />
-            </div>
-          </div>
-          <div class="auth-field-wrap">
-            <label class="auth-label">Email</label>
-            <div class="auth-input-row">
-              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg></span>
-              <input type="email" class="auth-input" id="signup-email" placeholder="you@example.com" autocomplete="email" />
-            </div>
-          </div>
-          <div class="auth-field-wrap">
-            <label class="auth-label">Password</label>
-            <div class="auth-input-row">
-              <span class="auth-input-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-              <input type="password" class="auth-input" id="signup-password" placeholder="Min 8 characters" autocomplete="new-password" />
-              <button class="auth-eye-btn" onclick="togglePassword('signup-password', this)" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
-            </div>
-          </div>
-          <p class="auth-terms">By signing up you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a></p>
-          <button class="btn-primary auth-submit-btn" onclick="handleSignup()">
-            <span>Create Account</span><span class="auth-btn-arrow">→</span>
-          </button>
-          <div class="auth-or"><span>or continue with</span></div>
-          <button class="auth-social-btn" onclick="handleSocialAuth('Google')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Continue with Google
-          </button>
-          <button class="auth-social-btn" onclick="handleSocialAuth('Apple')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.33-3.14-2.57C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg> Continue with Apple
-          </button>
+      </div><!-- /ob-slides -->
+    </div><!-- /ob-shell -->
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       HOME — VOICE BOT HUB
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="screen-home">
+    <canvas id="beams-canvas"></canvas>
+    <canvas id="dotted-glow-canvas"></canvas>
+    <div class="home-bot-shell">
+
+      <!-- Top row -->
+      <div class="home-top-row">
+        <div class="home-greeting-col">
+          <div class="home-greeting" id="greeting">Good morning</div>
+          <div class="home-date" id="top-date"></div>
         </div>
-
-        <!-- Guest Form -->
-        <div class="auth-form" id="form-guest">
-          <div class="guest-hero">
-            <div class="guest-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-            <h3 class="guest-title">Try Before You Commit</h3>
-            <p class="guest-desc">Do one full daily review, see your AI analysis, and decide if it's worth creating an account.</p>
+        <div class="home-top-right">
+          <div class="home-xp-chip" id="home-xp-chip" onclick="navigateTo('screen-settings')">
+            <span class="home-xp-lvl" id="home-xp-lvl">Lv 1</span>
+            <div class="home-xp-bar-wrap"><div class="home-xp-bar" id="home-xp-bar"></div></div>
           </div>
-          <div class="guest-limit-info">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span>Guest mode limited to 3 days of history</span>
-          </div>
-          <div class="guest-perks">
-            <div class="guest-perk"><svg class="perk-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Full AI analysis</div>
-            <div class="guest-perk"><svg class="perk-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Daily review session</div>
-            <div class="guest-perk"><svg class="perk-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Missions &amp; scoring</div>
-            <div class="guest-perk"><svg class="perk-warn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Progress not saved</div>
-          </div>
-          <button class="btn-primary auth-submit-btn" onclick="continueAsGuest()">
-            <span>Enter as Guest</span><span class="auth-btn-arrow">→</span>
+          <button class="cmd-btn" id="cmd-btn" onclick="openCommand()" title="Command Palette">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </button>
-          <button class="auth-social-btn" onclick="switchAuthTab('signup')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg> Create a free account instead
-          </button>
-        </div>
-
-        <!-- Auth message toast -->
-        <div class="auth-toast hidden" id="auth-toast"></div>
-
-        <!-- Footer credits -->
-        <div class="auth-credits-footer">
-          <span class="credits-label">Founded by</span>
-          <span class="credits-name-footer">Sanskaar</span>
-          <span class="credits-label" style="margin-top:2px">Co-founded by</span>
-          <span class="credits-name-footer">Kashish Devnani</span>
         </div>
       </div>
+
+      <!-- Orb section -->
+      <div class="home-orb-zone">
+        <div class="home-orb-wrap" id="home-orb-wrap">
+          <div class="home-orb-ring r3"></div>
+          <div class="home-orb-ring r2"></div>
+          <div class="home-orb-ring r1"></div>
+          <button class="home-orb-btn" id="home-orb-btn" onclick="toggleHomeVoice()">
+            <svg id="home-orb-icon" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+        <div class="home-orb-label" id="home-orb-label">Tap to speak · or type below</div>
+        <div class="home-orb-hint" id="home-orb-hint">"Spent $40 on groceries" · "Got paid $500" · "How am I doing?"</div>
+      </div>
+
+      <!-- Day log strip -->
+      <div class="day-log-strip" id="day-log-strip">
+        <div class="day-log-label">Today I…</div>
+        <div class="day-log-chips">
+          <button class="day-chip" data-act="studied" onclick="logDayActivity(this)">📚 Studied</button>
+          <button class="day-chip" data-act="worked-out" onclick="logDayActivity(this)">💪 Gym</button>
+          <button class="day-chip" data-act="worked" onclick="logDayActivity(this)">💼 Worked</button>
+          <button class="day-chip" data-act="built" onclick="logDayActivity(this)">🔨 Built</button>
+          <button class="day-chip" data-act="social-media" onclick="logDayActivity(this)">📱 Social media</button>
+          <button class="day-chip" data-act="idea" onclick="logDayActivity(this)">💡 Had an idea</button>
+          <button class="day-chip" data-act="earned" onclick="logDayActivity(this)">💰 Earned</button>
+          <button class="day-chip" data-act="wasted" onclick="logDayActivity(this)">😑 Wasted time</button>
+        </div>
+      </div>
+
+      <!-- Chat feed -->
+      <div class="home-chat-feed" id="home-chat-feed"></div>
+
+      <!-- Input row -->
+      <div class="home-input-area">
+        <div class="home-input-row">
+          <input class="home-input" id="home-input" placeholder="Log a transaction or ask anything…" autocomplete="off"
+            onkeydown="if(event.key==='Enter') homeChat()"/>
+          <button class="home-send-btn" onclick="homeChat()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <!-- Quick pill actions -->
+        <div class="home-pills-row">
+          <button class="home-pill" onclick="homeChat('Show me this month summary')">📊 Summary</button>
+          <button class="home-pill" onclick="homeChat('What did I spend most on?')">💸 Top spend</button>
+          <button class="home-pill" onclick="homeChat('Am I on track this month?')">🎯 On track?</button>
+          <button class="home-pill" onclick="navigateTo('screen-brain')">🧠 Brain</button>
+        </div>
+      </div>
+
     </div>
+  </div>
 
-    <!-- ═══════════════════════════════════════════
-         SCREEN 1 — ONBOARDING
-    ════════════════════════════════════════════ -->
-    <div class="screen" id="screen-onboarding">
-      <div class="onboarding-wrap">
-        <!-- Logo -->
-        <div class="brand-logo">
-          <span class="logo-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-          <h1 class="brand-name">Imperium</h1>
-          <p class="brand-tagline">Your Daily Operating System</p>
+  <!-- ══════════════════════════════════════════
+       AI BRAIN
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="screen-brain">
+    <div class="screen-content has-nav">
+      <header class="page-header">
+        <h2 class="page-title">AI Brain</h2>
+        <p class="page-sub">Behavioural intelligence · Pattern detection · Forecasting</p>
+      </header>
+
+      <div class="brain-tabs">
+        <button class="brain-tab active" id="btab-pulse" onclick="switchBrainTab('pulse')">🧠 Pulse</button>
+        <button class="brain-tab" id="btab-patterns" onclick="switchBrainTab('patterns')">📊 Patterns</button>
+        <button class="brain-tab" id="btab-behaviour" onclick="switchBrainTab('behaviour')">🔬 Behaviour</button>
+        <button class="brain-tab" id="btab-chat" onclick="switchBrainTab('chat')">💬 Chat</button>
+      </div>
+
+      <!-- PULSE PANEL -->
+      <div class="brain-panel active" id="bpanel-pulse">
+        <div class="brain-score-card glass-card" id="brain-score-card"></div>
+        <div class="brain-alerts" id="brain-alerts"></div>
+        <div class="brain-nudges" id="brain-nudges"></div>
+      </div>
+
+      <!-- PATTERNS PANEL -->
+      <div class="brain-panel" id="bpanel-patterns">
+        <div class="pattern-list" id="pattern-list"></div>
+        <div class="chart-card glass-card">
+          <div class="chart-title">Weekly Money Pattern</div>
+          <div class="chart-wrap"><canvas id="brain-pattern-chart"></canvas></div>
         </div>
+        <div class="pattern-streak-row" id="pattern-streak-row"></div>
+      </div>
 
-        <!-- Step 1: Role -->
-        <div class="onboarding-step active" id="ob-step-1">
-          <h2 class="ob-question">What best describes you?</h2>
-          <p class="ob-subtitle">This controls the language, missions, and benchmarks you see</p>
-          <div class="ob-cards">
-            <button class="ob-card" data-value="student" onclick="selectRole(this)">
-              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-              <span class="ob-card-label">Student</span>
-              <span class="ob-card-desc">Exams, learning, grades</span>
-            </button>
-            <button class="ob-card" data-value="founder" onclick="selectRole(this)">
-              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span>
-              <span class="ob-card-label">Founder / Builder</span>
-              <span class="ob-card-desc">Shipping, scaling, earning</span>
-            </button>
-            <button class="ob-card" data-value="sales" onclick="selectRole(this)">
-              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></span>
-              <span class="ob-card-label">Sales / Closer</span>
-              <span class="ob-card-desc">Deals, pipeline, income</span>
-            </button>
-            <button class="ob-card" data-value="creator" onclick="selectRole(this)">
-              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></span>
-              <span class="ob-card-label">Creator</span>
-              <span class="ob-card-desc">Content, audience, craft</span>
-            </button>
-          </div>
-          <button class="btn-primary ob-next hidden" id="ob-next-1" onclick="goToObStep2()">Continue →</button>
+      <!-- BEHAVIOUR PANEL -->
+      <div class="brain-panel" id="bpanel-behaviour">
+        <div class="behaviour-list" id="behaviour-list"></div>
+        <div class="study-cards" id="study-cards"></div>
+      </div>
+
+      <!-- CHAT PANEL -->
+      <div class="brain-panel" id="bpanel-chat">
+        <div class="brain-chat-feed" id="brain-chat-feed"></div>
+        <div class="brain-quick-qs" id="brain-quick-qs">
+          <button class="brain-q-chip" onclick="brainChat('What are my worst money habits?')">Worst habits</button>
+          <button class="brain-q-chip" onclick="brainChat('What pattern is hurting me most?')">Biggest pattern</button>
+          <button class="brain-q-chip" onclick="brainChat('Am I on track this month?')">On track?</button>
+          <button class="brain-q-chip" onclick="brainChat('What should I do differently next month?')">Next month</button>
+          <button class="brain-q-chip" onclick="brainChat('Where am I leaking money unconsciously?')">Money leaks</button>
         </div>
-
-        <!-- Step 2: Goal -->
-        <div class="onboarding-step" id="ob-step-2">
-          <h2 class="ob-question">What outcome do you want most in the next 30 days?</h2>
-          <p class="ob-subtitle">Every insight, mission, and score is calibrated to this</p>
-          <div class="ob-cards">
-            <button class="ob-card" data-value="money" onclick="selectGoal(this)">
-              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-              <span class="ob-card-label">Stop Wasting Money</span>
-              <span class="ob-card-desc">Track spending, find leaks, build capital</span>
-            </button>
-            <button class="ob-card" data-value="discipline" onclick="selectGoal(this)">
-              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-              <span class="ob-card-label">Consistent Routine</span>
-              <span class="ob-card-desc">Show up every day, no excuses</span>
-            </button>
-            <button class="ob-card" data-value="focus" onclick="selectGoal(this)">
-              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
-              <span class="ob-card-label">Deep Focus</span>
-              <span class="ob-card-desc">Ship real work, kill distractions</span>
-            </button>
-            <button class="ob-card" data-value="decisions" onclick="selectGoal(this)">
-              <span class="ob-card-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg></span>
-              <span class="ob-card-label">Better Decisions</span>
-              <span class="ob-card-desc">Think clearly, act fast, fewer regrets</span>
-            </button>
-          </div>
-          <button class="btn-primary ob-next hidden" id="ob-next-2" onclick="finishOnboarding()">Start My Journey →</button>
+        <div class="brain-chat-input-row">
+          <input class="brain-chat-input" id="brain-chat-input" placeholder="Ask the AI anything…" onkeydown="if(event.key==='Enter') brainChat()"/>
+          <button class="brain-mic-btn" id="brain-mic-btn" onclick="toggleBrainMic()">🎙</button>
+          <button class="brain-send-btn" onclick="brainChat()">→</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- ═══════════════════════════════════════════
-         SCREEN 2 — HOME DASHBOARD
-    ════════════════════════════════════════════ -->
-    <div class="screen" id="screen-home">
-      <div class="screen-content has-nav">
+  <!-- ══════════════════════════════════════════
+       DASHBOARD — PERFORMANCE SYSTEM
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="screen-dashboard">
+    <div class="screen-content has-nav">
 
-        <!-- Guest upgrade banner -->
-        <div class="guest-banner hidden" id="guest-banner">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span id="guest-banner-text">Guest mode — <strong id="guest-days-left">3 days</strong> remaining</span>
-          <button class="guest-banner-btn" onclick="skipToAuth()">Save Progress →</button>
+      <!-- STICKY HEADER -->
+      <div class="dash-header">
+        <div class="dash-header-left">
+          <span class="dash-level" id="dash-level">Lv 1</span>
+          <span class="dash-level-title" id="dash-level-title">Beginner</span>
         </div>
-
-        <!-- AI insight widget -->
-        <div class="insight-widget hidden" id="insight-widget">
-          <div class="insight-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </div>
-          <p class="insight-text" id="insight-text"></p>
+        <div class="dash-header-center">
+          <div class="dash-xp-bar-wrap"><div class="dash-xp-bar" id="dash-xp-bar"></div></div>
+          <span class="dash-xp-label" id="dash-xp-label">0 / 100 XP</span>
         </div>
-
-        <!-- Header -->
-        <header class="dash-header">
-          <div>
-            <p class="greeting" id="greeting-text">Good morning</p>
-            <h2 class="dash-title">Your Operating Score</h2>
-          </div>
-          <div class="header-right">
-            <div class="coins-badge">
-              <span class="coin-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a3.5 3.5 0 1 0 0 6H12"/><line x1="12" y1="7" x2="12" y2="17"/></svg></span>
-              <span id="coin-count">0</span>
-            </div>
-            <div class="level-badge" id="level-badge">Lv 1</div>
-          </div>
-        </header>
-
-        <!-- Daily Score Ring -->
-        <div class="score-ring-wrap">
-          <div class="score-ring">
-            <svg class="ring-svg" viewBox="0 0 120 120">
-              <defs>
-                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%"   stop-color="#60a5fa" />
-                  <stop offset="50%"  stop-color="#818cf8" />
-                  <stop offset="100%" stop-color="#f5e27a" />
-                </linearGradient>
-                <filter id="ringGlow">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
-              </defs>
-              <circle class="ring-bg" cx="60" cy="60" r="52" />
-              <circle class="ring-bg ring-bg-inner" cx="60" cy="60" r="44" />
-              <circle class="ring-progress" id="score-ring-circle" cx="60" cy="60" r="52"
-                stroke-dasharray="326.7" stroke-dashoffset="326.7" filter="url(#ringGlow)" />
-            </svg>
-            <div class="score-center">
-              <span class="score-number" id="daily-score">--</span>
-              <span class="score-label">Today's Score</span>
-            </div>
-          </div>
-          <p class="score-date" id="score-date"></p>
+        <div class="dash-header-right">
+          <span class="dash-streak" id="dash-streak">🔥 0</span>
         </div>
-
-        <!-- 4 Pillars -->
-        <div class="pillars-section">
-          <h3 class="section-title">Your 4 Pillars</h3>
-          <div class="pillars-grid">
-            <div class="pillar-card stagger-1">
-              <div class="pillar-header">
-                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-                <span class="pillar-name">Execution</span>
-                <span class="pillar-val" id="pillar-execution-val">0</span>
-              </div>
-              <div class="progress-bar-wrap">
-                <div class="progress-bar" id="pillar-execution" style="width:0%"></div>
-              </div>
-            </div>
-            <div class="pillar-card stagger-2">
-              <div class="pillar-header">
-                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg></span>
-                <span class="pillar-name">Reasoning</span>
-                <span class="pillar-val" id="pillar-reasoning-val">0</span>
-              </div>
-              <div class="progress-bar-wrap">
-                <div class="progress-bar reasoning" id="pillar-reasoning" style="width:0%"></div>
-              </div>
-            </div>
-            <div class="pillar-card stagger-3">
-              <div class="pillar-header">
-                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-                <span class="pillar-name">Focus</span>
-                <span class="pillar-val" id="pillar-focus-val">0</span>
-              </div>
-              <div class="progress-bar-wrap">
-                <div class="progress-bar focus" id="pillar-focus" style="width:0%"></div>
-              </div>
-            </div>
-            <div class="pillar-card stagger-4">
-              <div class="pillar-header">
-                <span class="pillar-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-                <span class="pillar-name">Financial</span>
-                <span class="pillar-val" id="pillar-financial-val">0</span>
-              </div>
-              <div class="progress-bar-wrap">
-                <div class="progress-bar financial" id="pillar-financial" style="width:0%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- First-Time User Guided Section -->
-        <div class="first-run-section" id="first-run-section">
-          <div class="first-run-card">
-            <h3 class="first-run-title">Complete your first daily review</h3>
-            <p class="first-run-sub">Takes about 2 minutes. Here's what you'll get:</p>
-            <div class="first-run-promises">
-              <div class="first-run-promise">
-                <span class="promise-icon">🎯</span>
-                <span>Your Operating Score across 4 pillars</span>
-              </div>
-              <div class="first-run-promise">
-                <span class="promise-icon">🧠</span>
-                <span>AI breakdown of your biggest mistake and thinking pattern</span>
-              </div>
-              <div class="first-run-promise">
-                <span class="promise-icon">⚡</span>
-                <span>Personalised missions for tomorrow</span>
-              </div>
-            </div>
-            <button class="btn-primary first-run-btn" onclick="navigateTo('screen-review')">
-              Start 2-Minute Review →
-            </button>
-            <p class="first-run-privacy">🔒 All data stays on this device. Nothing uploaded.</p>
-          </div>
-        </div>
-
-        <!-- Quick Stats -->
-        <div class="quick-stats">
-          <div class="stat-chip">
-            <span class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3.5-7.5C14 4 15 6 15 7.5c0 1.62-.73 2.64 0 4 .98 1.83 2 3 2 5A5 5 0 0 1 12 21a5 5 0 0 1-5-5c0-1.4.5-2.5 1.5-3.5z"/></svg></span>
-            <div>
-              <span class="stat-num" id="streak-count">0</span>
-              <span class="stat-lbl">Day Streak</span>
-            </div>
-          </div>
-          <div class="stat-chip">
-            <span class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
-            <div>
-              <span class="stat-num" id="missions-done">0/4</span>
-              <span class="stat-lbl">Missions</span>
-            </div>
-          </div>
-          <div class="stat-chip">
-            <span class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
-            <div>
-              <span class="stat-num" id="weekly-avg">--</span>
-              <span class="stat-lbl">Week Avg</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Review Button -->
-        <button class="btn-primary review-btn" onclick="navigateTo('screen-review')">
-          <svg class="btn-icon-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg> Start Daily Review • 2 min
-          <span class="btn-ripple"></span>
-        </button>
-
-        <!-- Voice Day Dump Card -->
-        <div class="voice-day-card glass-card" onclick="startVoiceDump()">
-          <div class="voice-day-header">
-            <div class="voice-day-orb" id="home-voice-orb">
-              <span class="voice-orb-icon" id="home-voice-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></span>
-            </div>
-            <div>
-              <h3 class="voice-day-title">Voice Entry</h3>
-              <p class="voice-day-sub">Tap to record — speak naturally, then AI asks follow-ups. Your data stays private.</p>
-            </div>
-          </div>
-          <div class="voice-day-preview hidden" id="voice-day-preview">
-            <p class="voice-day-transcript" id="voice-day-transcript"></p>
-          </div>
-        </div>
-
-        <!-- How It Works — Explainer -->
-        <div class="how-it-works-section">
-          <h3 class="section-title">How Your Daily Review Works</h3>
-          <div class="how-steps">
-            <div class="how-step">
-              <div class="how-step-icon" style="background: rgba(129,140,248,0.15); color: #818cf8;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              </div>
-              <div class="how-step-text">
-                <h4>1. Answer 7 Questions (voice or text)</h4>
-                <p>What you did, what you avoided, money in/out, time wasted, missed opportunities, discipline level</p>
-              </div>
-            </div>
-            <div class="how-step">
-              <div class="how-step-icon" style="background: rgba(52,211,153,0.15); color: #34d399;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              </div>
-              <div class="how-step-text">
-                <h4>2. AI Breaks Down Your Day</h4>
-                <p>Scored across Execution, Reasoning, Focus &amp; Financial — every insight cites your actual answers</p>
-              </div>
-            </div>
-            <div class="how-step">
-              <div class="how-step-icon" style="background: rgba(245,158,11,0.15); color: #f59e0b;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-              </div>
-              <div class="how-step-text">
-                <h4>3. Wake Up With a Plan</h4>
-                <p>Missions generated from your weak spots, not random challenges. Track improvement over time.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
+
+      <!-- SCORE CARD -->
+      <div class="dash-score-card glass-card" id="dash-score-card">
+        <div class="dash-score-num" id="dash-score">—</div>
+        <div class="dash-score-diag" id="dash-score-diag">Complete today's log to generate your score.</div>
+      </div>
+
+      <!-- ANALYSIS CARDS -->
+      <div class="dash-cards-stack" id="dash-cards-stack">
+        <div class="dash-card glass-card" id="dash-card-diagnosis">
+          <div class="dash-card-tag">DIAGNOSIS</div>
+          <div class="dash-card-body" id="dash-diagnosis-body">—</div>
+        </div>
+        <div class="dash-card glass-card" id="dash-card-leak">
+          <div class="dash-card-tag tag-red">LEAK</div>
+          <div class="dash-card-body" id="dash-leak-body">—</div>
+        </div>
+        <div class="dash-card glass-card" id="dash-card-missed">
+          <div class="dash-card-tag tag-yellow">MISSED OPPORTUNITY</div>
+          <div class="dash-card-body" id="dash-missed-body">—</div>
+        </div>
+        <div class="dash-card glass-card" id="dash-card-directive">
+          <div class="dash-card-tag tag-green">DIRECTIVE</div>
+          <div class="dash-card-body" id="dash-directive-body">—</div>
+        </div>
+        <div class="dash-card glass-card" id="dash-card-xp">
+          <div class="dash-card-tag tag-purple">XP FEEDBACK</div>
+          <div class="dash-card-body" id="dash-xp-body">—</div>
+        </div>
+      </div>
+
+      <!-- PATTERN DETECTION -->
+      <div class="dash-pattern-card glass-card hidden" id="dash-pattern-card">
+        <div class="dash-card-tag">PATTERN DETECTED</div>
+        <div class="dash-pattern-body" id="dash-pattern-body">—</div>
+        <div class="dash-card-tag tag-red" style="margin-top:8px">RISK</div>
+        <div class="dash-pattern-risk" id="dash-pattern-risk">—</div>
+        <div class="dash-card-tag tag-green" style="margin-top:8px">CORRECTION</div>
+        <div class="dash-pattern-fix" id="dash-pattern-fix">—</div>
+      </div>
+
+      <!-- DAILY INPUT SECTION -->
+      <div class="dash-input-section">
+        <div class="dash-input-title">LOG TODAY</div>
+
+        <div class="dash-input-group">
+          <label class="dash-label">Productivity</label>
+          <div class="dash-btn-row" id="dash-prod-row">
+            <button class="dash-opt-btn" data-val="low" onclick="dashPick('productivity',this)">Low</button>
+            <button class="dash-opt-btn" data-val="medium" onclick="dashPick('productivity',this)">Medium</button>
+            <button class="dash-opt-btn" data-val="high" onclick="dashPick('productivity',this)">High</button>
+          </div>
+        </div>
+
+        <div class="dash-input-group">
+          <label class="dash-label">Focus <span class="dash-focus-val" id="dash-focus-val">5</span>/10</label>
+          <input type="range" class="dash-slider" id="dash-focus" min="1" max="10" value="5" oninput="document.getElementById('dash-focus-val').textContent=this.value"/>
+        </div>
+
+        <div class="dash-input-group">
+          <label class="dash-label">Time wasted?</label>
+          <div class="dash-btn-row" id="dash-waste-row">
+            <button class="dash-opt-btn" data-val="yes" onclick="dashPick('wasted',this)">Yes</button>
+            <button class="dash-opt-btn" data-val="no" onclick="dashPick('wasted',this)">No</button>
+          </div>
+        </div>
+
+        <div class="dash-input-group">
+          <label class="dash-label">Idea generated?</label>
+          <div class="dash-btn-row" id="dash-idea-row">
+            <button class="dash-opt-btn" data-val="yes" onclick="dashPick('idea',this)">Yes</button>
+            <button class="dash-opt-btn" data-val="no" onclick="dashPick('idea',this)">No</button>
+          </div>
+        </div>
+
+        <div class="dash-input-group">
+          <label class="dash-label">Action taken on something important?</label>
+          <div class="dash-btn-row" id="dash-action-row">
+            <button class="dash-opt-btn" data-val="yes" onclick="dashPick('action',this)">Yes</button>
+            <button class="dash-opt-btn" data-val="no" onclick="dashPick('action',this)">No</button>
+          </div>
+        </div>
+
+        <div class="dash-input-group">
+          <label class="dash-label">Money spent today</label>
+          <div class="dash-money-row">
+            <span class="dash-money-sym">$</span>
+            <input type="number" class="dash-money-input" id="dash-money-amt" placeholder="0" inputmode="decimal" step="0.01" min="0"/>
+            <input type="text" class="dash-money-cat" id="dash-money-cat" placeholder="Category" maxlength="20"/>
+          </div>
+        </div>
+
+        <div class="dash-input-group">
+          <label class="dash-label">Add anything important</label>
+          <input type="text" class="dash-text-input" id="dash-extra" placeholder="Optional note…" maxlength="140"/>
+        </div>
+
+        <button class="btn-primary dash-submit magnetic" onclick="submitDailyLog()">Analyse My Day →</button>
+      </div>
+
+      <!-- AI GUIDED QUESTIONS -->
+      <div class="dash-ai-section" id="dash-ai-section">
+        <div class="dash-ai-title">AI DEBRIEF</div>
+        <div class="dash-ai-feed" id="dash-ai-feed"></div>
+        <div class="dash-ai-input-row hidden" id="dash-ai-input-row">
+          <input type="text" class="dash-ai-input" id="dash-ai-input" placeholder="Answer…" onkeydown="if(event.key==='Enter') answerDashAI()"/>
+          <button class="dash-ai-send" onclick="answerDashAI()">→</button>
+        </div>
+      </div>
+
     </div>
+  </div>
 
-    <!-- ═══════════════════════════════════════════
-         SCREEN 3 — DAILY REVIEW (CHAT)
-    ════════════════════════════════════════════ -->
-    <div class="screen" id="screen-review">
-      <div class="chat-header">
-        <button class="back-btn" onclick="navigateTo('screen-home')">‹</button>
-        <div class="chat-header-info">
-          <div class="ai-avatar" id="ai-avatar-wrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-          <div>
-            <p class="chat-name">Imperium AI</p>
-            <p class="chat-status" id="chat-status-text">Ready to analyse your day</p>
-          </div>
+  <!-- ══════════════════════════════════════════
+       TRACK
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="screen-track">
+    <div class="screen-content has-nav">
+      <header class="page-header">
+        <h2 class="page-title">Track Money</h2>
+        <p class="page-sub">Log by typing, voice, or receipt scan</p>
+      </header>
+
+      <!-- VOICE LOG BANNER -->
+      <div class="voice-log-banner glass-card" id="voice-banner">
+        <div class="vlb-left">
+          <div class="vlb-title">🎙️ Speak to Log</div>
+          <div class="vlb-sub" id="voice-hint">"Spent $12 on coffee" or "Got paid $500 from client"</div>
         </div>
-        <div class="chat-header-spacer"></div>
-      </div>
-
-      <div class="chat-messages" id="chat-messages"></div>
-
-      <div class="chat-input-wrap" id="chat-input-wrap">
-        <!-- Quick-reply option buttons -->
-        <div class="chat-options" id="chat-options"></div>
-
-        <!-- Text input row — ALWAYS VISIBLE -->
-        <div class="chat-text-input" id="chat-text-row">
-          <input type="text" id="chat-text-field"
-            placeholder="Type your answer…"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="true" />
-          <button class="send-btn" id="chat-send-btn" onclick="sendTextAnswer()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════
-         SCREEN 4 — RESULTS
-    ════════════════════════════════════════════ -->
-    <div class="screen" id="screen-results">
-      <div class="screen-content has-nav">
-        <header class="results-header">
-          <button class="back-btn ghost" onclick="navigateTo('screen-home')">‹ Home</button>
-          <h2 class="results-title">Today's Analysis</h2>
-          <div></div>
-        </header>
-
-        <!-- Score Banner -->
-        <div class="results-score-banner">
-          <div class="results-score-inner">
-            <span class="results-score-num" id="result-score-num">--</span>
-            <span class="results-score-lbl">Operating Score</span>
-          </div>
-          <div class="results-score-trend" id="result-trend"></div>
-        </div>
-
-        <!-- Skill Breakdown Visual -->
-        <div class="skill-breakdown-card" id="skill-breakdown-card">
-          <h3 class="skill-breakdown-title">Your Daily Breakdown</h3>
-          <p class="skill-breakdown-sub">How your answers mapped to each pillar — every score is based on what you told us</p>
-          <div class="skill-bars">
-            <div class="skill-bar-row">
-              <div class="skill-bar-label">
-                <span class="skill-bar-icon" style="background: rgba(96,165,250,0.15); color: #60a5fa;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-                <span>Execution</span>
-              </div>
-              <div class="skill-bar-track"><div class="skill-bar-fill speed-fill" id="skill-bar-execution" style="width:0%"></div></div>
-              <span class="skill-bar-val" id="skill-val-execution">0</span>
-            </div>
-            <div class="skill-bar-row">
-              <div class="skill-bar-label">
-                <span class="skill-bar-icon" style="background: rgba(168,85,247,0.15); color: #a855f7;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg></span>
-                <span>Reasoning</span>
-              </div>
-              <div class="skill-bar-track"><div class="skill-bar-fill reasoning-fill" id="skill-bar-reasoning" style="width:0%"></div></div>
-              <span class="skill-bar-val" id="skill-val-reasoning">0</span>
-            </div>
-            <div class="skill-bar-row">
-              <div class="skill-bar-label">
-                <span class="skill-bar-icon" style="background: rgba(20,184,166,0.15); color: #14b8a6;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-                <span>Focus</span>
-              </div>
-              <div class="skill-bar-track"><div class="skill-bar-fill focus-fill" id="skill-bar-focus" style="width:0%"></div></div>
-              <span class="skill-bar-val" id="skill-val-focus">0</span>
-            </div>
-            <div class="skill-bar-row">
-              <div class="skill-bar-label">
-                <span class="skill-bar-icon" style="background: rgba(212,175,55,0.15); color: #d4af37;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-                <span>Financial</span>
-              </div>
-              <div class="skill-bar-track"><div class="skill-bar-fill knowledge-fill" id="skill-bar-financial" style="width:0%"></div></div>
-              <span class="skill-bar-val" id="skill-val-financial">0</span>
-            </div>
-          </div>
-          <!-- Input summary cards -->
-          <div class="input-summary" id="input-summary"></div>
-        </div>
-
-        <!-- Result Cards -->
-        <div class="result-cards" id="result-cards">
-          <div class="result-card mistake-card">
-            <div class="result-card-header">
-              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
-              <h3>Biggest Mistake</h3>
-            </div>
-            <p class="result-body" id="res-mistake">Complete your daily review to see insights.</p>
-          </div>
-
-          <div class="result-card money-card">
-            <div class="result-card-header">
-              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
-              <h3>Money Impact</h3>
-            </div>
-            <p class="result-body" id="res-money">—</p>
-          </div>
-
-          <div class="result-card thinking-card">
-            <div class="result-card-header">
-              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
-              <h3>Thinking Pattern</h3>
-            </div>
-            <p class="result-body" id="res-thinking">—</p>
-          </div>
-
-          <div class="result-card missed-card">
-            <div class="result-card-header">
-              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
-              <h3>Missed Opportunity</h3>
-            </div>
-            <p class="result-body" id="res-missed">—</p>
-          </div>
-
-          <div class="result-card fix-card">
-            <div class="result-card-header">
-              <span class="result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
-              <h3>Fix for Tomorrow</h3>
-            </div>
-            <ul class="result-fixes" id="res-fixes">
-              <li>—</li>
-            </ul>
-          </div>
-        </div>
-
-        <button class="btn-primary" onclick="navigateTo('screen-missions')" style="margin:1.5rem 0 0.5rem">
-          View Today's Missions →
+        <button class="mic-btn" id="mic-btn" onclick="toggleVoiceLog()">
+          <svg class="mic-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
         </button>
       </div>
-    </div>
 
-    <!-- ═══════════════════════════════════════════
-         SCREEN 5 — MISSIONS
-    ════════════════════════════════════════════ -->
-    <div class="screen" id="screen-missions">
-      <div class="screen-content has-nav">
-        <header class="section-header-row">
-          <h2 class="page-title">Daily Missions</h2>
-          <div class="coins-badge">
-            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a3.5 3.5 0 1 0 0 6H12"/><line x1="12" y1="7" x2="12" y2="17"/></svg></span>
-            <span id="missions-coin-count">0</span>
+      <div class="log-card glass-card">
+        <!-- TYPE TOGGLE -->
+        <div class="log-type-toggle">
+          <button class="log-type-btn active" id="logtype-expense" data-t="expense" onclick="switchLogType(this)">💸 Expense</button>
+          <button class="log-type-btn" id="logtype-income" data-t="income" onclick="switchLogType(this)">💰 Income</button>
+        </div>
+
+        <!-- AMOUNT -->
+        <div class="amount-row">
+          <span class="amount-sym" id="amount-sym">$</span>
+          <input type="number" id="tx-amount" class="amount-big" placeholder="0" inputmode="decimal" step="0.01" min="0"/>
+        </div>
+
+        <!-- CATEGORIES -->
+        <div id="cat-grid-wrap">
+          <div class="cat-pills">
+            <button class="cat-btn selected" data-c="food" onclick="pickCat(this)">🍔 Food</button>
+            <button class="cat-btn" data-c="coffee" onclick="pickCat(this)">☕ Coffee</button>
+            <button class="cat-btn" data-c="transport" onclick="pickCat(this)">🚗 Transport</button>
+            <button class="cat-btn" data-c="shopping" onclick="pickCat(this)">🛍️ Shopping</button>
+            <button class="cat-btn" data-c="groceries" onclick="pickCat(this)">🛒 Groceries</button>
+            <button class="cat-btn" data-c="bills" onclick="pickCat(this)">📄 Bills</button>
+            <button class="cat-btn" data-c="entertainment" onclick="pickCat(this)">🎬 Fun</button>
+            <button class="cat-btn" data-c="health" onclick="pickCat(this)">💊 Health</button>
+            <button class="cat-btn" data-c="subscription" onclick="pickCat(this)">🔄 Subs</button>
+            <button class="cat-btn" data-c="tools" onclick="pickCat(this)">🛠️ Tools</button>
+            <button class="cat-btn" data-c="ads" onclick="pickCat(this)">📢 Ads</button>
+            <button class="cat-btn" data-c="other" onclick="pickCat(this)">📌 Other</button>
           </div>
-        </header>
-        <p class="page-sub">Based on yesterday's weakest areas — not random challenges</p>
-
-        <!-- Missions List -->
-        <div class="missions-list" id="missions-list">
-          <div class="mission-item" id="mission-execution" data-pillar="execution">
-            <div class="mission-check" onclick="completeMission('execution')">
-              <div class="check-circle" id="check-execution"></div>
-            </div>
-            <div class="mission-info">
-              <span class="mission-pillar speed-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Execution</span>
-              <p class="mission-task" id="mission-execution-task">Ship one deliverable before noon</p>
-            </div>
-            <span class="mission-coins">+15 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
-          </div>
-
-          <div class="mission-item" id="mission-reasoning" data-pillar="reasoning">
-            <div class="mission-check" onclick="completeMission('reasoning')">
-              <div class="check-circle" id="check-reasoning"></div>
-            </div>
-            <div class="mission-info">
-              <span class="mission-pillar reasoning-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg> Reasoning</span>
-              <p class="mission-task" id="mission-reasoning-task">Write down one decision you'd make differently and why</p>
-            </div>
-            <span class="mission-coins">+15 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
-          </div>
-
-          <div class="mission-item" id="mission-focus" data-pillar="focus">
-            <div class="mission-check" onclick="completeMission('focus')">
-              <div class="check-circle" id="check-focus"></div>
-            </div>
-            <div class="mission-info">
-              <span class="mission-pillar focus-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Focus</span>
-              <p class="mission-task" id="mission-focus-task">Work 60 minutes uninterrupted on your #1 priority</p>
-            </div>
-            <span class="mission-coins">+15 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
-          </div>
-
-          <div class="mission-item stretch-mission" id="mission-financial" data-pillar="financial">
-            <div class="mission-check" onclick="completeMission('financial')">
-              <div class="check-circle" id="check-financial"></div>
-            </div>
-            <div class="mission-info">
-              <span class="mission-pillar financial-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Financial</span>
-              <span class="stretch-badge">🌟 Stretch</span>
-              <p class="mission-task" id="mission-financial-task">Track every dollar spent today and find one cut</p>
-            </div>
-            <span class="mission-coins">+25 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
+        </div>
+        <div id="income-source-wrap" class="hidden">
+          <div class="cat-pills">
+            <button class="cat-btn selected" data-c="freelance" onclick="pickCat(this)">💻 Freelance</button>
+            <button class="cat-btn" data-c="client" onclick="pickCat(this)">🤝 Client</button>
+            <button class="cat-btn" data-c="product" onclick="pickCat(this)">📦 Product</button>
+            <button class="cat-btn" data-c="salary" onclick="pickCat(this)">🏦 Salary</button>
+            <button class="cat-btn" data-c="investment" onclick="pickCat(this)">📈 Investment</button>
+            <button class="cat-btn" data-c="other" onclick="pickCat(this)">📌 Other</button>
           </div>
         </div>
 
-        <!-- Bonus Banner -->
-        <div class="bonus-banner" id="bonus-banner">
-          <span class="bonus-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
-          <div>
-            <p class="bonus-title">All missions complete!</p>
-            <p class="bonus-sub">+50 bonus coins earned</p>
+        <!-- NOTE -->
+        <input type="text" id="tx-note" class="note-input" placeholder="Note (optional)…" autocomplete="off"/>
+
+        <!-- CARD TRACKING -->
+        <div class="card-track-section" id="card-track-section">
+          <div class="card-track-toggle" onclick="toggleCardTrack()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            <span>Add card / due date</span>
+            <span class="card-track-arrow" id="card-track-arrow">›</span>
           </div>
-          <span class="bonus-coins">+50 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5"><circle cx="12" cy="12" r="10"/></svg></span>
-        </div>
-
-        <!-- Coin Animation -->
-        <div class="coin-burst" id="coin-burst"></div>
-      </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════
-         SCREEN 6 — PROGRESS
-    ════════════════════════════════════════════ -->
-    <div class="screen" id="screen-progress">
-      <div class="screen-content has-nav">
-        <header class="section-header-row">
-          <h2 class="page-title">Progress</h2>
-          <div class="level-coin-row">
-            <div class="level-badge big" id="progress-level">Lv 1</div>
-            <div class="coins-badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M14.5 9a3.5 3.5 0 1 0 0 6H12"/><line x1="12" y1="7" x2="12" y2="17"/></svg>
-              <span id="progress-coins">0</span>
+          <div class="card-track-fields hidden" id="card-fields">
+            <div class="card-fields-row">
+              <input type="text" id="card-name" class="card-input" placeholder="Card name (e.g. HDFC, Amex)" autocomplete="off" maxlength="24"/>
+              <input type="text" id="card-last4" class="card-input card-last4" placeholder="Last 4" inputmode="numeric" maxlength="4"/>
             </div>
-          </div>
-        </header>
-
-        <!-- Stats Row -->
-        <div class="progress-stats-row">
-          <div class="progress-stat-card">
-            <span class="p-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3.5-7.5C14 4 15 6 15 7.5c0 1.62-.73 2.64 0 4 .98 1.83 2 3 2 5A5 5 0 0 1 12 21a5 5 0 0 1-5-5c0-1.4.5-2.5 1.5-3.5z"/></svg></span>
-            <span class="p-stat-num" id="prog-streak">0</span>
-            <span class="p-stat-lbl">Streak</span>
-          </div>
-          <div class="progress-stat-card">
-            <span class="p-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></span>
-            <span class="p-stat-num" id="prog-avg">--</span>
-            <span class="p-stat-lbl">Avg Score</span>
-          </div>
-          <div class="progress-stat-card">
-            <span class="p-stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>
-            <span class="p-stat-num" id="prog-missions">0</span>
-            <span class="p-stat-lbl">Missions</span>
-          </div>
-        </div>
-
-        <!-- Score Chart -->
-        <div class="chart-card">
-          <h3 class="chart-title">Weekly Score</h3>
-          <div class="chart-wrap">
-            <canvas id="score-chart"></canvas>
-          </div>
-        </div>
-
-        <!-- Money Chart -->
-        <div class="chart-card">
-          <h3 class="chart-title">Money Behaviour</h3>
-          <div class="chart-wrap">
-            <canvas id="money-chart"></canvas>
-          </div>
-        </div>
-
-        <!-- Pillar Breakdown -->
-        <div class="chart-card">
-          <h3 class="chart-title">Pillar Breakdown</h3>
-          <div class="pillar-breakdown" id="pillar-breakdown-prog">
-            <div class="pb-row">
-              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Execution</span>
-              <div class="pb-bar-wrap"><div class="pb-bar speed-bar" id="pb-execution" style="width:0%"></div></div>
-              <span class="pb-val" id="pb-execution-val">0</span>
-            </div>
-            <div class="pb-row">
-              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg> Reasoning</span>
-              <div class="pb-bar-wrap"><div class="pb-bar reasoning-bar" id="pb-reasoning" style="width:0%"></div></div>
-              <span class="pb-val" id="pb-reasoning-val">0</span>
-            </div>
-            <div class="pb-row">
-              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> Focus</span>
-              <div class="pb-bar-wrap"><div class="pb-bar focus-bar" id="pb-focus" style="width:0%"></div></div>
-              <span class="pb-val" id="pb-focus-val">0</span>
-            </div>
-            <div class="pb-row">
-              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Financial</span>
-              <div class="pb-bar-wrap"><div class="pb-bar financial-bar" id="pb-financial" style="width:0%"></div></div>
-              <span class="pb-val" id="pb-financial-val">0</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════
-         SCREEN 7 — PROFILE / SETTINGS
-    ════════════════════════════════════════════ -->
-    <div class="screen" id="screen-profile">
-      <div class="screen-content has-nav">
-
-        <!-- Profile Header -->
-        <div class="profile-hero">
-          <div class="profile-avatar">
-            <span id="profile-avatar-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 3.4 2.1 6.3 5 7.4V20h6v-2.6c2.9-1.1 5-4 5-7.4a8 8 0 0 0-8-8z"/><line x1="10" y1="22" x2="14" y2="22"/></svg></span>
-          </div>
-          <h2 class="profile-name" id="profile-user-type">Imperium User</h2>
-          <p class="profile-goal" id="profile-user-goal">Goal: —</p>
-          <div class="profile-badges">
-            <span class="badge gold" id="profile-level-badge">Level 1</span>
-            <span class="badge blue" id="profile-coins-badge">0 🪙</span>
-            <span class="badge green" id="profile-streak-badge">0 🔥 Streak</span>
-          </div>
-        </div>
-
-        <!-- Settings Cards -->
-        <div class="settings-section">
-          <h3 class="settings-heading">Notifications</h3>
-          <div class="settings-card">
-            <div class="setting-row">
-              <div class="setting-info">
-                <span class="setting-label">Daily Review Reminder</span>
-                <span class="setting-desc">Every evening at 9 PM</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="notif-review" checked />
-                <span class="toggle-thumb"></span>
+            <div class="card-fields-row">
+              <label class="card-due-label">
+                <span>Due date</span>
+                <input type="date" id="card-due" class="card-input card-due-input"/>
               </label>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <span class="setting-label">Mission Alerts</span>
-                <span class="setting-desc">Morning reminders for daily missions</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="notif-missions" checked />
-                <span class="toggle-thumb"></span>
-              </label>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <span class="setting-label">Streak Protection</span>
-                <span class="setting-desc">Alert before midnight if streak at risk</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="notif-streak" />
-                <span class="toggle-thumb"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pro Upgrade -->
-        <div class="pro-card">
-          <div class="pro-card-top">
-            <div>
-              <h3 class="pro-title">Imperium Pro</h3>
-              <p class="pro-subtitle">For users who want deeper analysis</p>
-            </div>
-            <span class="pro-badge">PRO</span>
-          </div>
-          <ul class="pro-features">
-            <li>✦ Unlimited AI reviews per day</li>
-            <li>✦ Advanced spending pattern analysis</li>
-            <li>✦ Weekly strategy summary with trend insights</li>
-            <li>✦ Custom mission builder</li>
-            <li>✦ Export daily reports as PDF</li>
-          </ul>
-          <div class="pro-comparison">
-            <div class="compare-col">
-              <h4>Free</h4>
-              <ul><li>✓ 1 daily review</li><li>✓ 4-pillar scoring</li><li>✓ Daily missions</li><li>✓ 7-day history</li></ul>
-            </div>
-            <div class="compare-col pro-col">
-              <h4>Pro</h4>
-              <ul><li>✓ Unlimited reviews</li><li>✓ Deep spending analysis</li><li>✓ Weekly strategy AI</li><li>✓ Full history + export</li></ul>
-            </div>
-          </div>
-          <button class="btn-gold" onclick="showProModal()">Start Free Trial — $8/mo founding rate</button>
-          <p class="pro-note">First 100 members lock in $8/mo forever. Regular price $20/mo.</p>
-        </div>
-
-        <!-- Trust & Privacy -->
-        <div class="settings-section">
-          <h3 class="settings-heading">Privacy &amp; Data</h3>
-          <div class="settings-card">
-            <div class="setting-row">
-              <div class="setting-info">
-                <span class="setting-label">🔒 Data Storage</span>
-                <span class="setting-desc">All data stored locally on this device. Nothing uploaded to our servers.</span>
-              </div>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <span class="setting-label">🧠 How Scoring Works</span>
-                <span class="setting-desc">Your score is calculated from discipline, time usage, money behaviour, and task completion. Each pillar weighs your answers differently.</span>
-              </div>
-              <span class="setting-arrow">›</span>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <span class="setting-label">📤 Export My Data</span>
-                <span class="setting-desc">Download all your reviews, scores, and insights as JSON</span>
-              </div>
-              <span class="setting-arrow" onclick="exportData()">›</span>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <span class="setting-label">🚫 AI Data Usage</span>
-                <span class="setting-desc">Your answers are processed locally. We never train on your personal data.</span>
+              <div class="card-type-pills">
+                <button class="card-pill selected" data-ct="credit" onclick="pickCardType(this)">Credit</button>
+                <button class="card-pill" data-ct="debit" onclick="pickCardType(this)">Debit</button>
+                <button class="card-pill" data-ct="upi" onclick="pickCardType(this)">UPI</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- App Info -->
-        <div class="settings-section">
-          <h3 class="settings-heading">App</h3>
-          <div class="settings-card">
-            <div class="setting-row" onclick="resetApp()">
-              <div class="setting-info">
-                <span class="setting-label danger">Reset All Data</span>
-                <span class="setting-desc">Clear your history and start fresh</span>
-              </div>
-              <span class="setting-arrow">›</span>
-            </div>
-            <div class="setting-row">
-              <div class="setting-info">
-                <span class="setting-label">Version</span>
-                <span class="setting-desc">Imperium v1.0.0</span>
-              </div>
-            </div>
+        <!-- RECEIPT -->
+        <div class="receipt-row">
+          <label class="receipt-snap" onclick="document.getElementById('receipt-file').click()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            Snap Receipt
+          </label>
+          <button class="scan-receipt-btn" id="scan-receipt-btn" onclick="scanReceiptOCR()" title="Auto-scan amount from receipt">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+            Scan & Fill
+          </button>
+          <input type="file" id="receipt-file" accept="image/*" capture="environment" onchange="handleReceipt(event)" hidden/>
+        </div>
+        <div class="receipt-thumb hidden" id="receipt-thumb">
+          <img id="receipt-img" alt="receipt"/>
+          <div class="receipt-thumb-info">
+            <span class="receipt-thumb-name" id="receipt-thumb-name">Receipt attached</span>
+            <span class="receipt-scan-status" id="receipt-scan-status"></span>
           </div>
+          <button class="receipt-rm" onclick="rmReceipt()">✕</button>
         </div>
 
+        <button class="btn-primary log-save-btn magnetic" onclick="saveTransaction()">Save →</button>
+      </div>
+
+      <!-- DUE DATES SECTION -->
+      <div class="section-label-row" style="margin-top:24px" id="due-dates-header">
+        <span class="section-label">Upcoming Due Dates</span>
+      </div>
+      <div class="due-dates-feed" id="due-dates-feed"></div>
+
+      <div class="section-label-row" style="margin-top:16px">
+        <span class="section-label">All Transactions</span>
+        <span class="tx-count" id="tx-count">0</span>
+      </div>
+      <div class="tx-feed full-feed" id="tx-feed-full">
+        <div class="tx-empty">No transactions yet.</div>
       </div>
     </div>
+  </div>
 
-    <!-- ═══════════════════════════════════════════
-         BOTTOM NAV
-    ════════════════════════════════════════════ -->
-    <nav class="bottom-nav" id="bottom-nav">
-      <button class="nav-item active" onclick="navigateTo('screen-home')" id="nav-home">
-        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 14 15 14 15 21"/></svg></span>
-        <span class="nav-label">Home</span>
-      </button>
-      <button class="nav-item" onclick="navigateTo('screen-missions')" id="nav-missions">
-        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-        <span class="nav-label">Missions</span>
-      </button>
-      <button class="nav-item" onclick="navigateTo('screen-results')" id="nav-results">
-        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></span>
-        <span class="nav-label">Results</span>
-      </button>
-      <button class="nav-item" onclick="navigateTo('screen-progress')" id="nav-progress">
-        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
-        <span class="nav-label">Progress</span>
-      </button>
-      <button class="nav-item" onclick="navigateTo('screen-profile')" id="nav-profile">
-        <span class="nav-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-        <span class="nav-label">Profile</span>
-      </button>
-    </nav>
+  <!-- ══════════════════════════════════════════
+       INSIGHTS
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="screen-insights">
+    <div class="screen-content has-nav">
+      <header class="page-header">
+        <h2 class="page-title">🧠 AI Insights</h2>
+        <p class="page-sub">Deep intelligence on your money</p>
+      </header>
 
-    <!-- ═══════════════════════════════════════════
-         PRO MODAL
-    ════════════════════════════════════════════ -->
-    <div class="modal-overlay hidden" id="pro-modal" onclick="closeProModal()">
-      <div class="modal-sheet" onclick="event.stopPropagation()">
-        <div class="modal-handle"></div>
-        <div class="modal-icon">✦</div>
-        <h2 class="modal-title">Imperium Pro</h2>
-        <p class="modal-desc">Deeper analysis. Full history. Weekly strategy.</p>
-        <div class="modal-plans">
-          <div class="plan-card selected">
-            <span class="plan-label">Founding Monthly</span>
-            <span class="plan-price">$8</span>
-            <span class="plan-period">/month</span>
-            <span class="plan-save">60% off</span>
+      <!-- INSIGHT TABS -->
+      <div class="ins-tabs">
+        <button class="ins-tab active" id="itab-overview"  onclick="switchInsTab('overview')">Overview</button>
+        <button class="ins-tab" id="itab-spending" onclick="switchInsTab('spending')">Spending</button>
+        <button class="ins-tab" id="itab-income"   onclick="switchInsTab('income')">Income</button>
+        <button class="ins-tab" id="itab-forecast" onclick="switchInsTab('forecast')">Forecast</button>
+      </div>
+
+      <!-- ── OVERVIEW TAB ── -->
+      <div class="ins-panel active" id="ipanel-overview">
+
+        <!-- HEALTH SCORE -->
+        <div class="health-card glass-card" id="health-card">
+          <div class="health-ring-wrap">
+            <svg class="health-ring" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" class="ring-track"/>
+              <circle cx="50" cy="50" r="42" class="ring-fill" id="health-ring-fill" stroke-dasharray="263.9" stroke-dashoffset="263.9"/>
+            </svg>
+            <div class="health-center">
+              <span class="health-score" id="health-score">—</span>
+              <span class="health-lbl">Health</span>
+            </div>
           </div>
-          <div class="plan-card">
-            <span class="plan-label">Founding Yearly</span>
-            <span class="plan-price">$72</span>
-            <span class="plan-period">/year</span>
-            <span class="plan-save">Save 25%</span>
+          <div class="health-breakdown">
+            <div class="hb-row"><span class="hb-dot" style="background:#10b981"></span><span class="hb-name">Profit Margin</span><span class="hb-val" id="hb-margin">—</span></div>
+            <div class="hb-row"><span class="hb-dot" style="background:#3b82f6"></span><span class="hb-name">Runway</span><span class="hb-val" id="hb-runway">—</span></div>
+            <div class="hb-row"><span class="hb-dot" style="background:#f59e0b"></span><span class="hb-name">Burn Rate</span><span class="hb-val" id="hb-burn">—</span></div>
+            <div class="hb-row"><span class="hb-dot" style="background:#a855f7"></span><span class="hb-name">Savings Rate</span><span class="hb-val" id="hb-savings">—</span></div>
           </div>
         </div>
-        <p class="modal-founding-note">Founding rate for first 100 members. Locks in forever.</p>
-        <button class="btn-gold full-width" onclick="closeProModal()">Start 7-Day Free Trial</button>
-        <p class="modal-footer-text">7-day free trial • Cancel anytime • Regular price $20/mo</p>
+
+        <!-- MONTH COMPARISON STRIP -->
+        <div class="ins-month-strip" id="ins-month-strip"></div>
+
+        <!-- AI ADVICE CARDS -->
+        <div class="section-label" style="margin-top:4px">🤖 AI Advice</div>
+        <div class="advice-feed" id="advice-feed">
+          <div class="advice-empty">Log some transactions to get personalised AI advice.</div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="chart-card glass-card" style="margin-top:4px">
+          <div class="chart-title-row">
+            <span class="chart-title">Income vs Expenses</span>
+            <div class="chart-range-pills">
+              <button class="crp active" onclick="setChartRange(7,this)">7d</button>
+              <button class="crp" onclick="setChartRange(30,this)">30d</button>
+              <button class="crp" onclick="setChartRange(90,this)">3mo</button>
+            </div>
+          </div>
+          <div class="chart-wrap"><canvas id="income-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ── SPENDING TAB ── -->
+      <div class="ins-panel" id="ipanel-spending">
+        <div class="section-label" style="padding-top:16px">Top Spending Categories</div>
+        <div class="spending-table" id="spending-table"></div>
+
+        <div class="chart-card glass-card" style="margin-top:4px">
+          <div class="chart-title">Where Your Money Goes</div>
+          <div class="chart-wrap chart-pie"><canvas id="cat-chart"></canvas></div>
+        </div>
+
+        <div class="section-label" style="margin-top:8px">Biggest Single Expenses</div>
+        <div class="big-tx-list" id="big-tx-list"></div>
+
+        <div class="ins-ai-block glass-card" id="spending-ai-block">
+          <div class="ins-ai-label">🤖 AI on your spending</div>
+          <div class="ins-ai-text" id="spending-ai-text">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ── INCOME TAB ── -->
+      <div class="ins-panel" id="ipanel-income">
+        <div class="ins-income-stats" id="ins-income-stats"></div>
+
+        <div class="section-label" style="padding-top:4px">Income Sources</div>
+        <div class="income-source-table" id="income-source-table"></div>
+
+        <div class="chart-card glass-card" style="margin-top:4px">
+          <div class="chart-title">Daily Income — This Month</div>
+          <div class="chart-wrap"><canvas id="income-daily-chart"></canvas></div>
+        </div>
+
+        <div class="ins-ai-block glass-card" id="income-ai-block">
+          <div class="ins-ai-label">🤖 AI on your income</div>
+          <div class="ins-ai-text" id="income-ai-text">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ── FORECAST TAB ── -->
+      <div class="ins-panel" id="ipanel-forecast">
+        <div class="forecast-hero glass-card" id="forecast-hero"></div>
+
+        <div class="chart-card glass-card" style="margin-top:12px">
+          <div class="chart-title">30-Day Projection</div>
+          <div class="chart-wrap"><canvas id="forecast-chart"></canvas></div>
+        </div>
+
+        <div class="section-label" style="margin-top:8px">Goal Progress</div>
+        <div class="goal-progress-card glass-card" id="goal-progress-card"></div>
+
+        <div class="ins-ai-block glass-card" id="forecast-ai-block">
+          <div class="ins-ai-label">🤖 AI forecast analysis</div>
+          <div class="ins-ai-text" id="forecast-ai-text">Loading…</div>
+        </div>
+      </div>
+
+      <!-- AI CHAT — always visible at bottom -->
+      <div class="ask-ai-card glass-card" style="margin-top:16px">
+        <div class="ask-label-row">
+          <span class="ask-label">Ask AI anything about your money</span>
+          <button class="ask-mic-btn" id="ask-mic-btn" onclick="toggleAskMic()" title="Voice question">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+        </div>
+        <div class="ask-quick-chips" id="ask-quick-chips">
+          <button class="ask-chip" onclick="askQuick('How can I reduce my biggest expense?')">Cut costs</button>
+          <button class="ask-chip" onclick="askQuick('What is my biggest financial risk right now?')">Biggest risk</button>
+          <button class="ask-chip" onclick="askQuick('How do I hit my goal faster?')">Hit goal faster</button>
+          <button class="ask-chip" onclick="askQuick('Where am I leaking money?')">Money leaks</button>
+        </div>
+        <div class="ask-row">
+          <input type="text" id="ask-input" class="ask-input" placeholder="e.g. How can I increase profit this month?" onkeydown="if(event.key==='Enter') askAI()"/>
+          <button class="ask-send magnetic" onclick="askAI()">→</button>
+        </div>
+        <div class="ask-result hidden" id="ask-result"></div>
       </div>
     </div>
+  </div>
 
-    <!-- ═══════════════════════════════════════════
-         FOOTER
-    ════════════════════════════════════════════ -->
-    <footer class="app-footer">
-      <p>Founded by <strong>Sanskaar</strong></p>
-      <p>Co-founded by <strong>Kashish Devnani</strong></p>
-      <p class="footer-copy">© 2026 Imperium. All rights reserved.</p>
-    </footer>
+  <!-- ══════════════════════════════════════════
+       CALENDAR
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="screen-calendar">
+    <div class="screen-content has-nav">
+      <header class="cal-nav-header">
+        <button class="cal-arrow magnetic" onclick="changeMonth(-1)">‹</button>
+        <h2 class="cal-month" id="cal-month">March 2026</h2>
+        <button class="cal-arrow magnetic" onclick="changeMonth(1)">›</button>
+      </header>
+      <div class="cal-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-detail glass-card" id="cal-detail">
+        <div class="cal-detail-head" id="cal-detail-head">Select a day</div>
+        <div class="cal-detail-total" id="cal-detail-total"></div>
+        <div class="cal-detail-list" id="cal-detail-list"><p class="cal-empty-msg">Tap a day to see transactions</p></div>
+      </div>
+      <div class="month-stat-row">
+        <div class="ms-card glass-card"><div class="ms-val" id="ms-income">$0</div><div class="ms-lbl">Income</div></div>
+        <div class="ms-card glass-card"><div class="ms-val" id="ms-spent">$0</div><div class="ms-lbl">Spent</div></div>
+        <div class="ms-card glass-card"><div class="ms-val" id="ms-profit">$0</div><div class="ms-lbl">Profit</div></div>
+      </div>
+    </div>
+  </div>
 
-  </div><!-- /#app -->
+  <!-- ══════════════════════════════════════════
+       SETTINGS
+  ══════════════════════════════════════════ -->
+  <div class="screen" id="screen-settings">
+    <div class="screen-content has-nav">
+      <div class="profile-hero">
+        <div class="profile-av-wrap">
+          <svg class="profile-streak-ring" viewBox="0 0 80 80" id="profile-streak-ring">
+            <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(59,130,246,.12)" stroke-width="4"/>
+            <circle cx="40" cy="40" r="36" fill="none" stroke="url(#streakGrad)" stroke-width="4" stroke-linecap="round"
+              stroke-dasharray="226.2" stroke-dashoffset="226.2" id="streak-ring-fill"
+              style="transform:rotate(-90deg);transform-origin:50% 50%;"/>
+            <defs><linearGradient id="streakGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs>
+          </svg>
+          <div class="profile-av"><span id="pav-icon">👤</span></div>
+        </div>
+        <div class="profile-name" id="p-name">Imperium User</div>
+        <div class="profile-level-row">
+          <span class="profile-level-badge" id="p-level-badge">Lv 1</span>
+          <span class="profile-level-title" id="p-level-title">Beginner</span>
+        </div>
+        <div class="profile-xp-row">
+          <div class="profile-xp-bar-wrap"><div class="profile-xp-bar" id="p-xp-bar"></div></div>
+          <span class="profile-xp-label" id="p-xp-label">0 / 100 XP</span>
+        </div>
+        <div class="profile-badges-row">
+          <div class="profile-stat-chip"><span id="p-streak-val">0</span><small>streak 🔥</small></div>
+          <div class="profile-stat-chip"><span id="p-total-xp">0</span><small>total XP</small></div>
+          <div class="profile-stat-chip"><span id="p-tx-count">0</span><small>logs</small></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="sg-title">Achievements</div>
+        <div class="achievements-grid" id="achievements-grid"></div>
+      </div>
+      <div class="settings-group">
+        <div class="sg-title">Quick Access</div>
+        <div class="sg-card glass-card">
+          <div class="sg-row" onclick="navigateTo('screen-track')"><span class="sg-label">📝 Log Transaction</span><span class="sg-arrow">›</span></div>
+          <div class="sg-row" onclick="navigateTo('screen-insights')"><span class="sg-label">📊 AI Insights</span><span class="sg-arrow">›</span></div>
+          <div class="sg-row" onclick="navigateTo('screen-calendar')"><span class="sg-label">📅 Calendar</span><span class="sg-arrow">›</span></div>
+          <div class="sg-row" onclick="openCommand()"><span class="sg-label">⌘ Command Palette</span><span class="sg-val" style="font-size:.72rem;font-family:monospace">⌘K</span></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="sg-title">Budget</div>
+        <div class="sg-card glass-card">
+          <div class="sg-row" onclick="openBudgetModal()"><span class="sg-label">Monthly Budget</span><span class="sg-val" id="s-budget">Not set</span><span class="sg-arrow">›</span></div>
+          <div class="sg-row" onclick="openCurrencyModal()"><span class="sg-label">Currency</span><span class="sg-val" id="s-currency">$ USD</span><span class="sg-arrow">›</span></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="sg-title">Notifications</div>
+        <div class="sg-card glass-card">
+          <div class="sg-row"><span class="sg-label">Daily briefing</span><label class="toggle"><input type="checkbox" id="n-daily" checked/><span class="tslider"></span></label></div>
+          <div class="sg-row"><span class="sg-label">Budget alerts</span><label class="toggle"><input type="checkbox" id="n-budget" checked/><span class="tslider"></span></label></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="sg-title">Data</div>
+        <div class="sg-card glass-card">
+          <div class="sg-row" onclick="exportData()"><span class="sg-label">Export data</span><span class="sg-arrow">›</span></div>
+          <div class="sg-row danger-row" onclick="resetApp()"><span class="sg-label" style="color:#ef4444">Delete everything</span><span class="sg-arrow">›</span></div>
+        </div>
+      </div>
+      <div class="pro-card">
+        <div class="pro-badge">PRO</div>
+        <h3 class="pro-title">Imperium Pro</h3>
+        <p class="pro-sub">Smarter AI. Better outputs. Real results.</p>
+        <ul class="pro-list">
+          <li>Unlimited AI generations</li>
+          <li>Advanced financial forecasting</li>
+          <li>Weekly strategy report</li>
+          <li>Priority AI answers</li>
+        </ul>
+        <button class="btn-primary magnetic" onclick="openProModal()">Start Free Trial — $8/mo</button>
+        <p class="pro-note">Founding rate locked for first 100 members</p>
+      </div>
+      <div class="settings-group">
+        <div class="sg-card glass-card">
+          <div class="sg-row"><span class="sg-label">Version</span><span class="sg-val">Imperium OS v4.1.0</span></div>
+        </div>
+      </div>
+      <div class="settings-footer">
+        <p>Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p>
+        <p>© 2026 Imperium OS. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
 
-  <!-- Scripts -->
-  <script src="app.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-      });
-    }
-  </script>
+  <!-- BOTTOM NAV — 4 tabs -->
+  <nav class="bottom-nav hidden" id="bottom-nav">
+    <button class="nav-btn active" id="nb-home" onclick="navigateTo('screen-home')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 14 15 14 15 21"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-btn" id="nb-dashboard" onclick="navigateTo('screen-dashboard')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="14" y="10" width="7" height="7" rx="1"/><rect x="3" y="13" width="7" height="4" rx="1"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-btn" id="nb-brain" onclick="navigateTo('screen-brain')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2C8 2 5 5 5 8c0 1.5.5 2.8 1.4 3.8C5.6 12.5 5 13.7 5 15c0 2.2 1.8 4 4 4h6c2.2 0 4-1.8 4-4 0-1.3-.6-2.5-1.4-3.2C18.5 10.8 19 9.5 19 8c0-3-2.7-6-7-6z"/><line x1="12" y1="11" x2="12" y2="19"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+      <span>Brain</span>
+    </button>
+    <button class="nav-btn" id="nb-settings" onclick="navigateTo('screen-settings')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <!-- COMMAND PALETTE -->
+  <div class="cmd-overlay hidden" id="cmd-overlay" onclick="closeCommand()">
+    <div class="cmd-palette" onclick="event.stopPropagation()">
+      <div class="cmd-search-row">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="cmd-input" id="cmd-input" placeholder="Type a command…" oninput="filterCommands(this.value)" onkeydown="cmdKeyNav(event)" autocomplete="off"/>
+        <kbd class="cmd-esc" onclick="closeCommand()">ESC</kbd>
+      </div>
+      <div class="cmd-list" id="cmd-list"></div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal-bg hidden" id="modal-budget" onclick="closeBudgetModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-pill"></div>
+      <h3 class="modal-title">Monthly Budget</h3>
+      <p class="modal-desc">Set a monthly spending limit</p>
+      <div class="modal-amount-row"><span>$</span><input type="number" id="budget-val" class="modal-amount-input" placeholder="0" inputmode="decimal"/></div>
+      <button class="btn-primary" onclick="saveBudget()">Save</button>
+    </div>
+  </div>
+  <div class="modal-bg hidden" id="modal-pro" onclick="closeProModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-pill"></div>
+      <h3 class="modal-title">Imperium Pro</h3>
+      <p class="modal-desc">Unlimited AI generations + advanced insights</p>
+      <div class="plan-row">
+        <div class="plan active"><div class="plan-name">Monthly</div><div class="plan-price">$8<span>/mo</span></div></div>
+        <div class="plan"><div class="plan-name">Yearly</div><div class="plan-price">$72<span>/yr</span></div><div class="plan-save">Save 25%</div></div>
+      </div>
+      <button class="btn-primary" onclick="closeProModal()">Start 7-Day Free Trial</button>
+      <p class="modal-foot">Cancel anytime · Founding rate locked forever</p>
+    </div>
+  </div>
+
+  <!-- XP LEVEL-UP OVERLAY -->
+  <div class="xp-overlay hidden" id="xp-overlay">
+    <div class="xp-overlay-card">
+      <div class="xp-ov-burst" id="xp-ov-burst">⚡</div>
+      <div class="xp-ov-label">LEVEL UP</div>
+      <div class="xp-ov-level" id="xp-ov-level">Level 2</div>
+      <div class="xp-ov-title" id="xp-ov-title">Focused</div>
+      <div class="xp-ov-bar-wrap"><div class="xp-ov-bar" id="xp-ov-bar"></div></div>
+      <div class="xp-ov-sub" id="xp-ov-sub">0 / 200 XP to Level 3</div>
+      <button class="btn-primary" onclick="closeXPOverlay()">Continue →</button>
+    </div>
+  </div>
+
+</div>
+<script src="app.js"></script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 </body>
 </html>
