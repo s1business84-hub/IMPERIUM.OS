@@ -25,7 +25,6 @@
   <!-- BOOT SCREEN -->
   <div class="screen active" id="screen-boot">
     <div class="boot-wrap">
-      <canvas id="boot-canvas"></canvas>
       <div class="boot-content">
         <div class="boot-logo">
           <svg width="64" height="64" viewBox="0 0 44 44" fill="none">
@@ -39,10 +38,12 @@
             </defs>
           </svg>
         </div>
-        <div class="boot-name">IMPERIUM<span>OS</span></div>
-        <div class="boot-version">v6.0.0 — INITIALISING</div>
+        <div class="boot-canvas-text" id="boot-canvas-text">
+          <canvas id="boot-text-canvas"></canvas>
+          <div class="boot-canvas-text-bg">IMPERIUM OS</div>
+        </div>
+        <div class="boot-version">v6.1.0 — INITIALISING</div>
         <div class="boot-bar-wrap"><div class="boot-bar" id="boot-bar"></div></div>
-        <div class="boot-log" id="boot-log"></div>
       </div>
     </div>
   </div>
@@ -349,8 +350,8 @@
       </div>
       <div class="settings-group"><div class="sg-title">Achievements</div><div class="achievements-grid" id="achievements-grid"></div></div>
       <div class="settings-group"><div class="sg-title">Preferences</div><div class="sg-card glass-card"><div class="sg-row" onclick="openCurrencyModal()"><span class="sg-label">Currency</span><span class="sg-val" id="s-currency">$ USD</span><span class="sg-arrow">›</span></div></div></div>
-      <div class="settings-group"><div class="sg-title">Data</div><div class="sg-card glass-card"><div class="sg-row" onclick="exportData()"><span class="sg-label">Export data</span><span class="sg-arrow">›</span></div><div class="sg-row danger-row" onclick="resetApp()"><span class="sg-label" style="color:#ef4444">Delete everything</span><span class="sg-arrow">›</span></div></div></div>
-      <div class="settings-footer"><p>Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p><p>Imperium OS v6.0.0</p></div>
+      <div class="settings-group"><div class="sg-title">Data</div><div class="sg-card glass-card"><div class="sg-row" onclick="exportData()"><span class="sg-label">Export data</span><span class="sg-arrow">›</span></div><div class="sg-row danger-row" onclick="resetApp()"><span class="sg-label">Delete everything</span><span class="sg-arrow">›</span></div></div></div>
+      <div class="settings-footer"><p>Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p><p>Imperium OS v6.1.0</p></div>
     </div>
   </div>
 

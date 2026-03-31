@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   IMPERIUM OS v6.0.0 — iOS NATIVE + AI ASSISTANT
+   IMPERIUM OS v6.1.0 — UX PRO + CANVAS TEXT
    Check-in system + Passive data + Voice AI + XP + AI Chat
    ══════════════════════════════════════════════════════════ */
 'use strict';
@@ -643,51 +643,218 @@ function updatePassiveStrip() {
   el('passive-screen-src', '✓ synced');
   el('passive-score-src', 'auto');
 
-  // Color code
+  // Color code — using iOS system colors
+  const G = 'var(--system-green)', Y = 'var(--system-orange)', R = 'var(--system-red)', N = 'var(--label-primary)';
   const scoreEl = document.getElementById('passive-score-val');
-  if (scoreEl) scoreEl.style.color = data.score >= 70 ? '#10b981' : data.score >= 40 ? '#f59e0b' : '#ef4444';
+  if (scoreEl) scoreEl.style.color = data.score >= 70 ? G : data.score >= 40 ? Y : R;
   const stepsEl = document.getElementById('passive-steps-val');
-  if (stepsEl && data.steps) stepsEl.style.color = data.steps >= 8000 ? '#10b981' : data.steps >= 5000 ? '#f0f4ff' : '#f59e0b';
+  if (stepsEl && data.steps) stepsEl.style.color = data.steps >= 8000 ? G : data.steps >= 5000 ? N : Y;
   const sleepEl = document.getElementById('passive-sleep-val');
-  if (sleepEl && data.sleep) sleepEl.style.color = data.sleep >= 7 ? '#10b981' : data.sleep >= 6 ? '#f0f4ff' : '#ef4444';
+  if (sleepEl && data.sleep) sleepEl.style.color = data.sleep >= 7 ? G : data.sleep >= 6 ? N : R;
   const screenEl = document.getElementById('passive-screen-val');
-  if (screenEl && data.screenTime) screenEl.style.color = data.screenTime <= 120 ? '#10b981' : data.screenTime <= 240 ? '#f0f4ff' : '#ef4444';
+  if (screenEl && data.screenTime) screenEl.style.color = data.screenTime <= 120 ? G : data.screenTime <= 240 ? N : R;
 }
 
 /* ── BOOT SEQUENCE ────────────────────────────────── */
-const BOOT_LOGS = [
-  'Initialising kernel modules…',
-  'Loading check-in engine…',
-  'Connecting AI inference…',
-  'Syncing passive data layer…',
-  'Calibrating pattern detection…',
-  'Mounting secure vault…',
-  'Preparing voice interface…',
-  'System ready.'
-];
+
+/* Canvas Text Effect — flowing colored lines reveal text */
+class CanvasTextEffect {
+  constructor(canvas, text, options = {}) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.text = text;
+    this.colors = options.colors || [
+      'rgba(16,185,129,1)',   // green
+      'rgba(16,185,129,0.8)',
+      'rgba(59,130,246,1)',   // blue
+      'rgba(59,130,246,0.8)',
+      'rgba(10,132,255,1)',   // system blue
+      'rgba(10,132,255,0.7)',
+      'rgba(100,210,255,0.9)', // teal
+      'rgba(100,210,255,0.6)',
+      'rgba(16,185,129,0.5)',
+      'rgba(59,130,246,0.4)',
+    ];
+    this.lineGap = options.lineGap || 3;
+    this.speed = options.speed || 18;
+    this.fontSize = options.fontSize || 32;
+    this.fontFamily = options.fontFamily || "-apple-system, 'SF Pro Rounded', 'SF Pro Display', system-ui, sans-serif";
+    this.letterSpacing = options.letterSpacing || 3;
+    this.animationId = null;
+    this.startTime = null;
+    this.textMask = null;
+    this.running = false;
+  }
+
+  init() {
+    const container = this.canvas.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    const w = container.offsetWidth;
+    const h = container.offsetHeight;
+    this.canvas.width = w * dpr;
+    this.canvas.height = h * dpr;
+    this.canvas.style.width = w + 'px';
+    this.canvas.style.height = h + 'px';
+    this.ctx.scale(dpr, dpr);
+    this.w = w;
+    this.h = h;
+    this.dpr = dpr;
+    this._buildTextMask();
+  }
+
+  _buildTextMask() {
+    // Create an offscreen canvas to render text as a mask
+    const offscreen = document.createElement('canvas');
+    offscreen.width = this.canvas.width;
+    offscreen.height = this.canvas.height;
+    const offCtx = offscreen.getContext('2d');
+    offCtx.scale(this.dpr, this.dpr);
+
+    offCtx.font = '800 ' + this.fontSize + 'px ' + this.fontFamily;
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillStyle = '#fff';
+
+    // Draw with letter spacing
+    const chars = this.text.split('');
+    const totalW = chars.reduce((sum, ch) => {
+      return sum + offCtx.measureText(ch).width + this.letterSpacing;
+    }, 0) - this.letterSpacing;
+
+    let x = (this.w - totalW) / 2;
+    const y = this.h / 2;
+    for (const ch of chars) {
+      offCtx.fillText(ch, x + offCtx.measureText(ch).width / 2, y);
+      x += offCtx.measureText(ch).width + this.letterSpacing;
+    }
+
+    // Extract mask data
+    this.textMask = offCtx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  start() {
+    this.running = true;
+    this.startTime = performance.now();
+    this._animate();
+  }
+
+  stop() {
+    this.running = false;
+    if (this.animationId) cancelAnimationFrame(this.animationId);
+  }
+
+  _animate() {
+    if (!this.running) return;
+    const elapsed = (performance.now() - this.startTime) / 1000;
+    this._draw(elapsed);
+    this.animationId = requestAnimationFrame(() => this._animate());
+  }
+
+  _draw(time) {
+    const ctx = this.ctx;
+    const w = this.w;
+    const h = this.h;
+    const dpr = this.dpr;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw horizontal flowing lines through the text mask
+    const lineCount = Math.floor(h / this.lineGap);
+
+    for (let i = 0; i < lineCount; i++) {
+      const y = i * this.lineGap + this.lineGap / 2;
+      const colorIdx = i % this.colors.length;
+      const color = this.colors[colorIdx];
+
+      // Check if this line row has any text pixels
+      const pixelY = Math.floor(y * dpr);
+      if (pixelY >= this.canvas.height) continue;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(1, this.lineGap * 0.55);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+
+      let drawing = false;
+      let hasSegment = false;
+
+      for (let px = 0; px < this.canvas.width; px++) {
+        const maskIdx = (pixelY * this.canvas.width + px) * 4 + 3; // alpha channel
+        const isText = this.textMask.data[maskIdx] > 128;
+
+        const screenX = px / dpr;
+
+        if (isText) {
+          // Add wave distortion based on time
+          const wave = Math.sin((screenX * 0.04) + (i * 0.3) + (time * this.speed * 0.3)) * 1.2;
+          const drawY = y + wave;
+
+          if (!drawing) {
+            ctx.moveTo(screenX, drawY);
+            drawing = true;
+            hasSegment = true;
+          } else {
+            ctx.lineTo(screenX, drawY);
+          }
+        } else {
+          drawing = false;
+        }
+      }
+
+      if (hasSegment) {
+        // Animated opacity — lines fade in sequentially
+        const lineDelay = i * 0.015;
+        const fadeIn = Math.max(0, Math.min(1, (time - lineDelay) * 2.5));
+        ctx.globalAlpha = fadeIn * (0.6 + 0.4 * Math.sin(time * 1.5 + i * 0.2));
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+}
+
+let bootCanvasText = null;
 
 function runBoot() {
   const bar = document.getElementById('boot-bar');
-  const logEl = document.getElementById('boot-log');
-  let pct = 0, logIdx = 0;
+
+  // Init canvas text effect
+  const textCanvas = document.getElementById('boot-text-canvas');
+  if (textCanvas) {
+    bootCanvasText = new CanvasTextEffect(textCanvas, 'IMPERIUM OS', {
+      fontSize: 30,
+      letterSpacing: 4,
+      lineGap: 3,
+      speed: 18,
+      colors: [
+        'rgba(16,185,129,1)',
+        'rgba(16,185,129,0.85)',
+        'rgba(48,209,88,0.9)',
+        'rgba(10,132,255,1)',
+        'rgba(10,132,255,0.85)',
+        'rgba(59,130,246,0.9)',
+        'rgba(100,210,255,0.8)',
+        'rgba(94,92,230,0.7)',
+        'rgba(16,185,129,0.6)',
+        'rgba(10,132,255,0.5)',
+      ]
+    });
+    bootCanvasText.init();
+    bootCanvasText.start();
+  }
+
+  let pct = 0;
   const timer = setInterval(() => {
-    pct++;
+    pct += 2;
+    if (pct > 100) pct = 100;
     bar.style.width = pct + '%';
-    const lIdx = Math.floor((pct / 100) * BOOT_LOGS.length);
-    if (lIdx > logIdx && logIdx < BOOT_LOGS.length) {
-      const line = document.createElement('div');
-      line.className = 'log-line';
-      line.textContent = '▸ ' + BOOT_LOGS[logIdx];
-      logEl.appendChild(line);
-      logIdx++;
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-    if (pct >= 100) { clearInterval(timer); setTimeout(bootDone, 400); }
-  }, 24);
+    if (pct >= 100) { clearInterval(timer); setTimeout(bootDone, 350); }
+  }, 15);
 }
 
 function bootDone() {
   loadState();
+  if (bootCanvasText) bootCanvasText.stop();
   const boot = document.getElementById('screen-boot');
   boot.style.transition = 'opacity 0.6s ease';
   boot.style.opacity = '0';
