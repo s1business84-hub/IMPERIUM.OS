@@ -28,6 +28,8 @@ let S = {
   // AI Assistant
   assistantMessages: [],
   assistantUploads: [],
+  // Guide
+  guideSeen: false,
 };
 
 function loadState() {
@@ -282,7 +284,10 @@ function initCheckinCard() {
     if (q.type === 'text') {
       return '<div class="cq-item">' +
         '<div class="cq-text">' + q.text + '</div>' +
+        '<div class="cq-input-wrap">' +
         '<input type="text" class="cq-input" id="cq-' + q.id + '" placeholder="' + q.placeholder + '" autocomplete="off"/>' +
+        '<button class="cq-mic-btn" onclick="startCheckinVoice(this, \'' + q.id + '\')" title="Speak your answer">🎤</button>' +
+        '</div>' +
       '</div>';
     } else {
       return '<div class="cq-item">' +
@@ -1057,12 +1062,125 @@ function obBack() { if (obStep > 1) goObStep(obStep - 1); }
 function finishOnboarding() {
   S.onboarded = true;
   saveState();
+  // Show the app guide first if never seen
+  if (!S.guideSeen) {
+    showAppGuide();
+  } else {
+    showBottomNav();
+    updateStreak();
+    grantXP(100, 'System Activated');
+    navigateTo('screen-home');
+    initHomeData();
+    initGlobalEffects();
+  }
+}
+
+/* ── APP GUIDE / WALKTHROUGH ──────────────────────── */
+let guideStep = 1;
+const GUIDE_TOTAL = 5;
+
+function showAppGuide() {
+  var overlay = document.getElementById('guide-overlay');
+  if (overlay) {
+    overlay.classList.remove('hidden');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999';
+  }
+  guideStep = 1;
+  updateGuideUI();
+}
+
+function updateGuideUI() {
+  // Progress bar
+  var fill = document.getElementById('guide-fill');
+  if (fill) fill.style.width = (guideStep / GUIDE_TOTAL * 100) + '%';
+  // Slides
+  for (var i = 1; i <= GUIDE_TOTAL; i++) {
+    var slide = document.getElementById('gs-' + i);
+    if (slide) {
+      slide.classList.toggle('guide-slide-active', i === guideStep);
+    }
+  }
+  // Dots
+  var dots = document.querySelectorAll('#guide-dots .guide-dot');
+  dots.forEach(function(d, idx) { d.classList.toggle('active', idx < guideStep); });
+  // Button text
+  var btn = document.getElementById('guide-next-btn');
+  if (btn) btn.textContent = guideStep === GUIDE_TOTAL ? 'Let\'s go! 🚀' : 'Next →';
+  // Skip visibility
+  var skip = document.getElementById('guide-skip');
+  if (skip) skip.style.opacity = guideStep === GUIDE_TOTAL ? '0' : '1';
+}
+
+function nextGuideStep() {
+  if (guideStep < GUIDE_TOTAL) {
+    guideStep++;
+    updateGuideUI();
+  } else {
+    closeGuide();
+  }
+}
+
+function skipGuide() {
+  closeGuide();
+}
+
+function closeGuide() {
+  S.guideSeen = true;
+  saveState();
+  var overlay = document.getElementById('guide-overlay');
+  if (overlay) {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity .4s ease';
+    setTimeout(function() { overlay.classList.add('hidden'); overlay.style.cssText = ''; }, 400);
+  }
   showBottomNav();
   updateStreak();
   grantXP(100, 'System Activated');
   navigateTo('screen-home');
   initHomeData();
   initGlobalEffects();
+}
+
+/* ── CHECK-IN VOICE INPUT ─────────────────────────── */
+let checkinVoiceActive = false;
+let checkinVoiceRecognition = null;
+
+function startCheckinVoice(btn, qId) {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Voice not supported in this browser', 'error'); return; }
+  if (checkinVoiceActive) { stopCheckinVoice(); return; }
+
+  checkinVoiceActive = true;
+  btn.classList.add('cq-mic-recording');
+  btn.textContent = '⏹';
+
+  checkinVoiceRecognition = new SR();
+  checkinVoiceRecognition.lang = 'en-US';
+  checkinVoiceRecognition.interimResults = false;
+  checkinVoiceRecognition.maxAlternatives = 1;
+
+  checkinVoiceRecognition.onresult = function(e) {
+    var text = e.results[0][0].transcript;
+    var input = document.getElementById('cq-' + qId);
+    if (input) {
+      input.value = text;
+      input.focus();
+    }
+    stopCheckinVoice();
+    showToast('Got it! ✨', 'success');
+  };
+  checkinVoiceRecognition.onerror = function() { stopCheckinVoice(); showToast('Could not hear you, try again', 'error'); };
+  checkinVoiceRecognition.onend = function() { stopCheckinVoice(); };
+  checkinVoiceRecognition.start();
+}
+
+function stopCheckinVoice() {
+  checkinVoiceActive = false;
+  if (checkinVoiceRecognition) { try { checkinVoiceRecognition.stop(); } catch(e){} checkinVoiceRecognition = null; }
+  document.querySelectorAll('.cq-mic-btn').forEach(function(b) {
+    b.classList.remove('cq-mic-recording');
+    b.textContent = '🎤';
+  });
 }
 
 /* ── SMART SPEND DETECTION ────────────────────────── */

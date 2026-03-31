@@ -119,6 +119,83 @@
     </div>
   </div>
 
+  <!-- APP GUIDE — first-time walkthrough -->
+  <div class="guide-overlay hidden" id="guide-overlay">
+    <div class="guide-container">
+      <div class="guide-progress"><div class="guide-progress-fill" id="guide-fill"></div></div>
+      <div class="guide-slides" id="guide-slides">
+
+        <div class="guide-slide guide-slide-active" id="gs-1">
+          <div class="guide-glow guide-glow-green"></div>
+          <div class="guide-emoji">🛡️</div>
+          <h2 class="guide-title">Your personal <span class="guide-highlight">intelligence system</span></h2>
+          <p class="guide-desc">Imperium OS tracks your behavior, mood, energy, sleep, spending — and turns it into actionable insights. No effort required.</p>
+          <div class="guide-feature-row">
+            <div class="guide-feat"><span>🧠</span>AI learns YOU</div>
+            <div class="guide-feat"><span>📊</span>Auto-tracks data</div>
+            <div class="guide-feat"><span>🔒</span>100% private</div>
+          </div>
+        </div>
+
+        <div class="guide-slide" id="gs-2">
+          <div class="guide-glow guide-glow-blue"></div>
+          <div class="guide-emoji">⚡</div>
+          <h2 class="guide-title"><span class="guide-highlight">4 check-ins</span> a day. 30 seconds each.</h2>
+          <p class="guide-desc">Morning, afternoon, evening, night — 3 quick questions each. That's it. The AI handles everything else.</p>
+          <div class="guide-checkin-preview">
+            <div class="guide-cp-item done"><span>🌅</span> Morning</div>
+            <div class="guide-cp-item active"><span>☀️</span> Afternoon</div>
+            <div class="guide-cp-item"><span>🌆</span> Evening</div>
+            <div class="guide-cp-item"><span>🌙</span> Night</div>
+          </div>
+          <p class="guide-micro">🎤 You can also <strong>speak</strong> your answers — no typing needed</p>
+        </div>
+
+        <div class="guide-slide" id="gs-3">
+          <div class="guide-glow guide-glow-purple"></div>
+          <div class="guide-emoji">🔍</div>
+          <h2 class="guide-title">The AI finds <span class="guide-highlight">hidden patterns</span></h2>
+          <p class="guide-desc">After 3 days, the AI starts detecting what's actually affecting your productivity, mood, and energy — things you'd never notice.</p>
+          <div class="guide-pattern-demo">
+            <div class="guide-pd-item"><span class="guide-pd-icon">📱</span><div><strong>Screen Time → Low Energy</strong><br><small>High phone usage correlates with afternoon crashes</small></div></div>
+            <div class="guide-pd-item"><span class="guide-pd-icon">😴</span><div><strong>Sleep → Productivity</strong><br><small>7+ hours = 2x more tasks completed</small></div></div>
+          </div>
+        </div>
+
+        <div class="guide-slide" id="gs-4">
+          <div class="guide-glow guide-glow-orange"></div>
+          <div class="guide-emoji">💸</div>
+          <h2 class="guide-title">Track money <span class="guide-highlight">without thinking</span></h2>
+          <p class="guide-desc">Just voice-log "Spent $12 on lunch" or tap the smart spend card. The AI categorises and tracks everything for you.</p>
+          <div class="guide-feature-row">
+            <div class="guide-feat"><span>🗣️</span>Voice logging</div>
+            <div class="guide-feat"><span>📸</span>Receipt scan</div>
+            <div class="guide-feat"><span>📊</span>Auto insights</div>
+          </div>
+        </div>
+
+        <div class="guide-slide" id="gs-5">
+          <div class="guide-glow guide-glow-green"></div>
+          <div class="guide-emoji">🚀</div>
+          <h2 class="guide-title">You're <span class="guide-highlight">ready</span></h2>
+          <p class="guide-desc">Start with your first check-in. It takes 30 seconds and earns you <strong>+30 XP</strong>. The more you check in, the smarter the AI gets.</p>
+          <div class="guide-xp-preview">
+            <div class="guide-xp-bar-bg"><div class="guide-xp-bar-fill"></div></div>
+            <div class="guide-xp-text">Level 1 → Level 2 in just 4 check-ins</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="guide-nav">
+        <button class="guide-skip" id="guide-skip" onclick="skipGuide()">Skip</button>
+        <div class="guide-dots" id="guide-dots">
+          <span class="guide-dot active"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span>
+        </div>
+        <button class="guide-next-btn" id="guide-next-btn" onclick="nextGuideStep()">Next →</button>
+      </div>
+    </div>
+  </div>
+
   <!-- HOME — Voice Orb + Check-in + Passive Data -->
   <div class="screen" id="screen-home">
     <canvas id="beams-canvas"></canvas>
