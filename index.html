@@ -150,10 +150,27 @@
         </div>
         <div class="checkin-questions" id="checkin-questions"></div>
         <div class="checkin-done hidden" id="checkin-done">
-          <div class="checkin-done-icon">✅</div>
-          <div class="checkin-done-text" id="checkin-done-text">Check-in complete. Next: afternoon.</div>
+          <div class="checkin-done-row">
+            <div class="checkin-done-icon">✅</div>
+            <div class="checkin-done-info">
+              <div class="checkin-done-title" id="checkin-done-title">Check-in complete</div>
+              <div class="checkin-done-text" id="checkin-done-text">Next: afternoon check-in</div>
+            </div>
+            <div class="checkin-done-progress" id="checkin-done-progress">
+              <div class="cdp-dots">
+                <span class="cdp-dot" id="cdp-morning"></span>
+                <span class="cdp-dot" id="cdp-afternoon"></span>
+                <span class="cdp-dot" id="cdp-evening"></span>
+                <span class="cdp-dot" id="cdp-night"></span>
+              </div>
+              <div class="cdp-label" id="cdp-label">1/4</div>
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- DASHBOARD — reveals after check-in -->
+      <div class="home-dashboard hidden" id="home-dashboard">
 
       <!-- Voice Orb compact -->
       <div class="home-orb-zone compact">
@@ -240,6 +257,8 @@
           <button class="home-pill" onclick="homeChat('Spent $')">💸 Log spend</button>
         </div>
       </div>
+
+      </div><!-- /home-dashboard -->
     </div>
   </div>
 

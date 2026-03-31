@@ -207,6 +207,8 @@ function initCheckinCard() {
   const period = getCurrentPeriod();
   const periodInfo = CHECKIN_PERIODS[period];
   const todayCI = S.checkins[today] || {};
+  const dashboard = document.getElementById('home-dashboard');
+  const checkinCard = document.getElementById('checkin-card');
 
   // Update header
   const iconEl = document.getElementById('checkin-period-icon');
@@ -215,26 +217,64 @@ function initCheckinCard() {
   if (iconEl) iconEl.textContent = periodInfo.icon;
   if (periodEl) periodEl.textContent = periodInfo.label;
 
+  // Count completed check-ins today
+  const completedPeriods = Object.keys(todayCI);
+  const completedCount = completedPeriods.length;
+
   // Check if current period already done
   if (todayCI[period]) {
     document.getElementById('checkin-questions').classList.add('hidden');
     const doneEl = document.getElementById('checkin-done');
     doneEl.classList.remove('hidden');
-    const next = getNextPeriod(period);
+
+    // Update done title & text
+    const doneTitle = document.getElementById('checkin-done-title');
     const doneText = document.getElementById('checkin-done-text');
+    const next = getNextPeriod(period);
+    if (doneTitle) {
+      doneTitle.textContent = completedCount >= 4 ? 'All check-ins done! 🎉' : periodInfo.label + ' done';
+    }
     if (doneText) {
       doneText.textContent = next
-        ? 'Check-in complete! Next: ' + CHECKIN_PERIODS[next].label.toLowerCase() + '.'
-        : 'All check-ins done for today! 🎉';
+        ? 'Next: ' + CHECKIN_PERIODS[next].label.toLowerCase()
+        : 'You\'ve completed your daily cycle';
     }
-    if (subEl) subEl.textContent = 'Completed ✓';
+    if (subEl) subEl.textContent = completedCount + '/4 complete';
+
+    // Update progress dots
+    ['morning','afternoon','evening','night'].forEach(function(p) {
+      const dot = document.getElementById('cdp-' + p);
+      if (dot) {
+        dot.className = 'cdp-dot' + (todayCI[p] ? ' cdp-done' : (p === period ? ' cdp-current' : ''));
+      }
+    });
+    const cdpLabel = document.getElementById('cdp-label');
+    if (cdpLabel) cdpLabel.textContent = completedCount + '/4';
+
+    // Collapse check-in card, show dashboard
+    if (checkinCard) checkinCard.classList.add('checkin-collapsed');
+    if (dashboard) {
+      dashboard.classList.remove('hidden');
+      // Trigger staggered animations
+      if (!dashboard.classList.contains('dashboard-revealed')) {
+        dashboard.classList.add('dashboard-revealed');
+      }
+    }
     return;
   }
 
-  // Show questions
+  // Check-in not done yet — show questions, expand card, hide dashboard
   document.getElementById('checkin-questions').classList.remove('hidden');
   document.getElementById('checkin-done').classList.add('hidden');
   if (subEl) subEl.textContent = '3 quick questions';
+  if (checkinCard) checkinCard.classList.remove('checkin-collapsed');
+  // If any prior period was done today, still show dashboard
+  if (completedCount > 0 && dashboard) {
+    dashboard.classList.remove('hidden');
+    dashboard.classList.add('dashboard-revealed');
+  } else if (dashboard) {
+    dashboard.classList.add('hidden');
+  }
 
   const questions = CHECKIN_QUESTIONS[period];
   const container = document.getElementById('checkin-questions');
