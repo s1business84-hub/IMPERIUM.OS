@@ -250,12 +250,7 @@
           <input class="home-input" id="home-input" placeholder="Talk to your AI · log anything…" autocomplete="off" onkeydown="if(event.key==='Enter') homeChat()"/>
           <button class="home-send-btn" onclick="homeChat()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
         </div>
-        <div class="home-pills-row">
-          <button class="home-pill" onclick="homeChat('How am I doing today?')">📊 Today</button>
-          <button class="home-pill" onclick="homeChat('Show patterns')">🔍 Patterns</button>
-          <button class="home-pill" onclick="homeChat('Give me advice')">💡 Advice</button>
-          <button class="home-pill" onclick="homeChat('Spent $')">💸 Log spend</button>
-        </div>
+
       </div>
 
       </div><!-- /home-dashboard -->
@@ -265,20 +260,66 @@
   <!-- INSIGHTS -->
   <div class="screen" id="screen-insights">
     <div class="screen-content has-nav">
-      <header class="page-header"><h2 class="page-title">Insights</h2><p class="page-sub">AI patterns from check-ins + passive data</p></header>
-      <div class="insight-score-card glass-card" id="insight-score-card">
-        <div class="isc-left"><div class="isc-score" id="isc-score">—</div><div class="isc-grade" id="isc-grade">Complete check-ins to generate</div></div>
-        <div class="isc-right">
-          <div class="isc-stat"><span class="isc-val" id="isc-checkins">0</span><small>check-ins</small></div>
-          <div class="isc-stat"><span class="isc-val" id="isc-streak">0</span><small>streak 🔥</small></div>
-          <div class="isc-stat"><span class="isc-val" id="isc-xp">0</span><small>XP</small></div>
+      <!-- Greeting Header -->
+      <div class="insights-hero">
+        <div class="insights-hero-bg"></div>
+        <div class="insights-hero-content">
+          <div class="insights-greeting" id="insights-greeting">Good morning ☀️</div>
+          <div class="insights-greeting-sub" id="insights-greeting-sub">Here's your intelligence overview</div>
+        </div>
+        <div class="insights-stats-row">
+          <div class="insights-stat-chip"><span class="isc-val" id="isc-checkins">0</span><small>check-ins</small></div>
+          <div class="insights-stat-chip"><span class="isc-val" id="isc-streak">0</span><small>streak 🔥</small></div>
+          <div class="insights-stat-chip"><span class="isc-val" id="isc-xp">0</span><small>XP</small></div>
+          <div class="insights-stat-chip accent"><span class="isc-val" id="isc-score">—</span><small id="isc-grade">score</small></div>
         </div>
       </div>
-      <div class="chart-card glass-card"><div class="chart-title">This Week</div><div class="chart-wrap"><canvas id="weekly-chart"></canvas></div></div>
+
+      <!-- 4 Action Cards -->
+      <div class="insights-cards-grid">
+        <div class="insight-action-card iac-today" onclick="insightCardAction('today')">
+          <div class="iac-icon">📊</div>
+          <div class="iac-label">Today</div>
+          <div class="iac-sub" id="iac-today-sub">Your daily snapshot</div>
+        </div>
+        <div class="insight-action-card iac-patterns" onclick="insightCardAction('patterns')">
+          <div class="iac-icon">🔍</div>
+          <div class="iac-label">Patterns</div>
+          <div class="iac-sub" id="iac-patterns-sub">AI-detected trends</div>
+        </div>
+        <div class="insight-action-card iac-advice" onclick="insightCardAction('advice')">
+          <div class="iac-icon">💡</div>
+          <div class="iac-label">Advice</div>
+          <div class="iac-sub" id="iac-advice-sub">Personalised tips</div>
+        </div>
+        <div class="insight-action-card iac-spend" onclick="insightCardAction('spend')">
+          <div class="iac-icon">💸</div>
+          <div class="iac-label">Spending</div>
+          <div class="iac-sub" id="iac-spend-sub">Money intelligence</div>
+        </div>
+      </div>
+
+      <!-- Expanded Card Content Area -->
+      <div class="insight-expanded hidden" id="insight-expanded">
+        <div class="insight-expanded-header">
+          <div class="insight-expanded-title" id="insight-expanded-title">📊 Today</div>
+          <button class="insight-expanded-close" onclick="closeInsightCard()">✕</button>
+        </div>
+        <div class="insight-expanded-body" id="insight-expanded-body"></div>
+      </div>
+
+      <!-- Weekly Chart -->
+      <div class="chart-card glass-card"><div class="chart-title">📈 This Week</div><div class="chart-wrap"><canvas id="weekly-chart"></canvas></div></div>
+
+      <!-- Pattern Feed -->
       <div class="section-label">🧠 AI Patterns</div>
       <div class="pattern-feed" id="pattern-feed"><div class="pattern-empty">Complete at least 3 days of check-ins to unlock patterns.</div></div>
+
+      <!-- Check-in History -->
       <div class="section-label" style="margin-top:8px">📋 Recent Check-ins</div>
       <div class="checkin-history" id="checkin-history"><div class="pattern-empty">No check-ins yet. Start from Home.</div></div>
+
+      <!-- Brain Chat -->
       <div class="section-label" style="margin-top:8px">💬 Ask AI</div>
       <div class="brain-chat-card glass-card">
         <div class="brain-chat-feed" id="brain-chat-feed"></div>

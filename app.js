@@ -1672,7 +1672,6 @@ function detectLifePatterns() {
 let weeklyChartInst = null;
 
 function initInsights() {
-  // Score card
   const dates = Object.keys(S.checkins).sort();
   const totalCI = getTotalCheckinCount();
   const el = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
@@ -1680,6 +1679,43 @@ function initInsights() {
   el('isc-checkins', totalCI);
   el('isc-streak', S.streak || 0);
   el('isc-xp', S.totalXp || 0);
+
+  // Update Insights greeting
+  const h = new Date().getHours();
+  const name = S.user ? S.user.name.split(' ')[0] : 'there';
+  const greetEmoji = h < 12 ? '☀️' : h < 17 ? '🌤️' : h < 21 ? '🌅' : '🌙';
+  const greetText = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 21 ? 'Good evening' : 'Good night';
+  const greetEl = document.getElementById('insights-greeting');
+  const greetSubEl = document.getElementById('insights-greeting-sub');
+  if (greetEl) greetEl.textContent = greetText + ', ' + name + ' ' + greetEmoji;
+  if (greetSubEl) {
+    if (totalCI === 0) greetSubEl.textContent = 'Start checking in to unlock your intelligence';
+    else if (totalCI < 10) greetSubEl.textContent = 'Building your profile — ' + totalCI + ' check-ins so far';
+    else greetSubEl.textContent = 'Here\'s your intelligence overview';
+  }
+
+  // Update action card subtexts dynamically
+  const today = new Date().toDateString();
+  const todayCI = S.checkins[today] || {};
+  const todayPD = S.passiveData[today];
+  const periodsDone = Object.keys(todayCI).length;
+  const todaySub = document.getElementById('iac-today-sub');
+  if (todaySub) todaySub.textContent = periodsDone > 0 ? periodsDone + '/4 check-ins · ' + (todayPD ? '⚡ ' + todayPD.score : 'sync data') : 'No check-ins yet';
+
+  const patterns = detectLifePatterns();
+  const patternsSub = document.getElementById('iac-patterns-sub');
+  if (patternsSub) patternsSub.textContent = patterns.length > 0 ? patterns.length + ' patterns found' : 'Need 3+ days of data';
+
+  const adviceSub = document.getElementById('iac-advice-sub');
+  if (adviceSub) adviceSub.textContent = patterns.length > 0 ? 'Tips based on your data' : 'Check in more for tips';
+
+  const monthTx = S.transactions.filter(function(tx) {
+    var d = new Date(tx.date); var n = new Date();
+    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  });
+  const totalSpent = monthTx.filter(function(tx) { return tx.type === 'expense'; }).reduce(function(s, tx) { return s + tx.amount; }, 0);
+  const spendSub = document.getElementById('iac-spend-sub');
+  if (spendSub) spendSub.textContent = monthTx.length > 0 ? fmt(totalSpent) + ' this month' : 'No spending logged';
 
   // Calculate weekly score
   const recent7 = dates.slice(-7);
@@ -1690,10 +1726,10 @@ function initInsights() {
   if (scoreCount > 0) {
     avgScore = Math.round(avgScore / scoreCount);
     el('isc-score', avgScore);
-    const gradeEl = document.getElementById('isc-grade');
-    if (gradeEl) {
-      gradeEl.textContent = avgScore >= 75 ? 'Excellent week' : avgScore >= 50 ? 'Good progress' : 'Room to improve';
-      gradeEl.style.color = avgScore >= 75 ? '#10b981' : avgScore >= 50 ? '#f59e0b' : '#ef4444';
+    const gradeE = document.getElementById('isc-grade');
+    if (gradeE) {
+      gradeE.textContent = avgScore >= 75 ? 'excellent' : avgScore >= 50 ? 'good' : 'building';
+      gradeE.style.color = avgScore >= 75 ? '#10b981' : avgScore >= 50 ? '#f59e0b' : '#ef4444';
     }
     const scoreEl = document.getElementById('isc-score');
     if (scoreEl) scoreEl.style.color = avgScore >= 75 ? '#10b981' : avgScore >= 50 ? '#f59e0b' : '#ef4444';
@@ -1703,7 +1739,6 @@ function initInsights() {
   buildWeeklyChart();
 
   // Pattern cards
-  const patterns = detectLifePatterns();
   const patternFeed = document.getElementById('pattern-feed');
   if (patternFeed) {
     if (patterns.length) {
@@ -1737,6 +1772,103 @@ function initInsights() {
       historyEl.innerHTML = '<div class="pattern-empty">No check-ins yet. Start from Home.</div>';
     }
   }
+}
+
+/* ── INSIGHT ACTION CARDS ─────────────────────────── */
+function insightCardAction(type) {
+  var expanded = document.getElementById('insight-expanded');
+  var title = document.getElementById('insight-expanded-title');
+  var body = document.getElementById('insight-expanded-body');
+  if (!expanded || !title || !body) return;
+
+  var today = new Date().toDateString();
+  var todayCI = S.checkins[today] || {};
+  var todayPD = S.passiveData[today];
+  var dates = Object.keys(S.checkins).sort();
+  var patterns = detectLifePatterns();
+  var html = '';
+
+  if (type === 'today') {
+    title.textContent = '📊 Today\'s Snapshot';
+    var periodsDone = Object.keys(todayCI).length;
+    html += '<div class="ieb-section"><div class="ieb-section-title">Check-ins</div>';
+    html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">✅</span><span class="ieb-stat-text">' + periodsDone + '/4 check-ins completed</span></div>';
+    ['morning','afternoon','evening','night'].forEach(function(p) {
+      var icon = todayCI[p] ? '🟢' : '⚪';
+      html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">' + icon + '</span><span class="ieb-stat-text">' + CHECKIN_PERIODS[p].label + '</span>' + (todayCI[p] ? '<span class="ieb-stat-val">Done</span>' : '') + '</div>';
+    });
+    html += '</div>';
+    if (todayPD) {
+      html += '<div class="ieb-section"><div class="ieb-section-title">Passive Data</div>';
+      html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">🚶</span><span class="ieb-stat-text">Steps</span><span class="ieb-stat-val">' + todayPD.steps.toLocaleString() + '</span></div>';
+      html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">😴</span><span class="ieb-stat-text">Sleep</span><span class="ieb-stat-val">' + todayPD.sleep + 'h</span></div>';
+      html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">📱</span><span class="ieb-stat-text">Screen Time</span><span class="ieb-stat-val">' + todayPD.screenTime + 'm</span></div>';
+      html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">⚡</span><span class="ieb-stat-text">Day Score</span><span class="ieb-stat-val">' + todayPD.score + '</span></div>';
+      html += '</div>';
+    }
+  } else if (type === 'patterns') {
+    title.textContent = '🔍 Patterns Detected';
+    if (patterns.length) {
+      patterns.forEach(function(p) {
+        html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">' + p.icon + '</span><span class="ieb-stat-text"><strong>' + p.title + '</strong><br><span style="color:var(--label-secondary);font-size:var(--ts-footnote)">' + p.insight + '</span></span></div>';
+      });
+    } else {
+      html += '<div class="ieb-tip">🧠 Keep checking in daily — patterns emerge after 3+ days of data. The more consistent you are, the deeper the insights.</div>';
+    }
+  } else if (type === 'advice') {
+    title.textContent = '💡 Personalised Advice';
+    var tips = [];
+    patterns.forEach(function(p) {
+      if (p.icon.includes('⚠️') || p.icon.includes('📉')) tips.push(p);
+    });
+    if (tips.length) {
+      tips.forEach(function(t) {
+        html += '<div class="ieb-tip">🎯 <strong>' + t.title + ':</strong> ' + t.insight + '</div>';
+      });
+      html += '<div class="ieb-tip">💪 Pick ONE area to improve this week. Small, consistent changes beat dramatic overhauls.</div>';
+    } else if (patterns.length) {
+      html += '<div class="ieb-tip">✨ Your data looks great! Keep up the consistency. Consider: (1) Track one new habit, (2) Set more ambitious daily priorities, (3) Challenge yourself physically.</div>';
+    } else {
+      html += '<div class="ieb-tip">📝 I need more data to give personalised advice. Complete at least 3 days of check-ins and sync your health data.</div>';
+    }
+    html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">🔥</span><span class="ieb-stat-text">Current streak</span><span class="ieb-stat-val">' + (S.streak || 0) + ' days</span></div>';
+    html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">⭐</span><span class="ieb-stat-text">Total XP</span><span class="ieb-stat-val">' + (S.totalXp || 0) + '</span></div>';
+  } else if (type === 'spend') {
+    title.textContent = '💸 Spending Intelligence';
+    var now = new Date();
+    var monthTx = S.transactions.filter(function(tx) {
+      var d = new Date(tx.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    var totalSpent = monthTx.filter(function(tx) { return tx.type === 'expense'; }).reduce(function(s, tx) { return s + tx.amount; }, 0);
+    var totalInc = monthTx.filter(function(tx) { return tx.type === 'income'; }).reduce(function(s, tx) { return s + tx.amount; }, 0);
+    html += '<div class="ieb-section"><div class="ieb-section-title">This Month</div>';
+    html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">📈</span><span class="ieb-stat-text">Income</span><span class="ieb-stat-val">' + fmt(totalInc) + '</span></div>';
+    html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">📉</span><span class="ieb-stat-text">Spent</span><span class="ieb-stat-val" style="color:var(--system-red)">' + fmt(totalSpent) + '</span></div>';
+    html += '<div class="ieb-stat-row"><span class="ieb-stat-icon">' + (totalInc >= totalSpent ? '✅' : '⚠️') + '</span><span class="ieb-stat-text">Net</span><span class="ieb-stat-val" style="color:' + (totalInc >= totalSpent ? 'var(--system-green)' : 'var(--system-red)') + '">' + fmt(totalInc - totalSpent) + '</span></div>';
+    html += '</div>';
+    var recent = monthTx.slice(-5).reverse();
+    if (recent.length) {
+      html += '<div class="ieb-section"><div class="ieb-section-title">Recent Transactions</div>';
+      recent.forEach(function(tx) {
+        var sign = tx.type === 'income' ? '+' : '-';
+        var color = tx.type === 'income' ? 'var(--system-green)' : 'var(--system-red)';
+        html += '<div class="ieb-spend-item"><span class="ieb-spend-cat">' + (tx.type === 'income' ? '💰' : '💳') + ' ' + (tx.note || tx.category) + '</span><span class="ieb-spend-amount" style="color:' + color + '">' + sign + fmt(tx.amount) + '</span></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="ieb-tip">💳 No transactions this month. Voice-log from Home — say "Spent $X on Y" or tap the spend nudge card.</div>';
+    }
+  }
+
+  body.innerHTML = html;
+  expanded.classList.remove('hidden');
+  expanded.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeInsightCard() {
+  var expanded = document.getElementById('insight-expanded');
+  if (expanded) expanded.classList.add('hidden');
 }
 
 function buildWeeklyChart() {
