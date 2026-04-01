@@ -225,6 +225,7 @@ ul{list-style:none}
 .guide-glow-blue{background:radial-gradient(circle,var(--system-blue),transparent)}
 .guide-glow-purple{background:radial-gradient(circle,var(--system-purple),transparent)}
 .guide-glow-orange{background:radial-gradient(circle,var(--system-orange),transparent)}
+.guide-glow-teal{background:radial-gradient(circle,var(--system-teal),transparent)}
 .guide-emoji{font-size:4rem;animation:burstPop .6s var(--ease-spring);filter:drop-shadow(0 4px 20px rgba(0,0,0,.4))}
 .guide-title{font-size:var(--ts-title2);font-weight:700;text-align:center;line-height:1.3;font-family:var(--font-rounded);letter-spacing:-.01em}
 .guide-highlight{background:linear-gradient(135deg,var(--system-green),var(--system-blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -917,6 +918,17 @@ ul{list-style:none}
 .cpro-label{font-size:var(--ts-subhead);font-weight:700;background:linear-gradient(135deg,var(--system-blue),var(--system-purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .cpro-sub{font-size:var(--ts-caption1);color:var(--label-tertiary)}
 .cpro-arrow{font-size:1.4rem;color:var(--label-tertiary)}
+
+/* ═══════════════════════════════════════════════════════
+   SCIENCE MOTIVATION CARD
+═══════════════════════════════════════════════════════ */
+.science-card{margin:0 var(--s16) var(--s12);padding:var(--s16) var(--s20);background:linear-gradient(135deg,rgba(100,210,255,.07),rgba(94,92,230,.06));border:1px solid rgba(100,210,255,.15);border-radius:var(--radius-lg);display:flex;flex-direction:column;gap:var(--s8)}
+.science-card-header{display:flex;align-items:center;justify-content:space-between;gap:var(--s8)}
+.science-tag{font-size:var(--ts-caption1);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--system-teal);opacity:.9}
+.science-source{font-size:var(--ts-caption2);color:var(--label-quaternary);text-align:right;flex:1}
+.science-fact{font-size:var(--ts-subhead);color:var(--label-primary);line-height:1.65}
+.science-action{font-size:var(--ts-footnote);color:var(--system-teal);font-weight:600;line-height:1.5;border-left:2px solid rgba(100,210,255,.3);padding-left:var(--s8)}
+[data-theme="light"] .science-card{background:linear-gradient(135deg,rgba(0,150,200,.06),rgba(94,92,230,.04));border-color:rgba(0,150,200,.15)}
 
 /* ═══════════════════════════════════════════════════════
    THEME TOGGLE BUTTON

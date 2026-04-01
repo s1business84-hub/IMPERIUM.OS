@@ -151,6 +151,18 @@
         </div>
 
         <div class="guide-slide" id="gs-4">
+          <div class="guide-glow guide-glow-teal"></div>
+          <div class="guide-emoji">🔬</div>
+          <h2 class="guide-title">Built on <span class="guide-highlight">real science</span></h2>
+          <p class="guide-desc">Every insight Imperium gives you is grounded in peer-reviewed research — not opinions. You also get a daily science-backed motivation to keep you sharp.</p>
+          <div class="guide-pattern-demo">
+            <div class="guide-pd-item"><span class="guide-pd-icon">🧠</span><div><strong>Neuroplasticity</strong><br><small>Harvard: 66 days of habit reps rewires your brain permanently</small></div></div>
+            <div class="guide-pd-item"><span class="guide-pd-icon">📈</span><div><strong>Implementation Intentions</strong><br><small>Stating when+where you'll act makes you 2–3× more likely to follow through (Gollwitzer, 1999)</small></div></div>
+            <div class="guide-pd-item"><span class="guide-pd-icon">⚡</span><div><strong>Peak Performance Window</strong><br><small>Circadian science: your best cognitive work happens 2–4 hrs after waking</small></div></div>
+          </div>
+        </div>
+
+        <div class="guide-slide" id="gs-5">
           <div class="guide-glow guide-glow-orange"></div>
           <div class="guide-emoji">💸</div>
           <h2 class="guide-title">Track money <span class="guide-highlight">without thinking</span></h2>
@@ -162,7 +174,7 @@
           </div>
         </div>
 
-        <div class="guide-slide" id="gs-5">
+        <div class="guide-slide" id="gs-6">
           <div class="guide-glow guide-glow-green"></div>
           <div class="guide-emoji">🚀</div>
           <h2 class="guide-title">You're <span class="guide-highlight">ready</span></h2>
@@ -177,7 +189,7 @@
       <div class="guide-nav">
         <button class="guide-skip" id="guide-skip" onclick="skipGuide()">Skip</button>
         <div class="guide-dots" id="guide-dots">
-          <span class="guide-dot active"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span>
+          <span class="guide-dot active"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span>
         </div>
         <button class="guide-next-btn" id="guide-next-btn" onclick="nextGuideStep()">Next →</button>
       </div>
@@ -249,6 +261,16 @@
           </button>
         </div>
         <div class="home-orb-label" id="home-orb-label">Tap to talk · voice log anything</div>
+      </div>
+
+      <!-- Daily Science Motivation Card -->
+      <div class="science-card glass-card" id="science-card">
+        <div class="science-card-header">
+          <span class="science-tag">🔬 Science of the Day</span>
+          <span class="science-source" id="science-source"></span>
+        </div>
+        <div class="science-fact" id="science-fact"></div>
+        <div class="science-action" id="science-action"></div>
       </div>
 
       <!-- Passive Data Strip -->

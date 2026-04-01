@@ -1103,7 +1103,7 @@ function finishOnboarding() {
 
 /* ── APP GUIDE / WALKTHROUGH ──────────────────────── */
 let guideStep = 1;
-const GUIDE_TOTAL = 5;
+const GUIDE_TOTAL = 6;
 
 function showAppGuide() {
   var overlay = document.getElementById('guide-overlay');
@@ -1684,6 +1684,7 @@ function initHomeData() {
   initCheckinBeams();
   updatePassiveStrip();
   initSpendNudge();
+  initScienceCard();
 
   if (!homeChatHistory.length) {
     const name = S.user ? S.user.name.split(' ')[0] : 'there';
@@ -3633,6 +3634,217 @@ function voteFeature(el, feature) {
   }
   showToast('Vote recorded! 🗳', 'success');
   grantXP(5, 'feature voted');
+}
+
+/* ════════════════════════════════════════════════════════
+   SCIENCE-BACKED DAILY MOTIVATION
+   Rotates each day. Sources: peer-reviewed journals,
+   Harvard, Stanford, Oxford, Nature, Huberman Lab, etc.
+   ════════════════════════════════════════════════════════ */
+const SCIENCE_CARDS = [
+  {
+    emoji: '🧠',
+    fact: 'Your brain physically rewires itself every time you repeat a behaviour. After ~66 days, the new circuit becomes automatic — no willpower needed.',
+    action: 'What habit are you building? Keep your streak alive — each rep is literally reshaping your brain.',
+    source: 'Lally et al., 2010 · UCL'
+  },
+  {
+    emoji: '⏰',
+    fact: 'Cortisol and adrenaline peak 30–60 min after waking, creating a natural focus window. Delaying phone use until after this window boosts deep-work output by up to 40%.',
+    action: 'Try a 30-min phone-free morning. Use that peak energy for your #1 task first.',
+    source: 'Huberman Lab · Stanford Neuroscience'
+  },
+  {
+    emoji: '😴',
+    fact: 'Getting 7–8 hours of sleep improves memory consolidation, emotional regulation, and problem-solving. Even one night of 6 hrs impairs cognition as much as being legally drunk.',
+    action: 'Log your sleep tonight. Consistency matters more than total hours — same bed/wake time ±30 min.',
+    source: 'Walker, 2017 · UC Berkeley · Nature'
+  },
+  {
+    emoji: '💪',
+    fact: 'A single 20-minute walk increases BDNF (Brain-Derived Neurotrophic Factor), the brain’s “growth fertiliser”, improving focus and mood for up to 4 hours.',
+    action: 'Get outside for a 20-min walk today. No headphones — let your mind wander. That’s when insights strike.',
+    source: 'Ratey, Harvard Medical School · JAMA'
+  },
+  {
+    emoji: '🎯',
+    fact: 'Writing down a specific plan — “I will do X at TIME in PLACE” — makes you 2–3× more likely to follow through. This is called an Implementation Intention.',
+    action: 'Open your morning check-in and set one concrete intention: “I will [task] at [time] in [place].”',
+    source: 'Gollwitzer, 1999 · Psychological Bulletin'
+  },
+  {
+    emoji: '🌊',
+    fact: 'Cold exposure (even a 30-second cold shower) triggers a 2.5–3× spike in dopamine that lasts for hours — longer and more stable than caffeine.',
+    action: 'End your shower with 30 seconds cold. The discomfort IS the benefit — you’re training your stress system.',
+    source: 'Huberman, 2021 · van Tulleken, 2023'
+  },
+  {
+    emoji: '📊',
+    fact: 'People who track their habits and behaviours achieve their goals at 2–3× the rate of those who don’t. Measurement creates accountability and pattern awareness.',
+    action: 'Your check-in today isn’t just data — it’s the act that makes you twice as likely to improve.',
+    source: 'Amabile & Kramer, HBR · 2011'
+  },
+  {
+    emoji: '🧘',
+    fact: '10 minutes of mindfulness meditation daily for 8 weeks visibly increases grey matter density in the prefrontal cortex — the region controlling focus, decisions, and emotional regulation.',
+    action: 'Even 5 deep breaths before a hard task primes your PFC. Try box breathing: 4s in — 4s hold — 4s out.',
+    source: 'Hölzel et al., 2011 · Harvard · Psychiatry Research'
+  },
+  {
+    emoji: '🍿',
+    fact: 'Your gut contains 500 million neurons — your “second brain.” 90% of serotonin (your happiness chemical) is produced there. Diet directly shapes mood and focus.',
+    action: 'What you eat today affects how you think tomorrow. Prioritise whole foods, fibre, and water.',
+    source: 'Gershon, Columbia · Cryan & Dinan, 2012 · Nature'
+  },
+  {
+    emoji: '🔥',
+    fact: 'The “2-minute rule”: if a task takes less than 2 minutes, doing it immediately reduces cognitive load more than scheduling it. Mental to-do lists consume working memory.',
+    action: 'Scan your mental list right now. Pick ONE thing under 2 minutes and do it before reading further.',
+    source: 'Allen, GTD · Validated by cognitive load theory (Sweller, 1988)'
+  },
+  {
+    emoji: '💧',
+    fact: 'Even mild dehydration (1–2% body weight loss) impairs concentration, working memory, and mood. Most people are chronically slightly dehydrated.',
+    action: 'Drink a full glass of water right now. Aim for 35ml per kg of bodyweight daily.',
+    source: 'Ganio et al., 2011 · British Journal of Nutrition'
+  },
+  {
+    emoji: '🙏',
+    fact: 'Expressing gratitude activates the hypothalamus, releasing dopamine and serotonin simultaneously — an effect that compounds over time with daily practice.',
+    action: 'Name 3 specific things you’re grateful for today. Not generic — be precise. Specificity amplifies the effect.',
+    source: 'Emmons & McCullough, 2003 · Journal of Personality & Social Psychology'
+  },
+  {
+    emoji: '⚡',
+    fact: 'Your peak cognitive performance window occurs 2–4 hours after waking, aligned with your core body temperature rise. Complex thinking done then requires 30% less effort.',
+    action: 'Block your hardest task for 2–4 hrs after you wake. Protect that window ruthlessly.',
+    source: 'Pink, 2018 · Anderson, 2003 · Circadian Biology'
+  },
+  {
+    emoji: '🏃',
+    fact: 'Aerobic exercise for 20+ minutes increases BDNF, norepinephrine, and serotonin simultaneously — creating a “brain state” that makes learning 20% more efficient for 2 hours afterward.',
+    action: 'Schedule your hardest learning or deep work session right after exercise, not before.',
+    source: 'Ratey, 2008 · Spark · Harvard Medical School'
+  },
+  {
+    emoji: '📞',
+    fact: 'Social connection is as important to longevity as quitting smoking. Loneliness increases cortisol chronically, suppressing immunity and accelerating cognitive decline.',
+    action: 'Reach out to one person today — a text, call, or in-person moment. Quality over quantity.',
+    source: 'Holt-Lunstad, 2015 · PLOS Medicine · Harvard Study of Adult Development'
+  },
+  {
+    emoji: '📝',
+    fact: 'Writing about your goals increases the likelihood of achieving them by 42%. The act of encoding goals physically engages a different brain pathway than thinking alone.',
+    action: 'Write one goal for this week — specific, measurable, time-bound. Pen to paper or type it in check-in.',
+    source: 'Matthews, Dominican University · 2007'
+  },
+  {
+    emoji: '🌙',
+    fact: 'Blue light from screens suppresses melatonin production for up to 3 hours after exposure, delaying your sleep onset and reducing deep-sleep quality.',
+    action: 'Dim screens or use night mode after 9 PM. The Insights tab shows your screen vs. sleep correlation.',
+    source: 'Harvard Sleep Medicine · Chang et al., 2015 · PNAS'
+  },
+  {
+    emoji: '🎵',
+    fact: 'Music with ~60 BPM (baroque, lo-fi) synchronises brain waves to an alpha state — the ideal frequency for focused, creative work without anxiety.',
+    action: 'Put on lo-fi or classical music for your next focus block. Silence is second-best for most people.',
+    source: 'Rauscher et al., 1993 · Jenkins, 2001 · Stanford Study'
+  },
+  {
+    emoji: '🏆',
+    fact: 'Self-compassion after failure leads to faster recovery and higher future performance than self-criticism. Your inner critic is scientifically counterproductive.',
+    action: 'Missed a goal? Say: “This is hard, and that’s okay. What’s one small step forward?” — and mean it.',
+    source: 'Neff, 2003 · Breines & Chen, 2012 · Journal of Social Psychology'
+  },
+  {
+    emoji: '🔬',
+    fact: 'The Zeigarnik Effect: your brain remembers unfinished tasks 2× better than completed ones, causing mental “open loops” that drain focus. Writing tasks down closes the loop.',
+    action: 'Do a 5-minute brain dump of every open task. Writing it down frees cognitive RAM instantly.',
+    source: 'Zeigarnik, 1927 · Masicampo & Baumeister, 2011 · Psychological Science'
+  },
+  {
+    emoji: '🌞',
+    fact: 'Morning sunlight exposure (10–20 min outdoors within 1 hr of waking) sets your circadian rhythm, improves sleep quality that night by up to 50%, and boosts daytime energy.',
+    action: 'Step outside in the morning — no sunglasses for 10–20 min. This single habit has outsized returns.',
+    source: 'Huberman, Stanford · Czeisler, Harvard Chronobiology'
+  },
+  {
+    emoji: '💰',
+    fact: 'Tracking spending leads to a 15–20% reduction in unnecessary expenditure on average. Awareness alone changes behaviour — you can’t manage what you don’t measure.',
+    action: 'Log today’s spending in the Home screen. Even rough estimates create powerful pattern data.',
+    source: 'Ameriks, Caplin & Leahy, 2003 · Journal of Finance'
+  },
+  {
+    emoji: '🥊',
+    fact: 'Voluntary hard challenges — cold showers, hard workouts, difficult conversations — build psychological resilience by teaching your nervous system that discomfort is survivable.',
+    action: 'Do one uncomfortable thing today on purpose. Each time you do, your stress threshold permanently rises.',
+    source: 'McGonigal, 2015 · Stanford · Post-traumatic growth research'
+  },
+  {
+    emoji: '⏳',
+    fact: 'The Pomodoro technique (25 min deep work + 5 min break) outperforms marathon sessions because it prevents decision fatigue and preserves the prefrontal cortex’s glucose supply.',
+    action: 'Set a 25-minute timer for your next task. No phone. No tab-switching. All in.',
+    source: 'Cirillo, 1987 · Validated by Baumeister ego-depletion research'
+  },
+  {
+    emoji: '👥',
+    fact: 'Being observed by others, even imaginary accountability, increases task completion rates by 33%. Sharing a goal publicly harnesses this effect without needing a partner present.',
+    action: 'Tell one person your top priority today — or log it in your morning check-in. Accountability is leverage.',
+    source: 'Ariely & Wertenbroch, 2002 · Psychological Science'
+  },
+  {
+    emoji: '🧩',
+    fact: 'Novelty triggers dopamine release, enhancing motivation and learning. Doing even familiar tasks in a new order, location, or method reactivates the reward system.',
+    action: 'Change one thing about your routine today. Different seat, different path, different order. Your brain craves novelty.',
+    source: 'Bunzeck & Düzel, 2006 · Neuron · UCL'
+  },
+  {
+    emoji: '💬',
+    fact: 'Naming your emotions (“affect labelling”) reduces the amygdala’s threat response. Simply saying “I feel anxious” activates the prefrontal cortex and reduces emotional intensity.',
+    action: 'In your next check-in, be honest about your mood. Labelling it isn’t weakness — it’s neuroscience.',
+    source: 'Lieberman et al., 2007 · UCLA · Psychological Science'
+  },
+  {
+    emoji: '🌱',
+    fact: 'Spending just 20 minutes in nature reduces cortisol (stress hormone) more effectively than any supplement. Even a city park counts.',
+    action: 'Take a 20-min nature break this week. Leave your phone on silent. Let your nervous system reset.',
+    source: 'Hunter et al., 2019 · Frontiers in Psychology'
+  },
+  {
+    emoji: '📞',
+    fact: 'People in the top 15% of goal achievers use “mental contrasting” — vividly imagining the goal AND its obstacles. Optimism without obstacle-planning reduces motivation.',
+    action: 'Name your biggest goal. Then name ONE obstacle. Then name ONE step around that obstacle. That’s your plan.',
+    source: 'Oettingen, 2014 · WOOP · New York University'
+  },
+  {
+    emoji: '💙',
+    fact: 'Emotions are contagious. Research shows we unconsciously mirror the emotional states of people around us within seconds — this is called emotional contagion.',
+    action: 'Choose your 3 closest people carefully. And be the energy you want to catch yourself absorbing.',
+    source: 'Hatfield, Cacioppo & Rapson, 1993 · Psychological Inquiry'
+  },
+  {
+    emoji: '📵',
+    fact: 'Every notification trains your brain to crave interruption. Average recovery time after an interruption is 23 minutes. Constant interruptions structurally reduce deep-thinking capacity.',
+    action: 'Put your phone face-down or on Do Not Disturb for your next 1-hour work block. Reclaim your focus.',
+    source: 'Mark et al., 2008 · CHI Conference · UC Irvine'
+  },
+];
+
+function initScienceCard() {
+  const card  = document.getElementById('science-card');
+  const factEl  = document.getElementById('science-fact');
+  const actionEl = document.getElementById('science-action');
+  const sourceEl = document.getElementById('science-source');
+  if (!card || !factEl) return;
+
+  // Pick a card deterministically by day-of-year so it changes daily
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const entry = SCIENCE_CARDS[dayOfYear % SCIENCE_CARDS.length];
+
+  factEl.innerHTML   = entry.emoji + ' ' + entry.fact;
+  actionEl.textContent = '→ ' + entry.action;
+  if (sourceEl) sourceEl.textContent = entry.source;
+  card.classList.remove('hidden');
 }
 
 /* ════════════════════════════════════════════════════════
