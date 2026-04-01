@@ -1,88 +1,290 @@
 import TelegramBot from "node-telegram-bot-api";
+import dotenv from "dotenv";
+import fetch from "node-fetch";
 
-const BOT_TOKEN = "8723944751:AAHEYNnVHqN6H7ljtDcAP6K17f7G5zYl0FI";
+dotenv.config();
 
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+// ─────────────────────────────────────────────────────
+//  CONFIG
+// ─────────────────────────────────────────────────────
+const TOKEN        = process.env.TELEGRAM_TOKEN || "8723944751:AAHEYNnVHqN6H7ljtDcAP6K17f7G5zYl0FI";
+const OLLAMA_URL   = process.env.OLLAMA_URL  || "http://localhost:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3";
+const APP_URL      = "https://s1business84-hub.github.io/IMPERIUM.OS";
 
-// ── Welcome message on /start ──────────────────────────
+const bot = new TelegramBot(TOKEN, { polling: true });
+
+// ─────────────────────────────────────────────────────
+//  MEMORY  —  userId → { history[], plan, tasks[], focus, name }
+// ─────────────────────────────────────────────────────
+const memory = new Map();
+
+function getUser(userId) {
+  if (!memory.has(userId)) {
+    memory.set(userId, { history: [], plan: null, tasks: [], focus: null, name: null });
+  }
+  return memory.get(userId);
+}
+
+function pushHistory(userId, role, content) {
+  const user = getUser(userId);
+  user.history.push({ role, content });
+  if (user.history.length > 40) user.history.splice(0, 2);
+}
+
+// ─────────────────────────────────────────────────────
+//  SYSTEM PROMPT  —  injected before every AI call
+// ─────────────────────────────────────────────────────
+function buildSystemPrompt(userId) {
+  const user = getUser(userId);
+  let ctx = `You are Imperium AI — a high-performance personal operator built into the Imperium OS app.
+You act like a sharp, direct, science-backed coach. You do NOT give generic advice.
+You know the user's context and use it. You challenge, guide, and optimise.
+Keep replies concise (max 3-4 short paragraphs) and actionable.`;
+  if (user.name)         ctx += `\nUser's name: ${user.name}.`;
+  if (user.focus)        ctx += `\nUser's current FOCUS: "${user.focus}" — weave this into advice when relevant.`;
+  if (user.plan)         ctx += `\nUser's active PLAN:\n${user.plan}`;
+  if (user.tasks.length) ctx += `\nUser's TASK LIST:\n${user.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
+  return ctx;
+}
+
+// ─────────────────────────────────────────────────────
+//  OLLAMA AI CALL
+// ─────────────────────────────────────────────────────
+async function getAIResponse(userId, userInput) {
+  const user = getUser(userId);
+  const messages = [
+    { role: "system", content: buildSystemPrompt(userId) },
+    ...user.history,
+    { role: "user", content: userInput },
+  ];
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream: false }),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.message?.content || data.response || null;
+  } catch (err) {
+    console.error("Ollama error:", err.message);
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────
+//  HELPER — send Markdown, fallback to plain text
+// ─────────────────────────────────────────────────────
+async function reply(chatId, text, opts = {}) {
+  try {
+    await bot.sendMessage(chatId, text, { parse_mode: "Markdown", ...opts });
+  } catch {
+    await bot.sendMessage(chatId, text.replace(/[*_`[\]]/g, ""), opts);
+  }
+}
+
+// ─────────────────────────────────────────────────────
+//  /start
+// ─────────────────────────────────────────────────────
 bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
+  const userId = msg.from.id;
   const name = msg.from.first_name || "there";
-  bot.sendMessage(
-    chatId,
-    `⚡ *Welcome to Imperium OS, ${name}!*\n\nI'm your personal AI assistant from the Imperium OS app.\n\nYou can:\n• Ask me anything 🤖\n• Log transactions (e.g. "spent $12 on lunch")\n• Request insights ("how am I doing this week?")\n• Get motivation and habit tips\n\nJust type a message to get started!`,
-    { parse_mode: "Markdown" }
-  );
+  getUser(userId).name = name;
+  reply(msg.chat.id,
+    `⚡ *Welcome to Imperium, ${name}.*\n\nI'm your high-performance AI operator.\nI remember your context, track your goals, and give science-backed guidance.\n\n*Commands:*\n/plan — set your strategy\n/focus — lock in one priority\n/tasks — view task list\n/add [task] — add a task\n/done [#] — complete a task\n/status — see all your context\n/clear — wipe memory\n/app — open your dashboard\n/help — full guide\n\nOr just *talk to me.* I adapt to your context every message.`);
 });
 
-// ── Help command ───────────────────────────────────────
+// ─────────────────────────────────────────────────────
+//  /help
+// ─────────────────────────────────────────────────────
 bot.onText(/\/help/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(
-    chatId,
-    `*Imperium OS Bot — Commands*\n\n/start — Welcome message\n/help — Show this menu\n/app — Open Imperium OS web app\n\n*Or just chat naturally:*\n• "log $50 groceries"\n• "how am I doing?"\n• "motivate me"\n• Ask anything!`,
-    { parse_mode: "Markdown" }
-  );
+  reply(msg.chat.id,
+    `*Imperium AI — Command Guide*\n\n⚡ */plan [text]* — set your current plan\n🎯 */focus [text]* — lock in one priority\n✅ */tasks* — view task list\n➕ */add [task]* — add a task\n✔️ */done [#]* — mark task complete\n📊 */status* — see all context\n🗑 */clear* — reset memory\n📱 */app* — open dashboard\n\n_Just chat naturally for AI responses. I remember the full session._`);
 });
 
-// ── App link command ───────────────────────────────────
+// ─────────────────────────────────────────────────────
+//  /app
+// ─────────────────────────────────────────────────────
 bot.onText(/\/app/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(
-    chatId,
-    `📱 *Open Imperium OS*\n\nYour full dashboard is at:\nhttps://s1business84-hub.github.io/IMPERIUM.OS\n\nAll your data, insights, and AI tools — in one place.`,
-    { parse_mode: "Markdown" }
-  );
+  reply(msg.chat.id,
+    `📱 *Imperium OS Dashboard*\n\n${APP_URL}\n\nCheck-ins, insights, spending tracker, full AI analysis.`);
 });
 
-// ── Main message handler ───────────────────────────────
+// ─────────────────────────────────────────────────────
+//  /plan
+// ─────────────────────────────────────────────────────
+bot.onText(/\/plan(.*)/, async (msg, match) => {
+  const userId = msg.from.id;
+  const user = getUser(userId);
+  const input = match[1].trim();
+  if (!input) {
+    reply(msg.chat.id, user.plan
+      ? `📋 *Your current plan:*\n\n${user.plan}\n\n_Use /plan [new plan] to update._`
+      : `📋 *Set your plan:*\nUse: \`/plan [describe your goal or strategy]\``);
+    return;
+  }
+  user.plan = input;
+  bot.sendChatAction(msg.chat.id, "typing");
+  const aiComment = await getAIResponse(userId, `My plan: "${input}". Give a sharp 2-sentence assessment and one tweak.`);
+  pushHistory(userId, "user", `My plan: ${input}`);
+  if (aiComment) pushHistory(userId, "assistant", aiComment);
+  reply(msg.chat.id,
+    `✅ *Plan locked:*\n_${input}_\n\n${aiComment || "Plan saved. I'll inject this context into every response."}`);
+});
+
+// ─────────────────────────────────────────────────────
+//  /focus
+// ─────────────────────────────────────────────────────
+bot.onText(/\/focus(.*)/, async (msg, match) => {
+  const userId = msg.from.id;
+  const user = getUser(userId);
+  const input = match[1].trim();
+  if (!input) {
+    reply(msg.chat.id, user.focus
+      ? `🎯 *Current focus:* ${user.focus}\n\n_Use /focus [new] to change._`
+      : `🎯 *Set your focus:*\nUse: \`/focus [one thing to stay locked on]\``);
+    return;
+  }
+  user.focus = input;
+  bot.sendChatAction(msg.chat.id, "typing");
+  const aiComment = await getAIResponse(userId, `I'm locking my focus on: "${input}". Give one sharp sentence on why this matters and one concrete first action for the next 30 minutes.`);
+  pushHistory(userId, "user", `Focus: ${input}`);
+  if (aiComment) pushHistory(userId, "assistant", aiComment);
+  reply(msg.chat.id,
+    `🎯 *Focus locked:*\n_${input}_\n\n${aiComment || "Focus set. I'll keep this front of mind."}`);
+});
+
+// ─────────────────────────────────────────────────────
+//  /tasks
+// ─────────────────────────────────────────────────────
+bot.onText(/\/tasks$/, (msg) => {
+  const user = getUser(msg.from.id);
+  if (!user.tasks.length) {
+    reply(msg.chat.id, `✅ *No tasks yet.*\n\nUse \`/add [task]\` to add one.`);
+    return;
+  }
+  const list = user.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n");
+  reply(msg.chat.id, `✅ *Your tasks:*\n\n${list}\n\n_/done [#] to complete · /add [task] to add more_`);
+});
+
+// ─────────────────────────────────────────────────────
+//  /add
+// ─────────────────────────────────────────────────────
+bot.onText(/\/add (.+)/, (msg, match) => {
+  const user = getUser(msg.from.id);
+  const task = match[1].trim();
+  user.tasks.push(task);
+  reply(msg.chat.id, `➕ Added: *${task}*\n\n${user.tasks.length} task${user.tasks.length > 1 ? "s" : ""} in queue. /tasks to view.`);
+});
+
+// ─────────────────────────────────────────────────────
+//  /done
+// ─────────────────────────────────────────────────────
+bot.onText(/\/done (\d+)/, (msg, match) => {
+  const user = getUser(msg.from.id);
+  const idx = parseInt(match[1]) - 1;
+  if (idx < 0 || idx >= user.tasks.length) {
+    reply(msg.chat.id, `❌ Task #${idx + 1} not found. Use /tasks to see your list.`);
+    return;
+  }
+  const done = user.tasks.splice(idx, 1)[0];
+  reply(msg.chat.id, `✔️ Done: *${done}*\n\n${user.tasks.length} task${user.tasks.length !== 1 ? "s" : ""} remaining.`);
+});
+
+// ─────────────────────────────────────────────────────
+//  /status
+// ─────────────────────────────────────────────────────
+bot.onText(/\/status/, (msg) => {
+  const user = getUser(msg.from.id);
+  let out = `📊 *Your Imperium Context*\n\n`;
+  out += user.focus ? `🎯 *Focus:* ${user.focus}\n` : `🎯 *Focus:* not set\n`;
+  out += user.plan  ? `📋 *Plan:* ${user.plan}\n`   : `📋 *Plan:* not set\n`;
+  if (user.tasks.length) {
+    out += `\n✅ *Tasks (${user.tasks.length}):*\n${user.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
+  } else {
+    out += `✅ *Tasks:* none`;
+  }
+  out += `\n\n💬 *Conversation:* ${Math.floor(user.history.length / 2)} exchanges`;
+  reply(msg.chat.id, out);
+});
+
+// ─────────────────────────────────────────────────────
+//  /clear
+// ─────────────────────────────────────────────────────
+bot.onText(/\/clear/, (msg) => {
+  const userId = msg.from.id;
+  const name = getUser(userId).name;
+  memory.delete(userId);
+  getUser(userId).name = name;
+  reply(msg.chat.id, `🗑 Memory cleared. Fresh start, ${name || "operator"}.`);
+});
+
+// ─────────────────────────────────────────────────────
+//  SCIENCE FALLBACKS — when Ollama is offline
+// ─────────────────────────────────────────────────────
+const SCIENCE = [
+  "Research: naming your next action (time + place) makes you 2–3× more likely to execute. What's your next concrete step?",
+  "Peak cognitive performance hits 2–4 hrs after waking. Are you protecting that window?",
+  "66 reps physically rewires a habit circuit in your brain. Where are you in the rep count?",
+  "A 20-min walk spikes BDNF — your brain's growth fertiliser — for 4 hours. Moved today?",
+  "Writing a goal down increases achievement probability by 42%. Is yours written?",
+  "Cold exposure raises dopamine 2.5× baseline for hours — more stable than caffeine.",
+];
+
+function buildFallback(userId) {
+  const user = getUser(userId);
+  let out = `⚡ *Imperium AI* _(AI offline — context mode)_\n\n`;
+  if (user.focus) out += `🎯 *Your focus:* ${user.focus}\n\n`;
+  out += SCIENCE[Math.floor(Math.random() * SCIENCE.length)];
+  if (user.tasks.length) out += `\n\n*Next task:* ${user.tasks[0]}`;
+  out += `\n\n_Full AI back when Ollama is running: \`ollama run llama3\`_`;
+  return out;
+}
+
+// ─────────────────────────────────────────────────────
+//  MAIN MESSAGE HANDLER
+// ─────────────────────────────────────────────────────
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
-  const userText = msg.text;
+  const userId = msg.from.id;
+  const text   = msg.text;
+  if (!text || text.startsWith("/")) return;
 
-  // Ignore commands (handled above)
-  if (!userText || userText.startsWith("/")) return;
+  const user = getUser(userId);
+  if (!user.name && msg.from.first_name) user.name = msg.from.first_name;
 
-  // Typing indicator
-  bot.sendChatAction(chatId, "typing");
-
-  // ── Transaction log shortcut ─────────────────────────
-  const txMatch = userText.match(
-    /(?:spent|paid|bought|logged?|added?)\s+\$?([\d.]+)\s+(?:on\s+)?(.+)/i
-  );
+  // Transaction shortcut
+  const txMatch = text.match(/(?:spent|paid|bought|logged?|added?)\s+\$?([\d.]+)\s+(?:on\s+)?(.+)/i);
   if (txMatch) {
-    const amount = parseFloat(txMatch[1]).toFixed(2);
+    const amount   = parseFloat(txMatch[1]).toFixed(2);
     const category = txMatch[2].trim();
-    bot.sendMessage(
-      chatId,
-      `✅ Got it! I've noted:\n💸 *$${amount}* — ${category}\n\nOpen the app to sync it to your dashboard:\nhttps://s1business84-hub.github.io/IMPERIUM.OS`,
-      { parse_mode: "Markdown" }
-    );
+    pushHistory(userId, "user", text);
+    pushHistory(userId, "assistant", `Logged $${amount} on ${category}.`);
+    reply(chatId, `💸 Logged: *$${amount}* — ${category}\n\nSync to dashboard: ${APP_URL}`);
     return;
   }
 
-  // ── Motivation shortcut ──────────────────────────────
-  if (/motivat|inspire|boost|hype/i.test(userText)) {
-    const quotes = [
-    `🔥 *\u201cThe pain you feel today is the strength you feel tomorrow.\u201d*\nKeep going, Imperium awaits.`,
-    `⚡ *\u201cDiscipline is choosing between what you want now and what you want most.\u201d*\nYou've got this.`,
-    `💎 *\u201cSmall daily improvements over time lead to stunning results.\u201d*\nOne step at a time.`,
-    `🚀 *\u201cSuccess is the sum of small efforts, repeated day in and day out.\u201d*\nYou're building something real.`,
-  ];
-    const pick = quotes[Math.floor(Math.random() * quotes.length)];
-    bot.sendMessage(chatId, pick, { parse_mode: "Markdown" });
-    return;
+  bot.sendChatAction(chatId, "typing");
+  pushHistory(userId, "user", text);
+  const aiReply = await getAIResponse(userId, text);
+
+  if (aiReply) {
+    pushHistory(userId, "assistant", aiReply);
+    reply(chatId, aiReply);
+  } else {
+    const fallback = buildFallback(userId);
+    reply(chatId, fallback);
   }
-
-  // ── Default AI-style response ────────────────────────
-  const response = `⚡ *Imperium AI*\n\nYou said: "${userText}"\n\nFor full AI-powered responses, analysis, and your personal dashboard, open the app:\nhttps://s1business84-hub.github.io/IMPERIUM.OS\n\n_Tip: Type /help to see what I can do here._`;
-
-  bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
 });
 
-// ── Error handling ────────────────────────────────────
-bot.on("polling_error", (err) => {
-  console.error("Polling error:", err.message);
-});
+// ─────────────────────────────────────────────────────
+//  ERROR HANDLING
+// ─────────────────────────────────────────────────────
+bot.on("polling_error", (err) => console.error("Polling error:", err.message));
+process.on("unhandledRejection", (err) => console.error("Unhandled:", err));
 
-console.log("✅ ImperiumOSBot is running — @ImperiumOSBot");
+console.log("⚡ Imperium Bot running — @ImperiumOSBot");
+console.log(`   Model : ${OLLAMA_MODEL} @ ${OLLAMA_URL}`);
+console.log("   Memory: in-process per userId");
