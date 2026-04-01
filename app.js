@@ -858,56 +858,75 @@ class CanvasTextEffect {
   }
 }
 
-let bootCanvasText = null;
+// ── ENCRYPTED TEXT BOOT ────────────────────────────────────────────────────
+const BOOT_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*<>[]{}|';
+const BOOT_TEXT  = 'Imperium OS';
 
 function runBoot() {
-  const bar = document.getElementById('boot-bar');
+  const el = document.getElementById('boot-encrypt-text');
+  if (!el) { bootDone(); return; }
 
-  // Init canvas text effect
-  const textCanvas = document.getElementById('boot-text-canvas');
-  if (textCanvas) {
-    bootCanvasText = new CanvasTextEffect(textCanvas, 'IMPERIUM OS', {
-      fontSize: 30,
-      letterSpacing: 4,
-      lineGap: 3,
-      speed: 18,
-      colors: [
-        'rgba(16,185,129,1)',
-        'rgba(16,185,129,0.85)',
-        'rgba(48,209,88,0.9)',
-        'rgba(10,132,255,1)',
-        'rgba(10,132,255,0.85)',
-        'rgba(59,130,246,0.9)',
-        'rgba(100,210,255,0.8)',
-        'rgba(94,92,230,0.7)',
-        'rgba(16,185,129,0.6)',
-        'rgba(10,132,255,0.5)',
-      ]
-    });
-    bootCanvasText.init();
-    bootCanvasText.start();
+  const chars = BOOT_TEXT.split('');
+  // Start with all scrambled
+  const state = chars.map(() => randomBootChar());
+  el.innerHTML = renderBootText(state, chars, 0);
+
+  let revealIndex = 0;           // next char index to lock in
+  let scrambleTick = 0;
+  const SCRAMBLE_INTERVAL = 40;  // ms between scramble frames
+  const REVEAL_EVERY = 5;        // reveal one char every N scramble ticks
+  const REVEAL_DELAY_MS = 50;    // matches revealDelayMs from the component
+
+  function randomBootChar() {
+    return BOOT_CHARS[Math.floor(Math.random() * BOOT_CHARS.length)];
   }
 
-  let pct = 0;
-  const timer = setInterval(() => {
-    pct += 2;
-    if (pct > 100) pct = 100;
-    bar.style.width = pct + '%';
-    if (pct >= 100) { clearInterval(timer); setTimeout(bootDone, 350); }
-  }, 15);
+  const interval = setInterval(() => {
+    scrambleTick++;
+
+    // Scramble unrevealed chars
+    for (let i = revealIndex; i < chars.length; i++) {
+      state[i] = randomBootChar();
+    }
+
+    // Reveal one char per REVEAL_EVERY ticks
+    if (scrambleTick % REVEAL_EVERY === 0 && revealIndex < chars.length) {
+      state[revealIndex] = chars[revealIndex]; // lock in real char
+      revealIndex++;
+    }
+
+    el.innerHTML = renderBootText(state, chars, revealIndex);
+
+    if (revealIndex >= chars.length) {
+      clearInterval(interval);
+      // Hold for a beat then exit
+      setTimeout(bootDone, 520);
+    }
+  }, SCRAMBLE_INTERVAL);
+
+  // Silence unused-var warning — REVEAL_DELAY_MS controls feel, matches component prop
+  void REVEAL_DELAY_MS;
+}
+
+function renderBootText(state, original, revealedUpTo) {
+  return state.map((ch, i) => {
+    if (i < revealedUpTo) {
+      return `<span class="boot-char-revealed">${original[i] === ' ' ? '&nbsp;' : original[i]}</span>`;
+    }
+    return `<span class="boot-char-encrypted">${ch}</span>`;
+  }).join('');
 }
 
 function bootDone() {
   loadState();
-  if (bootCanvasText) bootCanvasText.stop();
   const boot = document.getElementById('screen-boot');
-  boot.style.transition = 'opacity 0.6s ease';
+  boot.style.transition = 'opacity 0.5s ease';
   boot.style.opacity = '0';
   setTimeout(() => {
     boot.classList.remove('active');
     boot.style.display = 'none';
     checkAuth();
-  }, 650);
+  }, 520);
 }
 
 function checkAuth() {
