@@ -930,6 +930,8 @@ function bootDone() {
 }
 
 function checkAuth() {
+  initEmailJS();
+  initTheme();
   if (S.user && S.onboarded) {
     showBottomNav();
     updateStreak();
@@ -978,6 +980,8 @@ function navigateTo(id) {
 function showBottomNav() {
   const bn = document.getElementById('bottom-nav');
   if (bn) bn.classList.remove('hidden');
+  const tb = document.getElementById('theme-toggle-btn');
+  if (tb) tb.classList.remove('hidden');
 }
 
 /* ── AUTH ─────────────────────────────────────────── */
@@ -1021,6 +1025,7 @@ function continueAsGuest() {
   S.user = { name: 'Guest', email: 'guest@imperium.os' };
   S.onboarded = false;
   saveState();
+  sendWelcomeEmail('Guest', '');
   postAuth();
 }
 
@@ -3494,18 +3499,49 @@ let proWaitlistTier = '';
 
 function joinWaitlist(tier) {
   proWaitlistTier = tier;
+  // Update form tier label
+  const formTierEl = document.getElementById('pro-wl-form-tier');
+  if (formTierEl) formTierEl.textContent = tier.charAt(0).toUpperCase() + tier.slice(1);
+  // Show form, hide confirm
+  const wlForm = document.getElementById('pro-waitlist-form');
   const wlConfirm = document.getElementById('pro-waitlist-confirm');
-  const tierEl = document.getElementById('pro-wl-tier');
-  if (tierEl) tierEl.textContent = tier.charAt(0).toUpperCase() + tier.slice(1);
+  if (wlConfirm) wlConfirm.classList.add('hidden');
+  if (wlForm) {
+    wlForm.classList.remove('hidden');
+    wlForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function submitWaitlist() {
+  const first = (document.getElementById('wl-first')?.value || '').trim();
+  const last  = (document.getElementById('wl-last')?.value  || '').trim();
+  const email = (document.getElementById('wl-email')?.value || '').trim();
+
+  if (!first) { showToast('Enter your first name', 'warn'); return; }
+  if (!last)  { showToast('Enter your last name', 'warn');  return; }
+  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+    showToast('Enter a valid email address', 'warn'); return;
+  }
+
+  // Save to state
+  if (!S.proWaitlist) S.proWaitlist = [];
+  const entry = { tier: proWaitlistTier, first, last, email, ts: Date.now() };
+  S.proWaitlist = S.proWaitlist.filter(e => typeof e === 'object' ? e.email !== email : e !== proWaitlistTier);
+  S.proWaitlist.push(entry);
+  saveState();
+  sendWaitlistEmail(first, last, email, proWaitlistTier);
+
+  // Swap form → confirm
+  const wlForm    = document.getElementById('pro-waitlist-form');
+  const wlConfirm = document.getElementById('pro-waitlist-confirm');
+  const tierEl    = document.getElementById('pro-wl-tier');
+  if (tierEl) tierEl.textContent = proWaitlistTier.charAt(0).toUpperCase() + proWaitlistTier.slice(1);
+  if (wlForm)    wlForm.classList.add('hidden');
   if (wlConfirm) {
     wlConfirm.classList.remove('hidden');
     wlConfirm.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
-  // Save waitlist join in state
-  if (!S.proWaitlist) S.proWaitlist = [];
-  if (!S.proWaitlist.includes(tier)) S.proWaitlist.push(tier);
-  saveState();
-  showToast('You\'re on the ' + tier + ' waitlist! 🎉', 'success');
+  showToast(`You're on the ${proWaitlistTier} waitlist! 🎉`, 'success');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -3566,6 +3602,9 @@ function submitFeedback() {
   });
   saveState();
 
+  // Send email notification
+  sendFeedbackEmail(contactType, contactRating, msg.trim(), email.trim());
+
   // Clear form
   const msgEl = document.getElementById('contact-msg');
   const emailEl = document.getElementById('contact-email');
@@ -3598,4 +3637,83 @@ function voteFeature(el, feature) {
   }
   showToast('Vote recorded! 🗳', 'success');
   grantXP(5, 'feature voted');
+}
+
+/* ════════════════════════════════════════════════════════
+   EMAIL — EmailJS (imperiumosx@gmail.com)
+   Setup at emailjs.com:
+   1. Create account → Add Email Service → Gmail
+      Use: imperiumosx@gmail.com + app password: gdsz yvhg hxhs zmnc
+   2. Create 3 templates (see IDs below)
+   3. Copy your Public Key from Account tab
+   ════════════════════════════════════════════════════════ */
+const EJS_SERVICE    = 'service_imperium';   // ← your EmailJS Gmail service ID
+const EJS_PUBLIC_KEY = 'YOUR_EMAILJS_PUBLIC_KEY'; // ← your EmailJS public key
+const EJS_T_WELCOME  = 'template_welcome';   // ← welcome template ID
+const EJS_T_FEEDBACK = 'template_feedback';  // ← feedback/contact template ID
+const EJS_T_WAITLIST = 'template_waitlist';  // ← waitlist signup template ID
+
+function initEmailJS() {
+  if (window.emailjs && EJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY') {
+    emailjs.init({ publicKey: EJS_PUBLIC_KEY });
+  }
+}
+
+function sendWelcomeEmail(name, userEmail) {
+  if (!window.emailjs || EJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') return;
+  emailjs.send(EJS_SERVICE, EJS_T_WELCOME, {
+    to_email:   'imperiumosx@gmail.com',
+    user_name:  name || 'Guest',
+    user_email: userEmail || '(guest — no email)',
+    joined_at:  new Date().toLocaleString(),
+  }).catch(() => {});
+}
+
+function sendFeedbackEmail(type, rating, msg, replyEmail) {
+  if (!window.emailjs || EJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') return;
+  emailjs.send(EJS_SERVICE, EJS_T_FEEDBACK, {
+    to_email:      'imperiumosx@gmail.com',
+    feedback_type: type || 'feedback',
+    rating:        rating || 'none',
+    message:       msg || '(no message)',
+    reply_to:      replyEmail || 'not provided',
+    sent_at:       new Date().toLocaleString(),
+  }).catch(() => {});
+}
+
+function sendWaitlistEmail(first, last, email, tier) {
+  if (!window.emailjs || EJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') return;
+  emailjs.send(EJS_SERVICE, EJS_T_WAITLIST, {
+    to_email:   'imperiumosx@gmail.com',
+    first_name: first,
+    last_name:  last,
+    user_email: email,
+    tier:       tier,
+    joined_at:  new Date().toLocaleString(),
+  }).catch(() => {});
+}
+
+/* ════════════════════════════════════════════════════════
+   THEME TOGGLE (light / dark)
+   ════════════════════════════════════════════════════════ */
+function initTheme() {
+  const saved = localStorage.getItem('imperium_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon();
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('imperium_theme', next);
+  updateThemeIcon();
+}
+
+function updateThemeIcon() {
+  const btn = document.getElementById('theme-toggle-btn');
+  if (!btn) return;
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  btn.textContent = isLight ? '☀️' : '🌙';
+  btn.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
 }
