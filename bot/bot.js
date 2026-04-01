@@ -1,16 +1,22 @@
 import TelegramBot from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
+import fs from "fs";
+import path from "path";
+import os from "os";
+import { execSync } from "child_process";
 
 dotenv.config();
 
 // ─────────────────────────────────────────────────────
 //  CONFIG
 // ─────────────────────────────────────────────────────
-const TOKEN        = process.env.TELEGRAM_TOKEN || "8723944751:AAHEYNnVHqN6H7ljtDcAP6K17f7G5zYl0FI";
-const OLLAMA_URL   = process.env.OLLAMA_URL  || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3";
-const APP_URL      = "https://s1business84-hub.github.io/IMPERIUM.OS";
+const TOKEN          = process.env.TELEGRAM_TOKEN || "8723944751:AAHEYNnVHqN6H7ljtDcAP6K17f7G5zYl0FI";
+const OLLAMA_URL     = process.env.OLLAMA_URL  || "http://localhost:11434";
+const OLLAMA_MODEL   = process.env.OLLAMA_MODEL || "llama3";
+const WHISPER_MODEL  = process.env.WHISPER_MODEL || "whisper";
+const APP_URL        = "https://s1business84-hub.github.io/IMPERIUM.OS";
+const TEMP_DIR       = os.tmpdir();
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
@@ -21,7 +27,14 @@ const memory = new Map();
 
 function getUser(userId) {
   if (!memory.has(userId)) {
-    memory.set(userId, { history: [], plan: null, tasks: [], focus: null, name: null });
+    memory.set(userId, {
+      history:  [],    // [{ role, content }]
+      plan:     null,
+      tasks:    [],
+      focus:    null,
+      name:     null,
+      voiceLog: [],    // [{ ts, transcript }] — all voice messages stored
+    });
   }
   return memory.get(userId);
 }
@@ -93,7 +106,7 @@ bot.onText(/\/start/, (msg) => {
   const name = msg.from.first_name || "there";
   getUser(userId).name = name;
   reply(msg.chat.id,
-    `⚡ *Welcome to Imperium, ${name}.*\n\nI'm your high-performance AI operator.\nI remember your context, track your goals, and give science-backed guidance.\n\n*Commands:*\n/plan — set your strategy\n/focus — lock in one priority\n/tasks — view task list\n/add [task] — add a task\n/done [#] — complete a task\n/status — see all your context\n/clear — wipe memory\n/app — open your dashboard\n/help — full guide\n\nOr just *talk to me.* I adapt to your context every message.`);
+    `⚡ *Welcome to Imperium, ${name}.*\n\nI'm your high-performance AI operator.\nI remember your context, track your goals, and give science-backed guidance.\n\n*Commands:*\n/plan — set your strategy\n/focus — lock in one priority\n/tasks — view task list\n/add [task] — add a task\n/done [#] — complete a task\n/voice — view voice log\n/status — see all your context\n/clear — wipe memory\n/app — open your dashboard\n/help — full guide\n\nOr just *talk to me* — text or 🎙 *voice note.* I transcribe, store, and respond.`);
 });
 
 // ─────────────────────────────────────────────────────
@@ -101,7 +114,7 @@ bot.onText(/\/start/, (msg) => {
 // ─────────────────────────────────────────────────────
 bot.onText(/\/help/, (msg) => {
   reply(msg.chat.id,
-    `*Imperium AI — Command Guide*\n\n⚡ */plan [text]* — set your current plan\n🎯 */focus [text]* — lock in one priority\n✅ */tasks* — view task list\n➕ */add [task]* — add a task\n✔️ */done [#]* — mark task complete\n📊 */status* — see all context\n🗑 */clear* — reset memory\n📱 */app* — open dashboard\n\n_Just chat naturally for AI responses. I remember the full session._`);
+    `*Imperium AI — Command Guide*\n\n⚡ */plan [text]* — set your current plan\n🎯 */focus [text]* — lock in one priority\n✅ */tasks* — view task list\n➕ */add [task]* — add a task\n✔️ */done [#]* — mark task complete\n🎙 */voice* — view your voice log\n📊 */status* — see all context\n🗑 */clear* — reset memory\n📱 */app* — open dashboard\n\n_Text or voice note — I transcribe, store, and respond to both._`);
 });
 
 // ─────────────────────────────────────────────────────
@@ -207,6 +220,7 @@ bot.onText(/\/status/, (msg) => {
     out += `✅ *Tasks:* none`;
   }
   out += `\n\n💬 *Conversation:* ${Math.floor(user.history.length / 2)} exchanges`;
+  out += `\n🎙 *Voice notes stored:* ${user.voiceLog.length}`;
   reply(msg.chat.id, out);
 });
 
@@ -242,6 +256,112 @@ function buildFallback(userId) {
   out += `\n\n_Full AI back when Ollama is running: \`ollama run llama3\`_`;
   return out;
 }
+
+// ─────────────────────────────────────────────────────
+//  VOICE TRANSCRIPTION via Ollama whisper
+// ─────────────────────────────────────────────────────
+async function transcribeVoice(fileId) {
+  // 1. Get file path from Telegram
+  const fileInfo = await bot.getFile(fileId);
+  const fileUrl  = `https://api.telegram.org/file/bot${TOKEN}/${fileInfo.file_path}`;
+
+  // 2. Download .oga file
+  const ogaPath = path.join(TEMP_DIR, `voice_${fileId}.oga`);
+  const wavPath = path.join(TEMP_DIR, `voice_${fileId}.wav`);
+
+  const dlRes  = await fetch(fileUrl);
+  const buffer = await dlRes.arrayBuffer();
+  fs.writeFileSync(ogaPath, Buffer.from(buffer));
+
+  // 3. Convert .oga → .wav using ffmpeg
+  execSync(`ffmpeg -y -i "${ogaPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" 2>/dev/null`);
+
+  // 4. Read wav as base64
+  const wavBase64 = fs.readFileSync(wavPath).toString("base64");
+
+  // 5. Send to Ollama whisper
+  const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model:  WHISPER_MODEL,
+      prompt: "",
+      images: [wavBase64],   // Ollama whisper accepts audio as base64 image field
+      stream: false,
+    }),
+    signal: AbortSignal.timeout(60000),
+  });
+
+  // 6. Clean up temp files
+  try { fs.unlinkSync(ogaPath); fs.unlinkSync(wavPath); } catch {}
+
+  if (!res.ok) throw new Error(`Whisper HTTP ${res.status}`);
+  const data = await res.json();
+  return (data.response || "").trim();
+}
+
+// ─────────────────────────────────────────────────────
+//  /voice — show stored voice log
+// ─────────────────────────────────────────────────────
+bot.onText(/\/voice/, (msg) => {
+  const user = getUser(msg.from.id);
+  if (!user.voiceLog.length) {
+    reply(msg.chat.id, `🎙 *No voice messages stored yet.*\n\nSend me a voice note — I'll transcribe, store, and respond to it.`);
+    return;
+  }
+  const log = user.voiceLog
+    .slice(-10)  // last 10
+    .map((v, i) => `${i + 1}. _${new Date(v.ts).toLocaleTimeString()}_ — ${v.transcript}`)
+    .join("\n\n");
+  reply(msg.chat.id, `🎙 *Your voice log (last ${Math.min(user.voiceLog.length, 10)}):*\n\n${log}`);
+});
+
+// ─────────────────────────────────────────────────────
+//  VOICE MESSAGE HANDLER
+// ─────────────────────────────────────────────────────
+bot.on("voice", async (msg) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  const user   = getUser(userId);
+  if (!user.name && msg.from.first_name) user.name = msg.from.first_name;
+
+  bot.sendChatAction(chatId, "typing");
+  reply(chatId, `🎙 _Transcribing your voice note..._`);
+
+  let transcript;
+  try {
+    transcript = await transcribeVoice(msg.voice.file_id);
+  } catch (err) {
+    console.error("Whisper error:", err.message);
+    // Fallback: ask user to type it
+    reply(chatId, `⚠️ *Couldn't transcribe voice note.*\n\nMake sure Ollama whisper is pulled:\n\`ollama pull whisper\`\n\nOr just type your message instead.`);
+    return;
+  }
+
+  if (!transcript) {
+    reply(chatId, `⚠️ Got empty transcript. Try speaking more clearly or typing instead.`);
+    return;
+  }
+
+  // Store in voice log
+  user.voiceLog.push({ ts: Date.now(), transcript });
+  if (user.voiceLog.length > 50) user.voiceLog.shift(); // keep last 50
+
+  // Echo transcript back
+  reply(chatId, `🎙 *Heard:* _"${transcript}"_\n\n_Thinking..._`);
+
+  // Feed transcript into AI with full context
+  bot.sendChatAction(chatId, "typing");
+  pushHistory(userId, "user", transcript);
+  const aiReply = await getAIResponse(userId, transcript);
+
+  if (aiReply) {
+    pushHistory(userId, "assistant", aiReply);
+    reply(chatId, aiReply);
+  } else {
+    reply(chatId, buildFallback(userId));
+  }
+});
 
 // ─────────────────────────────────────────────────────
 //  MAIN MESSAGE HANDLER
