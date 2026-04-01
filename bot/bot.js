@@ -123,8 +123,8 @@ function requireAuth(msg) {
   if (isRegistered(msg.from.id)) return true;
   bot.sendMessage(msg.chat.id,
     `🔐 *Please sign up or sign in first.*\n\n` +
-    `➡️ \/signup YourName your@email.com\n` +
-    `➡️ \/signin your@email.com\n\n` +
+    `➡️ /signup YourName your@email.com\n` +
+    `➡️ /signin your@email.com\n\n` +
     `_All features unlock after authentication._`,
     { parse_mode: "Markdown" }
   );
@@ -202,8 +202,13 @@ async function getAIResponse(userId, userInput) {
 async function reply(chatId, text, opts = {}) {
   try {
     await bot.sendMessage(chatId, text, { parse_mode: "Markdown", ...opts });
-  } catch {
-    await bot.sendMessage(chatId, text.replace(/[*_`[\]]/g, ""), opts);
+  } catch (mdErr) {
+    // Markdown parse failed — retry as plain text
+    try {
+      await bot.sendMessage(chatId, text.replace(/[*_`\[\]]/g, ""), opts);
+    } catch (err) {
+      console.error(`reply() failed to chatId ${chatId}:`, err.message);
+    }
   }
 }
 
