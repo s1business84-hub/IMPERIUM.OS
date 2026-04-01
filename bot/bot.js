@@ -11,12 +11,19 @@ dotenv.config();
 // ─────────────────────────────────────────────────────
 //  CONFIG
 // ─────────────────────────────────────────────────────
-const TOKEN          = process.env.TELEGRAM_TOKEN || "8723944751:AAHEYNnVHqN6H7ljtDcAP6K17f7G5zYl0FI";
-const OLLAMA_URL     = process.env.OLLAMA_URL  || "http://localhost:11434";
-const OLLAMA_MODEL   = process.env.OLLAMA_MODEL || "llama3";
-const WHISPER_MODEL  = process.env.WHISPER_MODEL || "whisper";
-const APP_URL        = "https://s1business84-hub.github.io/IMPERIUM.OS";
-const TEMP_DIR       = os.tmpdir();
+// ── Startup: validate required env vars ──────────────────
+const TOKEN         = process.env.TELEGRAM_TOKEN;
+const OLLAMA_URL    = process.env.OLLAMA_URL    || "http://localhost:11434";
+const OLLAMA_MODEL  = process.env.OLLAMA_MODEL  || "llama3";
+const WHISPER_MODEL = process.env.WHISPER_MODEL || "whisper";
+const APP_URL       = process.env.APP_URL        || "https://imperium-os.vercel.app";
+const TEMP_DIR      = os.tmpdir();
+
+if (!TOKEN) {
+  console.error("❌ TELEGRAM_TOKEN is not set. Add it to bot/.env and restart.");
+  process.exit(1);
+}
+console.log(`✅ TELEGRAM_TOKEN loaded — ...${TOKEN.slice(-6)}`);
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
