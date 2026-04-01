@@ -553,7 +553,7 @@ ul{list-style:none}
 .ast-voice-btn:active,.ast-send-btn:active{transform:scale(.85)}
 .ast-voice-btn.recording{background:var(--system-red);animation:recordPulse 1s ease-in-out infinite}
 .ast-send-btn{background:var(--system-blue)}
-.ast-wa-banner{margin:0 var(--s16) var(--s8);padding:var(--s16);background:rgba(37,211,102,.08);border-radius:var(--radius-md);display:flex;align-items:center;gap:var(--s12);cursor:pointer;transition:all .15s;min-height:56px}
+.ast-wa-banner{margin:0 var(--s16) var(--s8);padding:var(--s16);background:rgba(38,139,210,.1);border-radius:var(--radius-md);display:flex;align-items:center;gap:var(--s12);cursor:pointer;transition:all .15s;min-height:56px}
 .ast-wa-banner:active{opacity:.7;transform:scale(.98)}
 .ast-wa-icon{font-size:1.6rem;flex-shrink:0}
 .ast-wa-text{flex:1}

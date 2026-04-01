@@ -3418,18 +3418,14 @@ function astQuickAction(action) {
   }
 }
 
-/* ── ASSISTANT: WhatsApp Connect ──────────────────── */
-function openWhatsAppConnect() {
-  const msg = encodeURIComponent('Hey! I want to connect my Imperium OS app. My user ID: ' + (S.user || 'guest') + '. Send me transaction screenshots and I\'ll log them!');
-  const waURL = 'https://wa.me/?text=' + msg;
-  // Show info in chat
+/* ── ASSISTANT: Telegram Bot Connect ────────────────── */
+function openTelegramBot() {
   addAstMessage('ai', 'text', {
-    text: '📱 WhatsApp Integration\n\nTo connect via WhatsApp:\n\n1. Save the Imperium AI number\n2. Send "Connect" to start\n3. Then just forward screenshots, files, or voice notes\n\nThe WhatsApp bot will sync everything back to this app automatically.\n\n🔗 Opening WhatsApp…'
+    text: '✈️ Telegram AI Bot\n\nChat with ImperiumOS AI directly on Telegram!\n\n1. Tap the button below or search @ImperiumOSBot\n2. Press Start to begin\n3. Ask anything — AI responses, logs, insights\n\nOpening Telegram now…'
   });
-  // Open WhatsApp deep link
   setTimeout(() => {
-    window.open(waURL, '_blank');
-  }, 1000);
+    window.open('https://t.me/ImperiumOSBot', '_blank');
+  }, 800);
 }
 
 function clearAssistantChat() {

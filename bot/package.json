@@ -1,0 +1,14 @@
+{
+  "name": "imperiumos-telegram-bot",
+  "version": "1.0.0",
+  "description": "Imperium OS Telegram bot — @ImperiumOSBot",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node --watch bot.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}

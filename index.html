@@ -67,7 +67,7 @@
       <div class="auth-or"><span>or</span></div>
       <button class="btn-ghost w-full" onclick="continueAsGuest()">Enter as Guest</button>
       <p class="auth-msg" id="auth-msg"></p>
-      <p class="auth-footer">Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p>
+      <p class="auth-footer">Founded by <strong>Sanskaar Nair</strong> · Co-founded by <strong>Kashish Devnani</strong></p>
     </div>
   </div>
 
@@ -414,17 +414,17 @@
           <div class="assistant-header-status" id="ast-status">● Online</div>
         </div>
         <div class="assistant-header-actions">
-          <button class="assistant-action-btn" onclick="openWhatsAppConnect()" title="Connect WhatsApp">💬</button>
+          <button class="assistant-action-btn" onclick="openTelegramBot()" title="Open Telegram Bot">✈️</button>
           <button class="assistant-action-btn" onclick="clearAssistantChat()" title="Clear chat">🗑</button>
         </div>
       </div>
 
-      <!-- WhatsApp Connect Banner -->
-      <div class="ast-wa-banner" id="ast-wa-banner" onclick="openWhatsAppConnect()">
-        <div class="ast-wa-icon">💬</div>
+      <!-- Telegram Bot Banner -->
+      <div class="ast-wa-banner" id="ast-wa-banner" onclick="openTelegramBot()">
+        <div class="ast-wa-icon">✈️</div>
         <div class="ast-wa-text">
-          <div class="ast-wa-title">Connect via WhatsApp</div>
-          <div class="ast-wa-sub">Send screenshots, voice notes & files anytime</div>
+          <div class="ast-wa-title">Chat on Telegram</div>
+          <div class="ast-wa-sub">Message @ImperiumOSBot anytime — AI in your pocket</div>
         </div>
         <span class="ast-wa-arrow">›</span>
       </div>
@@ -488,7 +488,7 @@
       </div>
       <div class="settings-group"><div class="sg-title">Preferences</div><div class="sg-card glass-card"><div class="sg-row" onclick="openCurrencyModal()"><span class="sg-label">Currency</span><span class="sg-val" id="s-currency">$ USD</span><span class="sg-arrow">›</span></div></div></div>
       <div class="settings-group"><div class="sg-title">Data</div><div class="sg-card glass-card"><div class="sg-row" onclick="exportData()"><span class="sg-label">Export data</span><span class="sg-arrow">›</span></div><div class="sg-row danger-row" onclick="resetApp()"><span class="sg-label">Delete everything</span><span class="sg-arrow">›</span></div></div></div>
-      <div class="settings-footer"><p>Founded by <strong>Sanskaar</strong> · Co-founded by <strong>Kashish</strong></p><p>Imperium OS v6.5.0</p></div>
+      <div class="settings-footer"><p>Founded by <strong>Sanskaar Nair</strong> · Co-founded by <strong>Kashish Devnani</strong></p><p>Imperium OS v6.6.3</p></div>
     </div>
   </div>
 
@@ -537,7 +537,7 @@
               <li class="pro-feat"><span class="pro-feat-check">✓</span>XP & achievements</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Basic pattern insights</li>
               <li class="pro-feat pro-feat-locked"><span class="pro-feat-lock">🔒</span>Advanced AI analysis</li>
-              <li class="pro-feat pro-feat-locked"><span class="pro-feat-lock">🔒</span>WhatsApp integration</li>
+              <li class="pro-feat pro-feat-locked"><span class="pro-feat-lock">🔒</span>Telegram bot integration</li>
               <li class="pro-feat pro-feat-locked"><span class="pro-feat-lock">🔒</span>Export reports</li>
             </ul>
             <div class="pro-plan-cta-wrap">
@@ -561,7 +561,7 @@
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Unlimited AI analysis</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Deep pattern detection</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Weekly AI report card</li>
-              <li class="pro-feat"><span class="pro-feat-check">✓</span>WhatsApp AI assistant</li>
+              <li class="pro-feat"><span class="pro-feat-check">✓</span>Telegram AI assistant</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Spending predictions</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Priority support</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Export PDF reports</li>
@@ -679,8 +679,8 @@
       <div class="contact-section">
         <div class="contact-section-label">Vote on what we build next</div>
         <div class="contact-votes" id="contact-votes">
-          <div class="contact-vote-item" onclick="voteFeature(this,'whatsapp')">
-            <div class="cvote-info"><div class="cvote-title">💬 WhatsApp AI assistant</div><div class="cvote-sub">Message your AI from WhatsApp 24/7</div></div>
+          <div class="contact-vote-item" onclick="voteFeature(this,'telegram')">
+            <div class="cvote-info"><div class="cvote-title">✈️ Telegram AI assistant</div><div class="cvote-sub">Message @ImperiumOSBot from Telegram 24/7</div></div>
             <div class="cvote-bar-wrap"><div class="cvote-bar" style="width:78%"></div></div>
             <div class="cvote-count" id="cvote-whatsapp">78%</div>
           </div>
