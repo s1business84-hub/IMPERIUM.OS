@@ -535,7 +535,7 @@ bot.on("voice", async (msg) => {
   if (!requireAuth(msg)) return;
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const user   = getUser(userId);
+  console.log(`🎙 [${new Date().toISOString()}] @${msg.from.username || msg.from.first_name} (${userId}): voice note (${msg.voice.duration}s)`);
   if (!user.name && msg.from.first_name) user.name = msg.from.first_name;
 
   bot.sendChatAction(chatId, "typing");
@@ -586,7 +586,8 @@ bot.on("message", async (msg) => {
   if (!text || text.startsWith("/")) return;
   if (!requireAuth(msg)) return;
 
-  const user = getUser(userId);
+  console.log(`📨 [${new Date().toISOString()}] @${msg.from.username || msg.from.first_name} (${userId}): ${text.slice(0, 80)}${text.length > 80 ? "…" : ""}`);
+
   if (!user.name && msg.from.first_name) user.name = msg.from.first_name;
 
   // Transaction shortcut
@@ -619,6 +620,25 @@ bot.on("message", async (msg) => {
 bot.on("polling_error", (err) => console.error("Polling error:", err.message));
 process.on("unhandledRejection", (err) => console.error("Unhandled:", err));
 
-console.log("⚡ Imperium Bot running — @ImperiumOSBot");
-console.log(`   Model : ${OLLAMA_MODEL} @ ${OLLAMA_URL}`);
-console.log("   Memory: in-process per userId");
+// ─────────────────────────────────────────────────────
+//  STARTUP — confirm bot identity via Telegram API
+// ─────────────────────────────────────────────────────
+(async () => {
+  try {
+    const me = await bot.getMe();
+    console.log("\n⚡ Imperium Bot initialised successfully");
+    console.log(`   Username : @${me.username}`);
+    console.log(`   Bot ID   : ${me.id}`);
+    console.log(`   Token    : ...${TOKEN.slice(-6)}  (last 6 chars)`);
+    console.log(`   Model    : ${OLLAMA_MODEL} @ ${OLLAMA_URL}`);
+    console.log(`   Email    : ${EMAIL_USER || "not configured"}`);
+    console.log(`   App URL  : ${APP_URL}`);
+    console.log(`   Memory   : in-process per userId`);
+    console.log("   Status   : polling for messages...\n");
+  } catch (err) {
+    console.error("❌ Bot failed to connect to Telegram:", err.message);
+    console.error("   Check your TELEGRAM_TOKEN and internet connection.");
+    process.exit(1);
+  }
+})();
+
