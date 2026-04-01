@@ -668,6 +668,7 @@ bot.on("voice", async (msg) => {
   if (!requireAuth(msg)) return;
   const chatId = msg.chat.id;
   const userId = msg.from.id;
+  const user   = getUser(userId);
   console.log(`🎙 [${new Date().toISOString()}] @${msg.from.username || msg.from.first_name} (${userId}): voice note (${msg.voice.duration}s)`);
   if (!user.name && msg.from.first_name) user.name = msg.from.first_name;
 
@@ -756,6 +757,7 @@ bot.on("message", async (msg) => {
 
   if (!requireAuth(msg)) return;
 
+  const user = getUser(userId);
   console.log(`📨 [${new Date().toISOString()}] @${msg.from.username || msg.from.first_name} (${userId}): ${text.slice(0, 80)}${text.length > 80 ? "…" : ""}`);
 
   if (!user.name && msg.from.first_name) user.name = msg.from.first_name;
