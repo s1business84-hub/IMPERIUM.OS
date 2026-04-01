@@ -529,7 +529,7 @@ bot.onText(/\/insights(@\w+)?\s*$/, async (msg) => {
     pushHistory(userId, "assistant", aiReply);
     reply(msg.chat.id, `📊 *Today's Insights*\n\n${aiReply}`);
   } else {
-    reply(msg.chat.id, buildFallback(userId));
+    reply(msg.chat.id, buildOfflineInsights(userId));
   }
 
   // Readiness radar chart
@@ -912,7 +912,7 @@ bot.on("voice", async (msg) => {
     pushHistory(userId, "assistant", aiReply);
     reply(chatId, aiReply);
   } else {
-    reply(chatId, buildFallback(userId));
+    reply(chatId, buildFallback(userId, transcript));
   }
 });
 
@@ -987,9 +987,27 @@ bot.on("message", async (msg) => {
     pushHistory(userId, "assistant", aiReply);
     reply(chatId, aiReply);
   } else {
-    const fallback = buildFallback(userId);
+    const fallback = buildFallback(userId, text);
     reply(chatId, fallback);
   }
+});
+
+// ─────────────────────────────────────────────────────
+//  /ping — system status check
+// ─────────────────────────────────────────────────────
+bot.onText(/\/ping(@\w+)?\s*$/, async (msg) => {
+  lastHealthCheck = 0; // force fresh check
+  const online = await checkOllama();
+  const reg    = getRegisteredUser(msg.from.id);
+  const now    = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+
+  reply(msg.chat.id,
+    `🟢 *Imperium System Status*\n_${now} IST_\n\n` +
+    `🤖 *Bot* — ✅ Online\n` +
+    `🧪 *Ollama AI* — ${online ? "✅ Online" : "❌ Offline — run \`ollama run llama3\`"}\n` +
+    `📧 *Email* — ${EMAIL_USER ? "✅ Configured" : "⚠️ Not set"}\n` +
+    `👤 *Account* — ${reg ? `✅ ${reg.name}` : "⚠️ Not signed in"}\n\n` +
+    `_All commands work regardless of AI status._`);
 });
 
 // ─────────────────────────────────────────────────────
@@ -1028,6 +1046,7 @@ process.on("unhandledRejection", (err) => console.error("Unhandled:", err));
       { command: "voice",     description: "View voice log" },
       { command: "clear",     description: "Reset memory" },
       { command: "app",       description: "Open web dashboard" },
+      { command: "ping",      description: "Check system status" },
       { command: "help",      description: "Full guide" },
     ]);
     console.log("   Commands : registered with Telegram ✓\n");
