@@ -89,7 +89,7 @@ export function HomePage() {
 
   const level = getLevelFromXP(state.xp);
   const userName = state.user?.name ?? 'Operator';
-  const firstName = userName.split(' ')[0]!;
+  const firstName = userName.split(' ')[0] || userName || 'Operator';
 
   const activeMission = state.missions.find((m) => !m.completed && m.dueDate >= today);
 

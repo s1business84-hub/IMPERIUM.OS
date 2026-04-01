@@ -21,12 +21,15 @@ const OUTCOME_LABELS: Record<Outcome, string> = {
 const CURRENCIES = ['$', '£', '€', '₹', '¥', 'A$', 'CAD'];
 
 function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((n) => n[0] ?? '')
-    .join('')
-    .toUpperCase();
+  return (
+    name
+      .split(' ')
+      .filter((n) => n.length > 0)
+      .slice(0, 2)
+      .map((n) => n[0] ?? '')
+      .join('')
+      .toUpperCase() || '👤'
+  );
 }
 
 export function ProfilePage() {

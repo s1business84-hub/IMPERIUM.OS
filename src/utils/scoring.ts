@@ -142,10 +142,12 @@ export function scoreReview(
   return { score, pillars };
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export function computeStreak(reviews: DailyReview[], lastReviewDate: string | null): number {
   if (!lastReviewDate) return 0;
   const today = new Date().toISOString().split('T')[0]!;
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]!;
+  const yesterday = new Date(Date.now() - MS_PER_DAY).toISOString().split('T')[0]!;
   if (lastReviewDate !== today && lastReviewDate !== yesterday) return 0;
 
   const dates = [...new Set(reviews.map((r) => r.date))].sort().reverse();
@@ -156,7 +158,7 @@ export function computeStreak(reviews: DailyReview[], lastReviewDate: string | n
     const d = current.toISOString().split('T')[0]!;
     if (date === d) {
       streak++;
-      current = new Date(current.getTime() - 86400000);
+      current = new Date(current.getTime() - MS_PER_DAY);
     } else {
       break;
     }
