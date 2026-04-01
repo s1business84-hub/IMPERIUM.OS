@@ -1486,6 +1486,170 @@ let homeVoiceActive = false;
 let homeRecognition = null;
 let homeChatHistory = [];
 
+// LLM CONFIGURATION
+let LLM_CONFIG = {
+  provider: 'ollama',  // 'ollama' | 'openai'
+  ollama: {
+    url: 'http://localhost:11434/api/chat',
+    model: 'llama3.2:latest'
+  },
+  openai: {
+    url: 'https://api.openai.com/v1/chat/completions',
+    model: 'gpt-4o-mini',
+    apiKey: ''
+  },
+  lastUsed: 0,  // rate limiting
+  rateLimitMs: 2000
+};
+
+function loadLLMConfig() {
+  const saved = localStorage.getItem('imperium_llm_config');
+  if (saved) {
+    try {
+      const config = JSON.parse(saved);
+      LLM_CONFIG = { ...LLM_CONFIG, ...config };
+    } catch(e) {}
+  }
+}
+
+function saveLLMConfig() {
+  localStorage.setItem('imperium_llm_config', JSON.stringify(LLM_CONFIG));
+}
+
+// Get relevant app context for LLM
+function getAppContext() {
+  const today = new Date().toDateString();
+  const recentDays = 7;
+  const cutoff = Date.now() - recentDays * 86400000;
+  
+  const context = {
+    user: S.user || { name: 'User' },
+    situation: S.situation || 'unknown',
+    goal: S.goal || 'optimize life',
+    totalCheckins: getTotalCheckinCount(),
+    streak: S.streak || 0,
+    level: S.level || 1,
+    recentCheckins: {},
+    passiveData: {},
+    transactions: [],
+    currency: S.currency || '$'
+  };
+  
+  // Recent checkins (last 7 days)
+  Object.keys(S.checkins || {}).sort().slice(-recentDays).forEach(date => {
+    context.recentCheckins[date] = S.checkins[date];
+  });
+  
+  // Recent passive data
+  Object.keys(S.passiveData || {}).sort().slice(-recentDays).forEach(date => {
+    context.passiveData[date] = S.passiveData[date];
+  });
+  
+  // Recent transactions (last 7 days)
+  (S.transactions || []).filter(tx => Date.parse(tx.date) > cutoff).forEach(tx => {
+    context.transactions.push(tx);
+  });
+  
+  return context;
+}
+
+// Central LLM call
+async function callLLM(userMessage, chatType = 'general') {
+  const now = Date.now();
+  if (now - LLM_CONFIG.lastUsed < LLM_CONFIG.rateLimitMs) {
+    return { error: 'Please wait a moment before sending another message' };
+  }
+  
+  LLM_CONFIG.lastUsed = now;
+  saveLLMConfig();
+  
+  const context = getAppContext();
+  
+  const systemPrompt = `You are Imperium AI, a personal intelligence system that tracks daily check-ins, health data (sleep/steps/screen), spending, and life optimization.
+
+USER PROFILE:
+- Name: ${context.user.name}
+- Situation: ${context.situation} 
+- Goal: ${context.goal}
+- Level: ${context.level} (${S.xp || 0} XP, ${context.streak} day streak)
+- Total check-ins: ${context.totalCheckins}
+
+RECENT DATA (last 7 days):
+Check-ins: ${JSON.stringify(context.recentCheckins)}
+Health: ${JSON.stringify(context.passiveData)}
+Transactions: ${context.transactions.length} (${context.transactions.reduce((s,t)=>s+(t.amount||0),0).toFixed(1)} ${context.currency})
+
+RULES:
+- Be concise (2-4 sentences max)
+- Actionable insights only
+- Use emojis (🧠⚡📊💰😴🚶📱)
+- Reference specific data when possible
+- Positive/encouraging tone
+- End with question or call-to-action if appropriate
+
+User says: "${userMessage}"
+
+Respond conversationally but insightfully.`;
+  
+  try {
+    let url, payload;
+    
+    if (LLM_CONFIG.provider === 'ollama') {
+      url = LLM_CONFIG.ollama.url;
+      payload = {
+        model: LLM_CONFIG.ollama.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        stream: false,
+        options: { temperature: 0.7, num_predict: 300 }
+      };
+    } else {
+      if (!LLM_CONFIG.openai.apiKey) {
+        return { error: 'OpenAI API key required. Set in Profile → LLM Settings.' };
+      }
+      url = LLM_CONFIG.openai.url;
+      payload = {
+        model: LLM_CONFIG.openai.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        temperature: 0.7,
+        max_tokens: 300
+      };
+    }
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(LLM_CONFIG.provider === 'openai' && { 'Authorization': `Bearer ${LLM_CONFIG.openai.apiKey}` })
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    const aiText = LLM_CONFIG.provider === 'ollama' 
+      ? data.message?.content || data.response || 'No response'
+      : data.choices[0]?.message?.content || 'No response';
+    
+    return { success: true, text: aiText.trim() };
+    
+  } catch (error) {
+    console.error('LLM Error:', error);
+    return { 
+      error: 'AI service unavailable. Using backup responses.',
+      fallback: true 
+    };
+  }
+}
+
 function initHomeData() {
   updateHomeGreeting();
   initParticles();
@@ -1569,19 +1733,42 @@ function stopHomeVoice() {
   if (label) label.textContent = 'Tap to talk · voice log anything';
 }
 
-function homeChat(q) {
+async function homeChat(q) {
   const inputEl = document.getElementById('home-input');
   const text = q || (inputEl ? inputEl.value.trim() : '');
   if (!text) return;
   if (inputEl && !q) inputEl.value = '';
   addHomeBotMessage('user', text);
 
-  // Check if it's a transaction logging intent
+  // Check if it's a transaction logging intent (pre-LLM)
   const parsed = parseHomeTx(text);
   if (parsed) {
     logFromHomeBot(parsed, text);
-  } else {
+    return;
+  }
+
+  // Show typing
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'hcm hcm-ai hcm-typing';
+  typingDiv.innerHTML = '<div class="hcm-av">🧠</div><div class="hcm-bubble"><div class="typing-dots"><div></div><div></div><div></div></div></div>';
+  const feed = document.getElementById('home-chat-feed');
+  if (feed) {
+    feed.appendChild(typingDiv);
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  // LLM call
+  const result = await callLLM(text, 'home');
+  const typingEl = document.querySelector('.hcm-typing');
+  if (typingEl && typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+
+  if (result.success) {
+    addHomeBotMessage('ai', result.text);
+  } else if (result.fallback) {
+    // Fallback to original static response
     generateHomeResponse(text);
+  } else {
+    addHomeBotMessage('ai', '🤖 LLM temporarily unavailable. ' + (result.error || 'Try again soon.'));
   }
 }
 
@@ -3258,6 +3445,9 @@ function openPro() {
   const earlyEl = document.getElementById('auth-early-spots');
   if (earlyEl) earlyEl.textContent = spots + ' spots left';
 
+  // Remember where we came from so closePro() can return here
+  S._proReturnScreen = S.currentScreen || 'screen-auth';
+
   // Hide waitlist confirm
   const wlConfirm = document.getElementById('pro-waitlist-confirm');
   if (wlConfirm) wlConfirm.classList.add('hidden');
@@ -3270,14 +3460,14 @@ function openPro() {
 }
 
 function closePro() {
-  // Return to wherever we came from
-  const prev = S.currentScreen && S.currentScreen !== 'screen-pro' ? S.currentScreen : 'screen-home';
-  // Show bottom nav again if needed
-  if (S.user && S.onboarded) {
+  // Return to the exact screen that triggered openPro()
+  const target = S._proReturnScreen || 'screen-auth';
+  S._proReturnScreen = null;
+  // Only restore bottom nav if we're going back into the app (not auth)
+  if (S.user && S.onboarded && target !== 'screen-auth') {
     const bn = document.getElementById('bottom-nav');
     if (bn) bn.classList.remove('hidden');
   }
-  const target = (prev === 'screen-pro') ? 'screen-home' : prev;
   navigateTo(target);
 }
 
