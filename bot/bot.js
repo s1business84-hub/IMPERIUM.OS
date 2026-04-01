@@ -246,11 +246,12 @@ bot.onText(/\/start/, (msg) => {
     reply(msg.chat.id,
       `⚡ *Welcome to Imperium, ${name}.*\n\n` +
       `I'm your high-performance AI operator.\n\n` +
-      `🔐 *To get started, sign up first:*\n` +
-      `\`/signup YourName your@email.com\`\n\n` +
-      `Already have an account?\n` +
-      `\`/signin your@email.com\`\n\n` +
-      `_Authentication is required to unlock all features._`);
+      `🔐 *New here? Create your account:*\n` +
+      `\`/signup YourName your@email.com\`\n` +
+      `_Then type your password when prompted._\n\n` +
+      `✅ *Already have an account? Sign in:*\n` +
+      `\`/signin your@email.com yourpassword\`\n\n` +
+      `_All features unlock after authentication._`);
     return;
   }
 
