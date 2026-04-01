@@ -21,6 +21,7 @@ const WHISPER_MODEL = process.env.WHISPER_MODEL || "whisper";
 const APP_URL       = process.env.APP_URL        || "https://imperium-os.vercel.app";
 const EMAIL_USER    = process.env.EMAIL_USER;
 const EMAIL_PASS    = process.env.EMAIL_PASS;
+const ADMIN_ID      = Number(process.env.ADMIN_ID);
 const TEMP_DIR      = os.tmpdir();
 
 if (!TOKEN) {
@@ -361,6 +362,46 @@ bot.onText(/\/signin (.+)/, async (msg, match) => {
     `Your AI operator is active. Use /start to see all commands.`);
 });
 
+
+// ─────────────────────────────────────────────────────
+//  /admin — owner-only user list
+// ─────────────────────────────────────────────────────
+bot.onText(/\/admin/, (msg) => {
+  if (msg.from.id !== ADMIN_ID) {
+    reply(msg.chat.id, `❌ Not authorised.`);
+    return;
+  }
+
+  const reg     = loadRegistry();
+  const entries = Object.entries(reg);
+
+  if (!entries.length) {
+    reply(msg.chat.id, `📊 *No users yet.*`);
+    return;
+  }
+
+  const verified   = entries.filter(([, u]) => u.passwordHash);
+  const unverified = entries.filter(([, u]) => !u.passwordHash);
+
+  let out = `📊 *Imperium Users — ${verified.length} registered*\n`;
+  out += `_${unverified.length} pending (no password set)_\n\n`;
+
+  verified.forEach(([id, u], i) => {
+    const date = new Date(u.registeredAt).toLocaleDateString("en-IN");
+    out += `${i + 1}\. *${u.name}*\n`;
+    out += `   📧 ${u.email}\n`;
+    out += `   📅 Joined: ${date}\n\n`;
+  });
+
+  if (unverified.length) {
+    out += `*Pending (signup started, no password):*\n`;
+    unverified.forEach(([, u]) => {
+      out += `• ${u.name} — ${u.email}\n`;
+    });
+  }
+
+  reply(msg.chat.id, out);
+});
 
 // ─────────────────────────────────────────────────────
 //  /changepassword
