@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { execSync } from "child_process";
+import nodemailer from "nodemailer";
 
 dotenv.config();
 
@@ -17,6 +18,8 @@ const OLLAMA_URL    = process.env.OLLAMA_URL    || "http://localhost:11434";
 const OLLAMA_MODEL  = process.env.OLLAMA_MODEL  || "llama3";
 const WHISPER_MODEL = process.env.WHISPER_MODEL || "whisper";
 const APP_URL       = process.env.APP_URL        || "https://imperium-os.vercel.app";
+const EMAIL_USER    = process.env.EMAIL_USER;
+const EMAIL_PASS    = process.env.EMAIL_PASS;
 const TEMP_DIR      = os.tmpdir();
 
 if (!TOKEN) {
@@ -28,7 +31,106 @@ console.log(`✅ TELEGRAM_TOKEN loaded — ...${TOKEN.slice(-6)}`);
 const bot = new TelegramBot(TOKEN, { polling: true });
 
 // ─────────────────────────────────────────────────────
-//  MEMORY  —  userId → { history[], plan, tasks[], focus, name }
+//  EMAIL — nodemailer via Gmail
+// ─────────────────────────────────────────────────────
+const mailer = EMAIL_USER && EMAIL_PASS
+  ? nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: EMAIL_USER, pass: EMAIL_PASS },
+    })
+  : null;
+
+async function sendEmail(to, subject, html) {
+  if (!mailer) { console.warn("⚠️ Email not configured — skipping send"); return; }
+  try {
+    await mailer.sendMail({ from: `"Imperium OS" <${EMAIL_USER}>`, to, subject, html });
+    console.log(`📧 Email sent → ${to}`);
+  } catch (err) {
+    console.error("Email error:", err.message);
+  }
+}
+
+async function sendWelcomeEmail(name, email) {
+  await sendEmail(
+    email,
+    "⚡ Welcome to Imperium OS",
+    `<div style="font-family:sans-serif;max-width:520px;margin:auto;background:#0a0a0a;color:#fff;padding:32px;border-radius:12px">
+      <h1 style="color:#7c3aed;margin-bottom:4px">⚡ Imperium OS</h1>
+      <p style="color:#a0a0a0;margin-top:0">High-Performance Operating System</p>
+      <hr style="border-color:#222;margin:24px 0">
+      <p>Hey <strong>${name}</strong>,</p>
+      <p>You're in. Your Imperium account is live.</p>
+      <p>Your AI operator is ready — go build something real.</p>
+      <a href="${APP_URL}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold">Open Imperium OS →</a>
+      <hr style="border-color:#222;margin:24px 0">
+      <p style="color:#555;font-size:12px">Imperium OS · Built by Sanskaar Nair &amp; Kashish Devnani</p>
+    </div>`
+  );
+}
+
+async function sendSignInEmail(name, email) {
+  const time = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+  await sendEmail(
+    email,
+    "🔐 Imperium OS — Sign In Confirmed",
+    `<div style="font-family:sans-serif;max-width:520px;margin:auto;background:#0a0a0a;color:#fff;padding:32px;border-radius:12px">
+      <h1 style="color:#7c3aed;margin-bottom:4px">⚡ Imperium OS</h1>
+      <p style="color:#a0a0a0;margin-top:0">Sign In Confirmed</p>
+      <hr style="border-color:#222;margin:24px 0">
+      <p>Hey <strong>${name}</strong>,</p>
+      <p>You just signed in to your Imperium AI bot.</p>
+      <p style="color:#a0a0a0;font-size:13px">Time: ${time} IST</p>
+      <p>If this wasn't you, reply to this email immediately.</p>
+      <a href="${APP_URL}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold">Open Dashboard →</a>
+      <hr style="border-color:#222;margin:24px 0">
+      <p style="color:#555;font-size:12px">Imperium OS · Built by Sanskaar Nair &amp; Kashish Devnani</p>
+    </div>`
+  );
+}
+
+// ─────────────────────────────────────────────────────
+//  USER REGISTRY — persisted to users.json
+// ─────────────────────────────────────────────────────
+const USERS_FILE = path.join(path.dirname(new URL(import.meta.url).pathname), "users.json");
+
+function loadRegistry() {
+  try { return JSON.parse(fs.readFileSync(USERS_FILE, "utf8")); } catch { return {}; }
+}
+
+function saveRegistry(reg) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(reg, null, 2));
+}
+
+function isRegistered(userId) {
+  const reg = loadRegistry();
+  return !!reg[userId];
+}
+
+function registerUser(userId, name, email) {
+  const reg = loadRegistry();
+  reg[userId] = { name, email, registeredAt: new Date().toISOString() };
+  saveRegistry(reg);
+}
+
+function getRegisteredUser(userId) {
+  return loadRegistry()[userId] || null;
+}
+
+// ─────────────────────────────────────────────────────
+//  AUTH GUARD — call before any protected handler
+// ─────────────────────────────────────────────────────
+function requireAuth(msg) {
+  if (isRegistered(msg.from.id)) return true;
+  bot.sendMessage(msg.chat.id,
+    `🔐 *Please sign up or sign in first.*\n\n` +
+    `➡️ \/signup YourName your@email.com\n` +
+    `➡️ \/signin your@email.com\n\n` +
+    `_All features unlock after authentication._`,
+    { parse_mode: "Markdown" }
+  );
+  return false;
+}
+
 // ─────────────────────────────────────────────────────
 const memory = new Map();
 
@@ -110,11 +212,106 @@ async function reply(chatId, text, opts = {}) {
 // ─────────────────────────────────────────────────────
 bot.onText(/\/start/, (msg) => {
   const userId = msg.from.id;
-  const name = msg.from.first_name || "there";
-  getUser(userId).name = name;
+  const name   = msg.from.first_name || "there";
+
+  if (!isRegistered(userId)) {
+    reply(msg.chat.id,
+      `⚡ *Welcome to Imperium, ${name}.*\n\n` +
+      `I'm your high-performance AI operator.\n\n` +
+      `🔐 *To get started, sign up first:*\n` +
+      `\`/signup YourName your@email.com\`\n\n` +
+      `Already have an account?\n` +
+      `\`/signin your@email.com\`\n\n` +
+      `_Authentication is required to unlock all features._`);
+    return;
+  }
+
+  const regUser = getRegisteredUser(userId);
+  getUser(userId).name = regUser.name;
   reply(msg.chat.id,
-    `⚡ *Welcome to Imperium, ${name}.*\n\nI'm your high-performance AI operator.\nI remember your context, track your goals, and give science-backed guidance.\n\n*Commands:*\n/plan — set your strategy\n/focus — lock in one priority\n/tasks — view task list\n/add [task] — add a task\n/done [#] — complete a task\n/voice — view voice log\n/status — see all your context\n/clear — wipe memory\n/app — open your dashboard\n/help — full guide\n\nOr just *talk to me* — text or 🎙 *voice note.* I transcribe, store, and respond.`);
+    `⚡ *Welcome back, ${regUser.name}.*\n\nYour AI operator is ready.\n\n` +
+    `*Commands:*\n/plan — set your strategy\n/focus — lock in one priority\n` +
+    `/tasks — view task list\n/add [task] — add a task\n/done [#] — complete a task\n` +
+    `/voice — view voice log\n/status — see all your context\n/clear — wipe memory\n` +
+    `/app — open your dashboard\n/help — full guide\n\n` +
+    `Or just *talk to me* — text or 🎙 *voice note.*`);
 });
+
+// ─────────────────────────────────────────────────────
+//  /signup — register new user + send welcome email
+// ─────────────────────────────────────────────────────
+bot.onText(/\/signup (.+)/, async (msg, match) => {
+  const userId = msg.from.id;
+  const parts  = match[1].trim().split(/\s+/);
+
+  if (parts.length < 2) {
+    reply(msg.chat.id, `⚠️ Usage: \`/signup YourName your@email.com\``);
+    return;
+  }
+
+  const email = parts[parts.length - 1];
+  const name  = parts.slice(0, -1).join(" ");
+
+  if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+    reply(msg.chat.id, `❌ Invalid email. Try: \`/signup YourName your@email.com\``);
+    return;
+  }
+
+  if (isRegistered(userId)) {
+    const existing = getRegisteredUser(userId);
+    reply(msg.chat.id, `✅ You're already signed up as *${existing.name}* (${existing.email}).\n\nUse /start to begin.`);
+    return;
+  }
+
+  registerUser(userId, name, email);
+  getUser(userId).name = name;
+
+  bot.sendChatAction(msg.chat.id, "typing");
+  await sendWelcomeEmail(name, email);
+
+  reply(msg.chat.id,
+    `✅ *Account created, ${name}!*\n\n` +
+    `📧 Welcome email sent to *${email}*\n\n` +
+    `You're in. Your Imperium AI operator is now active.\n` +
+    `Use /start to see all commands.`);
+});
+
+// ─────────────────────────────────────────────────────
+//  /signin — authenticate existing user + send confirmation email
+// ─────────────────────────────────────────────────────
+bot.onText(/\/signin (.+)/, async (msg, match) => {
+  const userId = msg.from.id;
+  const email  = match[1].trim();
+
+  if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+    reply(msg.chat.id, `❌ Invalid email. Try: \`/signin your@email.com\``);
+    return;
+  }
+
+  // Check if email exists in registry
+  const reg = loadRegistry();
+  const match2 = Object.entries(reg).find(([, u]) => u.email === email);
+
+  if (!match2) {
+    reply(msg.chat.id,
+      `❌ No account found for *${email}*\n\nSign up first: \`/signup YourName ${email}\``);
+    return;
+  }
+
+  const [, userData] = match2;
+  // Update registry to bind this Telegram userId to the account
+  registerUser(userId, userData.name, email);
+  getUser(userId).name = userData.name;
+
+  bot.sendChatAction(msg.chat.id, "typing");
+  await sendSignInEmail(userData.name, email);
+
+  reply(msg.chat.id,
+    `🔐 *Signed in, ${userData.name}!*\n\n` +
+    `📧 Sign-in confirmation sent to *${email}*\n\n` +
+    `Your AI operator is active. Use /start to see all commands.`);
+});
+
 
 // ─────────────────────────────────────────────────────
 //  /help
@@ -136,6 +333,7 @@ bot.onText(/\/app/, (msg) => {
 //  /plan
 // ─────────────────────────────────────────────────────
 bot.onText(/\/plan(.*)/, async (msg, match) => {
+  if (!requireAuth(msg)) return;
   const userId = msg.from.id;
   const user = getUser(userId);
   const input = match[1].trim();
@@ -158,6 +356,7 @@ bot.onText(/\/plan(.*)/, async (msg, match) => {
 //  /focus
 // ─────────────────────────────────────────────────────
 bot.onText(/\/focus(.*)/, async (msg, match) => {
+  if (!requireAuth(msg)) return;
   const userId = msg.from.id;
   const user = getUser(userId);
   const input = match[1].trim();
@@ -180,6 +379,7 @@ bot.onText(/\/focus(.*)/, async (msg, match) => {
 //  /tasks
 // ─────────────────────────────────────────────────────
 bot.onText(/\/tasks$/, (msg) => {
+  if (!requireAuth(msg)) return;
   const user = getUser(msg.from.id);
   if (!user.tasks.length) {
     reply(msg.chat.id, `✅ *No tasks yet.*\n\nUse \`/add [task]\` to add one.`);
@@ -193,6 +393,7 @@ bot.onText(/\/tasks$/, (msg) => {
 //  /add
 // ─────────────────────────────────────────────────────
 bot.onText(/\/add (.+)/, (msg, match) => {
+  if (!requireAuth(msg)) return;
   const user = getUser(msg.from.id);
   const task = match[1].trim();
   user.tasks.push(task);
@@ -203,6 +404,7 @@ bot.onText(/\/add (.+)/, (msg, match) => {
 //  /done
 // ─────────────────────────────────────────────────────
 bot.onText(/\/done (\d+)/, (msg, match) => {
+  if (!requireAuth(msg)) return;
   const user = getUser(msg.from.id);
   const idx = parseInt(match[1]) - 1;
   if (idx < 0 || idx >= user.tasks.length) {
@@ -217,6 +419,7 @@ bot.onText(/\/done (\d+)/, (msg, match) => {
 //  /status
 // ─────────────────────────────────────────────────────
 bot.onText(/\/status/, (msg) => {
+  if (!requireAuth(msg)) return;
   const user = getUser(msg.from.id);
   let out = `📊 *Your Imperium Context*\n\n`;
   out += user.focus ? `🎯 *Focus:* ${user.focus}\n` : `🎯 *Focus:* not set\n`;
@@ -235,6 +438,7 @@ bot.onText(/\/status/, (msg) => {
 //  /clear
 // ─────────────────────────────────────────────────────
 bot.onText(/\/clear/, (msg) => {
+  if (!requireAuth(msg)) return;
   const userId = msg.from.id;
   const name = getUser(userId).name;
   memory.delete(userId);
@@ -311,6 +515,7 @@ async function transcribeVoice(fileId) {
 //  /voice — show stored voice log
 // ─────────────────────────────────────────────────────
 bot.onText(/\/voice/, (msg) => {
+  if (!requireAuth(msg)) return;
   const user = getUser(msg.from.id);
   if (!user.voiceLog.length) {
     reply(msg.chat.id, `🎙 *No voice messages stored yet.*\n\nSend me a voice note — I'll transcribe, store, and respond to it.`);
@@ -327,6 +532,7 @@ bot.onText(/\/voice/, (msg) => {
 //  VOICE MESSAGE HANDLER
 // ─────────────────────────────────────────────────────
 bot.on("voice", async (msg) => {
+  if (!requireAuth(msg)) return;
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const user   = getUser(userId);
@@ -378,6 +584,7 @@ bot.on("message", async (msg) => {
   const userId = msg.from.id;
   const text   = msg.text;
   if (!text || text.startsWith("/")) return;
+  if (!requireAuth(msg)) return;
 
   const user = getUser(userId);
   if (!user.name && msg.from.first_name) user.name = msg.from.first_name;
