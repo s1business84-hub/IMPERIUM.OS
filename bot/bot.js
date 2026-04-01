@@ -247,6 +247,31 @@ async function reply(chatId, text, opts = {}) {
 }
 
 // ─────────────────────────────────────────────────────
+//  VISUAL HELPERS
+// ─────────────────────────────────────────────────────
+function progressBar(done, total, len = 12) {
+  if (total === 0) return "░".repeat(len) + " 0%";
+  const filled = Math.round((done / total) * len);
+  const pct    = Math.round((done / total) * 100);
+  return "█".repeat(filled) + "░".repeat(len - filled) + ` ${pct}%`;
+}
+
+// Build a QuickChart URL (no install needed — uses free API)
+function quickChartUrl(config) {
+  const encoded = encodeURIComponent(JSON.stringify(config));
+  return `https://quickchart.io/chart?c=${encoded}&backgroundColor=rgb(10,10,10)&width=600&height=300`;
+}
+
+async function sendChart(chatId, config, caption) {
+  try {
+    const url = quickChartUrl(config);
+    await bot.sendPhoto(chatId, url, { caption, parse_mode: "Markdown" });
+  } catch (err) {
+    console.error("Chart send error:", err.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────
 //  /start
 // ─────────────────────────────────────────────────────
 bot.onText(/\/start/, (msg) => {
@@ -492,12 +517,12 @@ bot.onText(/\/insights(@\w+)?\s*$/, async (msg) => {
     : "No tasks set.";
   const prompt =
     `Give me a sharp, personalised daily performance brief for today. ` +
-    `Be direct and science-backed. Include: ` +
-    `1) One honest assessment of my current momentum based on my context. ` +
-    `2) The single highest-leverage action I should take in the next 2 hours. ` +
-    `3) One mindset or physiological insight relevant to my situation. ` +
+    `Be direct and science-backed. Structure your response with these exact headers: ` +
+    `**Momentum** (1 honest sentence about current state), ` +
+    `**Highest Leverage Action** (one concrete thing to do in next 2 hours), ` +
+    `**Science Insight** (one physiology or psychology fact relevant to my situation). ` +
     `Context — Focus: "${user.focus || "not set"}". Plan: "${user.plan || "not set"}". ${taskSummary}. ` +
-    `Keep it under 200 words. No fluff.`;
+    `Max 150 words total. Be direct.`;
 
   const aiReply = await getAIResponse(userId, prompt);
   if (aiReply) {
@@ -506,6 +531,35 @@ bot.onText(/\/insights(@\w+)?\s*$/, async (msg) => {
   } else {
     reply(msg.chat.id, buildFallback(userId));
   }
+
+  // Readiness radar chart
+  const focusScore = user.focus ? 3 : 0;
+  const planScore  = user.plan  ? 3 : 0;
+  const taskScore  = Math.min(user.tasks.length, 3);
+  const chatScore  = Math.min(Math.floor(user.history.length / 2), 3);
+  const voiceScore = Math.min(user.voiceLog.length, 3);
+
+  await sendChart(msg.chat.id, {
+    type: "radar",
+    data: {
+      labels: ["Focus", "Plan", "Tasks", "AI Usage", "Voice"],
+      datasets: [{
+        label: "Readiness",
+        data: [focusScore, planScore, taskScore, chatScore, voiceScore],
+        backgroundColor: "rgba(124,58,237,0.3)",
+        borderColor: "#7c3aed",
+        pointBackgroundColor: "#a78bfa",
+        borderWidth: 2
+      }]
+    },
+    options: {
+      scales: { r: { min: 0, max: 3, ticks: { display: false }, grid: { color: "#333" }, pointLabels: { color: "#ffffff", font: { size: 13 } } } },
+      plugins: {
+        title:  { display: true, text: "Operator Readiness", color: "#ffffff", font: { size: 15 } },
+        legend: { display: false }
+      }
+    }
+  }, "⚡ Readiness radar");
 });
 
 // ─────────────────────────────────────────────────────
@@ -518,29 +572,55 @@ bot.onText(/\/dashboard(@\w+)?\s*$/, async (msg) => {
   const reg    = getRegisteredUser(userId);
   const now    = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
 
-  let out = `📱 *Imperium Dashboard*\n`;
-  out += `_${now} IST_\n`;
-  out += `━━━━━━━━━━━━━━━━━━━━\n\n`;
-
-  out += `👤 *${reg?.name || user.name || "Operator"}*\n`;
-  out += `📧 ${reg?.email || "—"}\n\n`;
-
-  out += `🎯 *Focus*\n${user.focus || "_not set — use /focus_"}\n\n`;
-  out += `📋 *Plan*\n${user.plan  || "_not set — use /plan_"}\n\n`;
+  // Text card
+  let out = `📱 *Imperium Dashboard*\n_${now} IST_\n━━━━━━━━━━━━━━━━━━━━\n\n`;
+  out += `👤 *${reg?.name || user.name || "Operator"}*  📧 ${reg?.email || "—"}\n\n`;
+  out += `🎯 *Focus*\n${user.focus || "_not set — /focus_"}\n\n`;
+  out += `📋 *Plan*\n${user.plan   || "_not set — /plan_"}\n\n`;
 
   if (user.tasks.length) {
     out += `✅ *Tasks (${user.tasks.length})*\n`;
-    out += user.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n");
+    out += user.tasks.map((t, i) => `${i + 1}. ◻️ ${t}`).join("\n");
     out += "\n\n";
   } else {
     out += `✅ *Tasks* — _none yet_\n\n`;
   }
-
-  out += `💬 *AI exchanges:* ${Math.floor(user.history.length / 2)}\n`;
-  out += `🎙 *Voice notes:* ${user.voiceLog.length}\n\n`;
-  out += `🔗 ${APP_URL}`;
+  out += `💬 ${Math.floor(user.history.length / 2)} AI exchanges  🎙 ${user.voiceLog.length} voice notes\n\n🔗 ${APP_URL}`;
 
   reply(msg.chat.id, out);
+
+  // Activity bar chart
+  const chartConfig = {
+    type: "bar",
+    data: {
+      labels: ["Tasks", "AI Chats", "Voice Notes", "Focus Set", "Plan Set"],
+      datasets: [{
+        label: "Activity",
+        data: [
+          user.tasks.length,
+          Math.floor(user.history.length / 2),
+          user.voiceLog.length,
+          user.focus ? 1 : 0,
+          user.plan  ? 1 : 0
+        ],
+        backgroundColor: ["#7c3aed", "#a78bfa", "#c4b5fd", "#6d28d9", "#4c1d95"],
+        borderRadius: 6,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      plugins: {
+        title:  { display: true, text: `${reg?.name || "Operator"}'s Activity — Imperium OS`, color: "#ffffff", font: { size: 15 } },
+        legend: { display: false }
+      },
+      scales: {
+        x: { ticks: { color: "#aaaaaa" }, grid: { color: "#222" } },
+        y: { ticks: { color: "#aaaaaa", stepSize: 1 }, grid: { color: "#222" }, beginAtZero: true }
+      }
+    }
+  };
+
+  await sendChart(msg.chat.id, chartConfig, `📊 Activity snapshot — ${now} IST`);
 });
 
 // ─────────────────────────────────────────────────────
@@ -596,11 +676,18 @@ bot.onText(/\/tasks(@\w+)?\s*$/, (msg) => {
   if (!requireAuth(msg)) return;
   const user = getUser(msg.from.id);
   if (!user.tasks.length) {
-    reply(msg.chat.id, `✅ *No tasks yet.*\n\nUse \`/add [task]\` to add one.`);
+    reply(msg.chat.id,
+      `✅ *No tasks yet.*\n\nUse \`/add [task]\` to add one.\n\n_Tip: /add finish pitch deck_`);
     return;
   }
-  const list = user.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n");
-  reply(msg.chat.id, `✅ *Your tasks (${user.tasks.length}):*\n\n${list}\n\n_/done [#] to complete · /add [task] to add more_`);
+  const total     = user.tasks.length;
+  const bar       = progressBar(0, total); // all pending
+  const list      = user.tasks.map((t, i) => `${i + 1}. ◻️ ${t}`).join("\n");
+  reply(msg.chat.id,
+    `✅ *Tasks — ${total} pending*\n` +
+    `\`${bar}\`\n\n` +
+    `${list}\n\n` +
+    `_/done [#] to complete · /add [task] to add_`);
 });
 
 // ─────────────────────────────────────────────────────
@@ -620,7 +707,7 @@ bot.onText(/\/add(?:@\w+)?\s+(.+)/, (msg, match) => {
 // ─────────────────────────────────────────────────────
 //  /done
 // ─────────────────────────────────────────────────────
-bot.onText(/\/done(?:@\w+)?\s+(\d+)/, (msg, match) => {
+bot.onText(/\/done(?:@\w+)?\s+(\d+)/, async (msg, match) => {
   if (!requireAuth(msg)) return;
   const userId = msg.from.id;
   const user = getUser(userId);
@@ -629,9 +716,34 @@ bot.onText(/\/done(?:@\w+)?\s+(\d+)/, (msg, match) => {
     reply(msg.chat.id, `❌ Task #${idx + 1} not found. Use /tasks to see your list.`);
     return;
   }
-  const done = user.tasks.splice(idx, 1)[0];
+  const done     = user.tasks.splice(idx, 1)[0];
+  const remaining = user.tasks.length;
   saveUserTasks(userId, user.tasks);
-  reply(msg.chat.id, `✔️ Done: *${done}*\n\n${user.tasks.length} task${user.tasks.length !== 1 ? "s" : ""} remaining.`);
+
+  const bar = progressBar(0, remaining === 0 ? 1 : remaining);
+  reply(msg.chat.id,
+    `✔️ *Done:* _${done}_\n\n` +
+    (remaining > 0
+      ? `${remaining} task${remaining !== 1 ? "s" : ""} remaining\n\`${progressBar(0, remaining)}\``
+      : `🏆 *All tasks complete!* Queue is clear.`)
+  );
+
+  // Send completion chart when all tasks are done
+  if (remaining === 0) {
+    await sendChart(msg.chat.id, {
+      type: "doughnut",
+      data: {
+        labels: ["Complete", "Remaining"],
+        datasets: [{ data: [1, 0], backgroundColor: ["#7c3aed", "#333"], borderWidth: 0 }]
+      },
+      options: {
+        plugins: {
+          title: { display: true, text: "Task Queue — All Done ✓", color: "#ffffff", font: { size: 16 } },
+          legend: { labels: { color: "#ffffff" } }
+        }
+      }
+    }, "⚡ Queue cleared.");
+  }
 });
 
 // ─────────────────────────────────────────────────────
@@ -639,17 +751,30 @@ bot.onText(/\/done(?:@\w+)?\s+(\d+)/, (msg, match) => {
 // ─────────────────────────────────────────────────────
 bot.onText(/\/status/, (msg) => {
   if (!requireAuth(msg)) return;
-  const user = getUser(msg.from.id);
-  let out = `📊 *Your Imperium Context*\n\n`;
-  out += user.focus ? `🎯 *Focus:* ${user.focus}\n` : `🎯 *Focus:* not set\n`;
-  out += user.plan  ? `📋 *Plan:* ${user.plan}\n`   : `📋 *Plan:* not set\n`;
+  const user    = getUser(msg.from.id);
+  const exchBar = progressBar(Math.min(user.history.length / 2, 20), 20);
+  const vocBar  = progressBar(Math.min(user.voiceLog.length, 10), 10);
+
+  let out = `📊 *Imperium Status*\n\n`;
+
+  out += user.focus
+    ? `🎯 *Focus*\n_${user.focus}_\n\n`
+    : `🎯 *Focus* — _not set_\n\n`;
+
+  out += user.plan
+    ? `📋 *Plan*\n_${user.plan}_\n\n`
+    : `📋 *Plan* — _not set_\n\n`;
+
   if (user.tasks.length) {
-    out += `\n✅ *Tasks (${user.tasks.length}):*\n${user.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
+    out += `✅ *Tasks (${user.tasks.length} pending)*\n`;
+    out += user.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n");
+    out += "\n\n";
   } else {
-    out += `✅ *Tasks:* none`;
+    out += `✅ *Tasks* — _none_\n\n`;
   }
-  out += `\n\n💬 *Conversation:* ${Math.floor(user.history.length / 2)} exchanges`;
-  out += `\n🎙 *Voice notes stored:* ${user.voiceLog.length}`;
+
+  out += `💬 *AI Activity*\n\`${exchBar}\`  ${Math.floor(user.history.length / 2)} exchanges\n\n`;
+  out += `🎙 *Voice Notes*\n\`${vocBar}\`  ${user.voiceLog.length} stored`;
   reply(msg.chat.id, out);
 });
 
@@ -888,6 +1013,24 @@ process.on("unhandledRejection", (err) => console.error("Unhandled:", err));
     console.log(`   App URL  : ${APP_URL}`);
     console.log(`   Memory   : in-process per userId`);
     console.log("   Status   : polling for messages...\n");
+
+    // Register command menu with Telegram (shows / autocomplete)
+    await bot.setMyCommands([
+      { command: "start",     description: "Launch Imperium" },
+      { command: "plan",      description: "Create a strategic plan" },
+      { command: "focus",     description: "Set your main focus" },
+      { command: "tasks",     description: "View task list" },
+      { command: "add",       description: "Add a new task" },
+      { command: "done",      description: "Complete a task" },
+      { command: "insights",  description: "View AI insights + radar chart" },
+      { command: "dashboard", description: "Full dashboard + activity chart" },
+      { command: "status",    description: "View your context" },
+      { command: "voice",     description: "View voice log" },
+      { command: "clear",     description: "Reset memory" },
+      { command: "app",       description: "Open web dashboard" },
+      { command: "help",      description: "Full guide" },
+    ]);
+    console.log("   Commands : registered with Telegram ✓\n");
   } catch (err) {
     console.error("❌ Bot failed to connect to Telegram:", err.message);
     console.error("   Check your TELEGRAM_TOKEN and internet connection.");
