@@ -270,10 +270,11 @@ bot.onText(/\/start/, (msg) => {
   getUser(userId).name = regUser.name;
   reply(msg.chat.id,
     `⚡ *Welcome back, ${regUser.name}.*\n\nYour AI operator is ready.\n\n` +
-    `*Commands:*\n/plan — set your strategy\n/focus — lock in one priority\n` +
-    `/tasks — view task list\n/add [task] — add a task\n/done [#] — complete a task\n` +
-    `/voice — view voice log\n/status — see all your context\n/clear — wipe memory\n` +
-    `/app — open your dashboard\n/help — full guide\n\n` +
+    `*Strategy:*\n/plan — set your strategy\n/focus — lock in one priority\n\n` +
+    `*Tasks:*\n/tasks — view task list\n/add [task] — add a task\n/done [#] — complete a task\n\n` +
+    `*AI:*\n/insights — today's AI performance brief\n/dashboard — your full context card\n/status — see all context\n\n` +
+    `*Logs:*\n/voice — view voice log\n/clear — wipe memory\n\n` +
+    `*Other:*\n/app — open dashboard\n/help — full guide\n\n` +
     `Or just *talk to me* — text or 🎙 *voice note.*`);
 });
 
@@ -451,14 +452,19 @@ bot.onText(/\/help/, (msg) => {
     `/signin email password — sign in\n` +
     `/changepassword — update your password\n` +
     `/forgotpassword — reset your password\n\n` +
-    `*AI & Goals:*\n` +
+    `*Strategy:*\n` +
     `/plan [text] — set your strategy\n` +
-    `/focus [text] — lock in one priority\n` +
+    `/focus [text] — lock in one priority\n\n` +
+    `*Tasks:*\n` +
     `/tasks — view task list\n` +
     `/add [task] — add a task\n` +
-    `/done [#] — mark task complete\n` +
+    `/done [#] — mark task complete\n\n` +
+    `*AI Insights:*\n` +
+    `/insights — today's AI performance brief\n` +
+    `/dashboard — your full context card\n` +
+    `/status — see all context\n\n` +
+    `*Logs:*\n` +
     `/voice — view your voice log\n` +
-    `/status — see all context\n` +
     `/clear — reset memory\n` +
     `/app — open dashboard\n\n` +
     `_Text or voice note — I transcribe, store, and respond to both._`);
@@ -470,6 +476,71 @@ bot.onText(/\/help/, (msg) => {
 bot.onText(/\/app/, (msg) => {
   reply(msg.chat.id,
     `📱 *Imperium OS Dashboard*\n\n${APP_URL}\n\nCheck-ins, insights, spending tracker, full AI analysis.`);
+});
+
+// ─────────────────────────────────────────────────────
+//  /insights — AI daily performance brief
+// ─────────────────────────────────────────────────────
+bot.onText(/\/insights(@\w+)?\s*$/, async (msg) => {
+  if (!requireAuth(msg)) return;
+  const userId = msg.from.id;
+  const user   = getUser(userId);
+  bot.sendChatAction(msg.chat.id, "typing");
+
+  const taskSummary = user.tasks.length
+    ? `Tasks: ${user.tasks.map((t, i) => `${i + 1}. ${t}`).join(", ")}`
+    : "No tasks set.";
+  const prompt =
+    `Give me a sharp, personalised daily performance brief for today. ` +
+    `Be direct and science-backed. Include: ` +
+    `1) One honest assessment of my current momentum based on my context. ` +
+    `2) The single highest-leverage action I should take in the next 2 hours. ` +
+    `3) One mindset or physiological insight relevant to my situation. ` +
+    `Context — Focus: "${user.focus || "not set"}". Plan: "${user.plan || "not set"}". ${taskSummary}. ` +
+    `Keep it under 200 words. No fluff.`;
+
+  const aiReply = await getAIResponse(userId, prompt);
+  if (aiReply) {
+    pushHistory(userId, "assistant", aiReply);
+    reply(msg.chat.id, `📊 *Today's Insights*\n\n${aiReply}`);
+  } else {
+    reply(msg.chat.id, buildFallback(userId));
+  }
+});
+
+// ─────────────────────────────────────────────────────
+//  /dashboard — full context card
+// ─────────────────────────────────────────────────────
+bot.onText(/\/dashboard(@\w+)?\s*$/, async (msg) => {
+  if (!requireAuth(msg)) return;
+  const userId = msg.from.id;
+  const user   = getUser(userId);
+  const reg    = getRegisteredUser(userId);
+  const now    = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+
+  let out = `📱 *Imperium Dashboard*\n`;
+  out += `_${now} IST_\n`;
+  out += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  out += `👤 *${reg?.name || user.name || "Operator"}*\n`;
+  out += `📧 ${reg?.email || "—"}\n\n`;
+
+  out += `🎯 *Focus*\n${user.focus || "_not set — use /focus_"}\n\n`;
+  out += `📋 *Plan*\n${user.plan  || "_not set — use /plan_"}\n\n`;
+
+  if (user.tasks.length) {
+    out += `✅ *Tasks (${user.tasks.length})*\n`;
+    out += user.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n");
+    out += "\n\n";
+  } else {
+    out += `✅ *Tasks* — _none yet_\n\n`;
+  }
+
+  out += `💬 *AI exchanges:* ${Math.floor(user.history.length / 2)}\n`;
+  out += `🎙 *Voice notes:* ${user.voiceLog.length}\n\n`;
+  out += `🔗 ${APP_URL}`;
+
+  reply(msg.chat.id, out);
 });
 
 // ─────────────────────────────────────────────────────
@@ -691,8 +762,7 @@ bot.on("voice", async (msg) => {
     transcript = await transcribeVoice(msg.voice.file_id);
   } catch (err) {
     console.error("Whisper error:", err.message);
-    // Fallback: ask user to type it
-    reply(chatId, `⚠️ *Couldn't transcribe voice note.*\n\nMake sure Ollama whisper is pulled:\n\`ollama pull whisper\`\n\nOr just type your message instead.`);
+    reply(chatId, `⚠️ *Couldn't transcribe voice note.*\n\n_${err.message}_\n\nJust type your message instead — full AI still works.`);
     return;
   }
 
