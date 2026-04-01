@@ -1491,6 +1491,7 @@ function initHomeData() {
   initDottedGlow();
   updateHomeXPChip();
   initCheckinCard();
+  initCheckinBeams();
   updatePassiveStrip();
   initSpendNudge();
 
@@ -2436,6 +2437,183 @@ document.addEventListener('keydown', e => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openCommand(); }
   if (e.key === 'Escape') closeCommand();
 });
+
+/* ── BEAM COLLISION CANVAS — Check-in Card Background ── */
+class BeamCollisionEffect {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.beams = [];
+    this.particles = [];
+    this.running = false;
+    this.W = 0;
+    this.H = 0;
+    this.colors = [
+      { r: 10, g: 132, b: 255 },    // system-blue
+      { r: 94, g: 92, b: 230 },     // system-indigo
+      { r: 191, g: 90, b: 242 },    // system-purple
+      { r: 48, g: 209, b: 88 },     // system-green
+      { r: 100, g: 210, b: 255 },   // system-teal
+      { r: 255, g: 159, b: 10 },    // system-orange
+    ];
+    this._resize = this.resize.bind(this);
+    this._loop = this.loop.bind(this);
+  }
+
+  start() {
+    if (this.running) return;
+    this.running = true;
+    this.resize();
+    window.addEventListener('resize', this._resize);
+    this.spawnBeams();
+    this._spawnInterval = setInterval(() => this.spawnBeams(), 2400);
+    requestAnimationFrame(this._loop);
+  }
+
+  stop() {
+    this.running = false;
+    window.removeEventListener('resize', this._resize);
+    if (this._spawnInterval) clearInterval(this._spawnInterval);
+  }
+
+  resize() {
+    const r = this.canvas.parentElement.getBoundingClientRect();
+    this.W = this.canvas.width = r.width;
+    this.H = this.canvas.height = r.height;
+  }
+
+  spawnBeams() {
+    const count = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < count; i++) {
+      const fromTop = Math.random() > 0.5;
+      const c = this.colors[Math.floor(Math.random() * this.colors.length)];
+      const beam = {
+        x: Math.random() * this.W,
+        y: fromTop ? -20 : this.H + 20,
+        angle: fromTop
+          ? (Math.PI / 3 + Math.random() * Math.PI / 3)
+          : -(Math.PI / 3 + Math.random() * Math.PI / 3),
+        speed: 0.8 + Math.random() * 1.2,
+        width: 1.5 + Math.random() * 2.5,
+        length: 40 + Math.random() * 60,
+        color: c,
+        alpha: 0.15 + Math.random() * 0.25,
+        life: 1,
+        trail: [],
+      };
+      this.beams.push(beam);
+    }
+  }
+
+  spawnCollisionParticles(x, y, c) {
+    const num = 8 + Math.floor(Math.random() * 8);
+    for (let i = 0; i < num; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1 + Math.random() * 3;
+      this.particles.push({
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: 1 + Math.random() * 2.5,
+        color: c,
+        alpha: 0.6 + Math.random() * 0.4,
+        decay: 0.015 + Math.random() * 0.02,
+      });
+    }
+  }
+
+  loop() {
+    if (!this.running) return;
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.W, this.H);
+
+    // Update & draw beams
+    for (let i = this.beams.length - 1; i >= 0; i--) {
+      const b = this.beams[i];
+      b.x += Math.cos(b.angle) * b.speed;
+      b.y += Math.sin(b.angle) * b.speed;
+      b.trail.push({ x: b.x, y: b.y });
+      if (b.trail.length > b.length) b.trail.shift();
+
+      // Draw beam trail
+      if (b.trail.length > 1) {
+        for (let t = 1; t < b.trail.length; t++) {
+          const frac = t / b.trail.length;
+          const a = b.alpha * frac;
+          ctx.beginPath();
+          ctx.moveTo(b.trail[t - 1].x, b.trail[t - 1].y);
+          ctx.lineTo(b.trail[t].x, b.trail[t].y);
+          ctx.strokeStyle = 'rgba(' + b.color.r + ',' + b.color.g + ',' + b.color.b + ',' + a + ')';
+          ctx.lineWidth = b.width * frac;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+        // Glow at head
+        const head = b.trail[b.trail.length - 1];
+        const grd = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 8);
+        grd.addColorStop(0, 'rgba(' + b.color.r + ',' + b.color.g + ',' + b.color.b + ',' + (b.alpha * 0.6) + ')');
+        grd.addColorStop(1, 'rgba(' + b.color.r + ',' + b.color.g + ',' + b.color.b + ',0)');
+        ctx.beginPath(); ctx.arc(head.x, head.y, 8, 0, Math.PI * 2); ctx.fillStyle = grd; ctx.fill();
+      }
+
+      // Check collision with other beams
+      for (let j = i - 1; j >= 0; j--) {
+        const b2 = this.beams[j];
+        if (b2.trail.length < 2) continue;
+        const h2 = b2.trail[b2.trail.length - 1];
+        const dx = b.x - h2.x, dy = b.y - h2.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 14) {
+          // Collision!
+          const mx = (b.x + h2.x) / 2, my = (b.y + h2.y) / 2;
+          const mc = { r: Math.round((b.color.r + b2.color.r) / 2), g: Math.round((b.color.g + b2.color.g) / 2), b: Math.round((b.color.b + b2.color.b) / 2) };
+          this.spawnCollisionParticles(mx, my, mc);
+          this.beams.splice(i, 1);
+          this.beams.splice(j, 1);
+          i--;
+          break;
+        }
+      }
+
+      // Remove if off-screen
+      if (b.x < -60 || b.x > this.W + 60 || b.y < -60 || b.y > this.H + 60) {
+        this.beams.splice(i, 1);
+      }
+    }
+
+    // Update & draw particles
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vx *= 0.96; p.vy *= 0.96;
+      p.alpha -= p.decay;
+      if (p.alpha <= 0) { this.particles.splice(i, 1); continue; }
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ',' + p.alpha + ')';
+      ctx.fill();
+      // Particle glow
+      const pg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
+      pg.addColorStop(0, 'rgba(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ',' + (p.alpha * 0.3) + ')');
+      pg.addColorStop(1, 'rgba(' + p.color.r + ',' + p.color.g + ',' + p.color.b + ',0)');
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2); ctx.fillStyle = pg; ctx.fill();
+    }
+
+    requestAnimationFrame(this._loop);
+  }
+}
+
+let checkinBeamEffect = null;
+
+function initCheckinBeams() {
+  const canvas = document.getElementById('checkin-beams-canvas');
+  if (!canvas) return;
+  if (checkinBeamEffect) checkinBeamEffect.stop();
+  checkinBeamEffect = new BeamCollisionEffect(canvas);
+  checkinBeamEffect.start();
+}
+
+function stopCheckinBeams() {
+  if (checkinBeamEffect) { checkinBeamEffect.stop(); checkinBeamEffect = null; }
+}
 
 /* ── GLOBAL EFFECTS ───────────────────────────────── */
 function initGlobalEffects() {
