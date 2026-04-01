@@ -123,10 +123,19 @@ function registerUser(userId, name, email, passwordHash) {
     name,
     email,
     passwordHash,
+    tasks: reg[userId]?.tasks || [],
     registeredAt: reg[userId]?.registeredAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
   saveRegistry(reg);
+}
+
+function saveUserTasks(userId, tasks) {
+  const reg = loadRegistry();
+  if (reg[userId]) {
+    reg[userId].tasks = tasks;
+    saveRegistry(reg);
+  }
 }
 
 // Save partial (no password yet) — used during signup flow
@@ -160,13 +169,14 @@ const memory = new Map();
 
 function getUser(userId) {
   if (!memory.has(userId)) {
+    const saved = getRegisteredUser(userId);
     memory.set(userId, {
-      history:  [],    // [{ role, content }]
+      history:  [],
       plan:     null,
-      tasks:    [],
+      tasks:    saved?.tasks || [],   // ← restored from users.json
       focus:    null,
-      name:     null,
-      voiceLog: [],    // [{ ts, transcript }] — all voice messages stored
+      name:     saved?.name  || null,
+      voiceLog: [],
     });
   }
   return memory.get(userId);
@@ -511,7 +521,7 @@ bot.onText(/\/focus(.*)/, async (msg, match) => {
 // ─────────────────────────────────────────────────────
 //  /tasks
 // ─────────────────────────────────────────────────────
-bot.onText(/\/tasks$/, (msg) => {
+bot.onText(/\/tasks(@\w+)?\s*$/, (msg) => {
   if (!requireAuth(msg)) return;
   const user = getUser(msg.from.id);
   if (!user.tasks.length) {
@@ -519,32 +529,37 @@ bot.onText(/\/tasks$/, (msg) => {
     return;
   }
   const list = user.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n");
-  reply(msg.chat.id, `✅ *Your tasks:*\n\n${list}\n\n_/done [#] to complete · /add [task] to add more_`);
+  reply(msg.chat.id, `✅ *Your tasks (${user.tasks.length}):*\n\n${list}\n\n_/done [#] to complete · /add [task] to add more_`);
 });
 
 // ─────────────────────────────────────────────────────
 //  /add
 // ─────────────────────────────────────────────────────
-bot.onText(/\/add (.+)/, (msg, match) => {
+bot.onText(/\/add(?:@\w+)?\s+(.+)/, (msg, match) => {
   if (!requireAuth(msg)) return;
-  const user = getUser(msg.from.id);
+  const userId = msg.from.id;
+  const user = getUser(userId);
   const task = match[1].trim();
+  if (!task) { reply(msg.chat.id, `⚠️ Usage: \`/add [task description]\``); return; }
   user.tasks.push(task);
+  saveUserTasks(userId, user.tasks);
   reply(msg.chat.id, `➕ Added: *${task}*\n\n${user.tasks.length} task${user.tasks.length > 1 ? "s" : ""} in queue. /tasks to view.`);
 });
 
 // ─────────────────────────────────────────────────────
 //  /done
 // ─────────────────────────────────────────────────────
-bot.onText(/\/done (\d+)/, (msg, match) => {
+bot.onText(/\/done(?:@\w+)?\s+(\d+)/, (msg, match) => {
   if (!requireAuth(msg)) return;
-  const user = getUser(msg.from.id);
+  const userId = msg.from.id;
+  const user = getUser(userId);
   const idx = parseInt(match[1]) - 1;
   if (idx < 0 || idx >= user.tasks.length) {
     reply(msg.chat.id, `❌ Task #${idx + 1} not found. Use /tasks to see your list.`);
     return;
   }
   const done = user.tasks.splice(idx, 1)[0];
+  saveUserTasks(userId, user.tasks);
   reply(msg.chat.id, `✔️ Done: *${done}*\n\n${user.tasks.length} task${user.tasks.length !== 1 ? "s" : ""} remaining.`);
 });
 
@@ -602,8 +617,10 @@ function buildFallback(userId) {
 }
 
 // ─────────────────────────────────────────────────────
-//  VOICE TRANSCRIPTION via Ollama whisper
+//  VOICE TRANSCRIPTION via openai-whisper CLI
 // ─────────────────────────────────────────────────────
+const WHISPER_BIN = process.env.WHISPER_BIN || "/Users/sanskaarnair/Desktop/BRAINANCE/BRAINANCE/.venv/bin/whisper";
+
 async function transcribeVoice(fileId) {
   // 1. Get file path from Telegram
   const fileInfo = await bot.getFile(fileId);
@@ -620,28 +637,22 @@ async function transcribeVoice(fileId) {
   // 3. Convert .oga → .wav using ffmpeg
   execSync(`ffmpeg -y -i "${ogaPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" 2>/dev/null`);
 
-  // 4. Read wav as base64
-  const wavBase64 = fs.readFileSync(wavPath).toString("base64");
+  // 4. Run whisper CLI on the wav file, output txt to TEMP_DIR
+  execSync(
+    `"${WHISPER_BIN}" "${wavPath}" --model base --output_format txt --output_dir "${TEMP_DIR}" --fp16 False 2>/dev/null`,
+    { timeout: 120000 }
+  );
 
-  // 5. Send to Ollama whisper
-  const res = await fetch(`${OLLAMA_URL}/api/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model:  WHISPER_MODEL,
-      prompt: "",
-      images: [wavBase64],   // Ollama whisper accepts audio as base64 image field
-      stream: false,
-    }),
-    signal: AbortSignal.timeout(60000),
-  });
+  // 5. Read the transcript (whisper names output file as <basename>.txt)
+  const txtPath = wavPath.replace(/\.wav$/, ".txt");
+  const transcript = fs.existsSync(txtPath)
+    ? fs.readFileSync(txtPath, "utf8").trim()
+    : "";
 
   // 6. Clean up temp files
-  try { fs.unlinkSync(ogaPath); fs.unlinkSync(wavPath); } catch {}
+  try { fs.unlinkSync(ogaPath); fs.unlinkSync(wavPath); fs.unlinkSync(txtPath); } catch {}
 
-  if (!res.ok) throw new Error(`Whisper HTTP ${res.status}`);
-  const data = await res.json();
-  return (data.response || "").trim();
+  return transcript;
 }
 
 // ─────────────────────────────────────────────────────
