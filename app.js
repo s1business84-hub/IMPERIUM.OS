@@ -940,7 +940,8 @@ function navigateTo(id) {
     'screen-home': 'nb-home',
     'screen-insights': 'nb-insights',
     'screen-assistant': 'nb-assistant',
-    'screen-profile': 'nb-profile'
+    'screen-profile': 'nb-profile',
+    'screen-contact': 'nb-contact'
   };
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   if (navMap[id]) {
@@ -952,6 +953,7 @@ function navigateTo(id) {
   if (id === 'screen-insights') { initInsights(); unlockAchievement('insights-visit'); }
   if (id === 'screen-assistant') { initAssistant(); }
   if (id === 'screen-profile') { initProfile(); }
+  if (id === 'screen-contact') { initContact(); }
 }
 
 function showBottomNav() {
@@ -2383,6 +2385,8 @@ const COMMANDS = [
   { icon: '🧠', label: 'Insights', action: () => navigateTo('screen-insights'), badge: 'AI' },
   { icon: '🤖', label: 'AI Assistant', action: () => navigateTo('screen-assistant'), badge: 'NEW' },
   { icon: '👤', label: 'Profile', action: () => navigateTo('screen-profile'), badge: '' },
+  { icon: '💬', label: 'Contact & Feedback', action: () => navigateTo('screen-contact'), badge: '' },
+  { icon: '⭐', label: 'Upgrade to Pro', action: () => openPro(), badge: 'SOON' },
   { icon: '📤', label: 'Export Data', action: exportData, badge: '' },
 ];
 
@@ -3232,3 +3236,157 @@ function formatFileSize(bytes) {
 
 /* ── BOOT ─────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => runBoot());
+
+/* ═══════════════════════════════════════════════════════
+   PRO UPGRADE SCREEN
+   ═══════════════════════════════════════════════════════ */
+
+// Simulate spots remaining (deterministic based on date so it feels real)
+const PRO_BASE_SPOTS = 47;
+
+function getProSpots() {
+  // Tick down 1 spot per day from launch date
+  const launch = new Date('2026-04-01').getTime();
+  const daysPassed = Math.floor((Date.now() - launch) / 86400000);
+  return Math.max(3, PRO_BASE_SPOTS - daysPassed);
+}
+
+function openPro() {
+  const spots = getProSpots();
+  const spotsEl = document.getElementById('pro-spots-left');
+  if (spotsEl) spotsEl.textContent = spots + ' spots left';
+  const earlyEl = document.getElementById('auth-early-spots');
+  if (earlyEl) earlyEl.textContent = spots + ' spots left';
+
+  // Hide waitlist confirm
+  const wlConfirm = document.getElementById('pro-waitlist-confirm');
+  if (wlConfirm) wlConfirm.classList.add('hidden');
+
+  // Navigate to pro screen (keeps back-stack feel)
+  navigateTo('screen-pro');
+  // Hide bottom nav on pro screen
+  const bn = document.getElementById('bottom-nav');
+  if (bn) bn.classList.add('hidden');
+}
+
+function closePro() {
+  // Return to wherever we came from
+  const prev = S.currentScreen && S.currentScreen !== 'screen-pro' ? S.currentScreen : 'screen-home';
+  // Show bottom nav again if needed
+  if (S.user && S.onboarded) {
+    const bn = document.getElementById('bottom-nav');
+    if (bn) bn.classList.remove('hidden');
+  }
+  const target = (prev === 'screen-pro') ? 'screen-home' : prev;
+  navigateTo(target);
+}
+
+let proWaitlistTier = '';
+
+function joinWaitlist(tier) {
+  proWaitlistTier = tier;
+  const wlConfirm = document.getElementById('pro-waitlist-confirm');
+  const tierEl = document.getElementById('pro-wl-tier');
+  if (tierEl) tierEl.textContent = tier.charAt(0).toUpperCase() + tier.slice(1);
+  if (wlConfirm) {
+    wlConfirm.classList.remove('hidden');
+    wlConfirm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  // Save waitlist join in state
+  if (!S.proWaitlist) S.proWaitlist = [];
+  if (!S.proWaitlist.includes(tier)) S.proWaitlist.push(tier);
+  saveState();
+  showToast('You\'re on the ' + tier + ' waitlist! 🎉', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════
+   CONTACT / FEEDBACK SCREEN
+   ═══════════════════════════════════════════════════════ */
+
+let contactRating = 0;
+let contactType = 'feedback';
+let votedFeatures = [];
+
+function initContact() {
+  // Restore voted features
+  if (S.votedFeatures) votedFeatures = S.votedFeatures;
+  // Update voted UI
+  votedFeatures.forEach(f => {
+    const item = document.querySelector('.contact-vote-item[onclick*="' + f + '"]');
+    if (item) item.classList.add('cvote-voted');
+  });
+  // Restore previous reaction if any
+  if (S.lastRating) {
+    contactRating = S.lastRating;
+    document.querySelectorAll('.contact-react').forEach(b => {
+      b.classList.toggle('selected', parseInt(b.dataset.val) === contactRating);
+    });
+  }
+}
+
+function pickReaction(btn) {
+  contactRating = parseInt(btn.dataset.val);
+  document.querySelectorAll('.contact-react').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  S.lastRating = contactRating;
+  saveState();
+}
+
+function pickContactType(btn) {
+  contactType = btn.dataset.type;
+  document.querySelectorAll('.contact-type-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function submitFeedback() {
+  const msg = (document.getElementById('contact-msg') || {}).value || '';
+  const email = (document.getElementById('contact-email') || {}).value || '';
+  if (!msg.trim() && contactRating === 0) {
+    showToast('Add a rating or message first', 'error');
+    return;
+  }
+
+  // Store locally
+  if (!S.feedback) S.feedback = [];
+  S.feedback.push({
+    type: contactType,
+    rating: contactRating,
+    msg: msg.trim(),
+    email: email.trim(),
+    ts: Date.now()
+  });
+  saveState();
+
+  // Clear form
+  const msgEl = document.getElementById('contact-msg');
+  const emailEl = document.getElementById('contact-email');
+  if (msgEl) msgEl.value = '';
+  if (emailEl) emailEl.value = '';
+
+  showToast('Message sent — thank you! 🙏', 'success');
+  grantXP(10, 'feedback submitted');
+}
+
+function voteFeature(el, feature) {
+  if (votedFeatures.includes(feature)) {
+    showToast('Already voted!', 'error');
+    return;
+  }
+  votedFeatures.push(feature);
+  if (!S.votedFeatures) S.votedFeatures = [];
+  S.votedFeatures = votedFeatures;
+  saveState();
+
+  el.classList.add('cvote-voted');
+  // Animate bar up slightly
+  const bar = el.querySelector('.cvote-bar');
+  const countEl = el.querySelector('.cvote-count');
+  if (bar) {
+    const current = parseInt(bar.style.width) || 50;
+    const newVal = Math.min(current + Math.floor(Math.random() * 3) + 1, 99);
+    bar.style.width = newVal + '%';
+    if (countEl) countEl.textContent = newVal + '%';
+  }
+  showToast('Vote recorded! 🗳', 'success');
+  grantXP(5, 'feature voted');
+}
