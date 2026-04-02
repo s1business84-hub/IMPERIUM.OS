@@ -15,9 +15,8 @@ dotenv.config();
 // ─────────────────────────────────────────────────────
 // ── Startup: validate required env vars ──────────────────
 const TOKEN         = process.env.TELEGRAM_TOKEN;
-const OLLAMA_URL    = process.env.OLLAMA_URL    || "http://localhost:11434";
-const OLLAMA_MODEL  = process.env.OLLAMA_MODEL  || "llama3";
-const WHISPER_MODEL = process.env.WHISPER_MODEL || "whisper";
+const GROQ_API_KEY  = process.env.GROQ_API_KEY;
+const GROQ_MODEL    = process.env.GROQ_MODEL    || "llama3-8b-8192";
 const APP_URL       = process.env.APP_URL        || "https://imperium-os.vercel.app";
 const EMAIL_USER    = process.env.EMAIL_USER;
 const EMAIL_PASS    = process.env.EMAIL_PASS;
@@ -205,11 +204,10 @@ Keep replies concise (max 3-4 short paragraphs) and actionable.`;
 }
 
 // ─────────────────────────────────────────────────────
-//  OLLAMA AI CALL
+//  GROQ AI CALL
 // ─────────────────────────────────────────────────────
 async function getAIResponse(userId, userInput) {
-  // Skip immediately if we know Ollama is offline
-  if (!(await checkOllama())) return null;
+  if (!GROQ_API_KEY) return null; // no key = offline mode
 
   const user = getUser(userId);
   const messages = [
@@ -218,19 +216,23 @@ async function getAIResponse(userId, userInput) {
     { role: "user", content: userInput },
   ];
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream: false }),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({ model: GROQ_MODEL, messages, max_tokens: 512 }),
       signal: AbortSignal.timeout(15000),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Groq ${res.status}: ${err.slice(0, 100)}`);
+    }
     const data = await res.json();
-    return data.message?.content || data.response || null;
+    return data.choices?.[0]?.message?.content?.trim() || null;
   } catch (err) {
-    console.error("Ollama error:", err.message);
-    ollamaOnline = false; // mark offline so next call skips instantly
-    lastHealthCheck = Date.now();
+    console.error("Groq error:", err.message);
     return null;
   }
 }
@@ -643,12 +645,6 @@ bot.onText(/\/plan(.*)/, async (msg, match) => {
     return;
   }
   user.plan = input;
-  const online = await checkOllama();
-  if (!online) {
-    reply(msg.chat.id,
-      `✅ *Plan locked:*\n_${input}_\n\n🧠 _AI offline — plan saved. Full analysis when Ollama is running._\n\n💡 Tip: your plan is now injected into every AI response once it's back.`);
-    return;
-  }
   bot.sendChatAction(msg.chat.id, "typing");
   const aiComment = await getAIResponse(userId, `My plan: "${input}". Give a sharp 2-sentence assessment and one tweak.`);
   pushHistory(userId, "user", `My plan: ${input}`);
@@ -672,12 +668,6 @@ bot.onText(/\/focus(.*)/, async (msg, match) => {
     return;
   }
   user.focus = input;
-  const online = await checkOllama();
-  if (!online) {
-    reply(msg.chat.id,
-      `🎯 *Focus locked:*\n_${input}_\n\n🧠 _AI offline — focus saved. You'll get a sharp first-action when Ollama is running._\n\n💡 Stay on this until it's done.`);
-    return;
-  }
   bot.sendChatAction(msg.chat.id, "typing");
   const aiComment = await getAIResponse(userId, `I'm locking my focus on: "${input}". Give one sharp sentence on why this matters and one concrete first action for the next 30 minutes.`);
   pushHistory(userId, "user", `Focus: ${input}`);
@@ -808,7 +798,7 @@ bot.onText(/\/clear/, (msg) => {
 });
 
 // ─────────────────────────────────────────────────────
-//  SCIENCE FALLBACKS — when Ollama is offline
+//  SCIENCE FALLBACKS — when Groq AI is unavailable
 // ─────────────────────────────────────────────────────
 const SCIENCE = [
   "Research: naming your next action (time + place) makes you 2–3× more likely to execute. What's your next concrete step?",
@@ -821,11 +811,11 @@ const SCIENCE = [
 
 function buildFallback(userId) {
   const user = getUser(userId);
-  let out = `⚡ *Imperium AI* _(AI offline — context mode)_\n\n`;
+  let out = `⚡ *Imperium AI* _(context mode — AI unavailable)_\n\n`;
   if (user.focus) out += `🎯 *Your focus:* ${user.focus}\n\n`;
   out += SCIENCE[Math.floor(Math.random() * SCIENCE.length)];
   if (user.tasks.length) out += `\n\n*Next task:* ${user.tasks[0]}`;
-  out += `\n\n_Full AI back when Ollama is running: \`ollama run llama3\`_`;
+  out += `\n\n_Set GROQ_API_KEY to enable AI responses._`;
   return out;
 }
 
@@ -1013,15 +1003,25 @@ bot.on("message", async (msg) => {
 //  /ping — system status check
 // ─────────────────────────────────────────────────────
 bot.onText(/\/ping(@\w+)?\s*$/, async (msg) => {
-  lastHealthCheck = 0; // force fresh check
-  const online = await checkOllama();
-  const reg    = getRegisteredUser(msg.from.id);
-  const now    = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+  const reg  = getRegisteredUser(msg.from.id);
+  const now  = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+
+  // Quick Groq health check
+  let groqStatus = "⚠️ No API key";
+  if (GROQ_API_KEY) {
+    try {
+      const r = await fetch("https://api.groq.com/openai/v1/models", {
+        headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+        signal: AbortSignal.timeout(5000),
+      });
+      groqStatus = r.ok ? "✅ Online" : `❌ Error ${r.status}`;
+    } catch { groqStatus = "❌ Unreachable"; }
+  }
 
   reply(msg.chat.id,
     `🟢 *Imperium System Status*\n_${now} IST_\n\n` +
     `🤖 *Bot* — ✅ Online\n` +
-    `🧪 *Ollama AI* — ${online ? "✅ Online" : "❌ Offline — run \`ollama run llama3\`"}\n` +
+    `🧠 *Groq AI (${GROQ_MODEL})* — ${groqStatus}\n` +
     `📧 *Email* — ${EMAIL_USER ? "✅ Configured" : "⚠️ Not set"}\n` +
     `👤 *Account* — ${reg ? `✅ ${reg.name}` : "⚠️ Not signed in"}\n\n` +
     `_All commands work regardless of AI status._`);
@@ -1043,9 +1043,10 @@ process.on("unhandledRejection", (err) => console.error("Unhandled:", err));
     console.log(`   Username : @${me.username}`);
     console.log(`   Bot ID   : ${me.id}`);
     console.log(`   Token    : ...${TOKEN.slice(-6)}  (last 6 chars)`);
-    console.log(`   Model    : ${OLLAMA_MODEL} @ ${OLLAMA_URL}`);
+    console.log(`   Model    : ${GROQ_MODEL} @ Groq API`);
     console.log(`   Email    : ${EMAIL_USER || "not configured"}`);
     console.log(`   App URL  : ${APP_URL}`);
+    console.log(`   Groq Key : ${GROQ_API_KEY ? "..." + GROQ_API_KEY.slice(-6) + "  (configured)" : "⚠️  NOT SET"}`);
     console.log(`   Memory   : in-process per userId`);
     console.log("   Status   : polling for messages...\n");
 

@@ -1,0 +1,6 @@
+node_modules
+logs
+users.json
+.env
+.venv
+*.log
