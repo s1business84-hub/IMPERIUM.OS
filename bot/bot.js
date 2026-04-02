@@ -208,6 +208,9 @@ Keep replies concise (max 3-4 short paragraphs) and actionable.`;
 //  OLLAMA AI CALL
 // ─────────────────────────────────────────────────────
 async function getAIResponse(userId, userInput) {
+  // Skip immediately if we know Ollama is offline
+  if (!(await checkOllama())) return null;
+
   const user = getUser(userId);
   const messages = [
     { role: "system", content: buildSystemPrompt(userId) },
@@ -219,13 +222,15 @@ async function getAIResponse(userId, userInput) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream: false }),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     return data.message?.content || data.response || null;
   } catch (err) {
     console.error("Ollama error:", err.message);
+    ollamaOnline = false; // mark offline so next call skips instantly
+    lastHealthCheck = Date.now();
     return null;
   }
 }
@@ -638,6 +643,12 @@ bot.onText(/\/plan(.*)/, async (msg, match) => {
     return;
   }
   user.plan = input;
+  const online = await checkOllama();
+  if (!online) {
+    reply(msg.chat.id,
+      `✅ *Plan locked:*\n_${input}_\n\n🧠 _AI offline — plan saved. Full analysis when Ollama is running._\n\n💡 Tip: your plan is now injected into every AI response once it's back.`);
+    return;
+  }
   bot.sendChatAction(msg.chat.id, "typing");
   const aiComment = await getAIResponse(userId, `My plan: "${input}". Give a sharp 2-sentence assessment and one tweak.`);
   pushHistory(userId, "user", `My plan: ${input}`);
@@ -661,6 +672,12 @@ bot.onText(/\/focus(.*)/, async (msg, match) => {
     return;
   }
   user.focus = input;
+  const online = await checkOllama();
+  if (!online) {
+    reply(msg.chat.id,
+      `🎯 *Focus locked:*\n_${input}_\n\n🧠 _AI offline — focus saved. You'll get a sharp first-action when Ollama is running._\n\n💡 Stay on this until it's done.`);
+    return;
+  }
   bot.sendChatAction(msg.chat.id, "typing");
   const aiComment = await getAIResponse(userId, `I'm locking my focus on: "${input}". Give one sharp sentence on why this matters and one concrete first action for the next 30 minutes.`);
   pushHistory(userId, "user", `Focus: ${input}`);
