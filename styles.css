@@ -781,6 +781,15 @@ ul{list-style:none}
 .pro-gradient-text{background:linear-gradient(135deg,#0a84ff,#5e5ce6,#bf5af2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .pro-hero-sub{font-size:var(--ts-subhead);color:var(--label-secondary);line-height:1.55;max-width:320px;margin:0 auto}
 
+/* Trial notice banner */
+.pro-trial-notice{display:inline-flex;align-items:center;gap:var(--s8);padding:var(--s8) var(--s16);background:linear-gradient(135deg,rgba(255,214,10,.12),rgba(255,159,10,.08));border:1px solid rgba(255,214,10,.25);border-radius:var(--radius-full);font-size:var(--ts-caption1);color:var(--system-yellow);margin-bottom:var(--s16)}
+
+/* Billing toggle */
+.pro-billing-toggle{display:flex;justify-content:center;gap:var(--s4);padding:var(--s4);background:var(--fill-quaternary);border-radius:var(--radius-md);margin-bottom:var(--s20)}
+.pro-toggle-btn{flex:1;max-width:160px;padding:var(--s10) var(--s16);font-size:var(--ts-subhead);font-weight:600;border-radius:var(--radius-sm);color:var(--label-secondary);transition:all var(--dur-fast) var(--ease-ios);display:flex;align-items:center;justify-content:center;gap:var(--s8)}
+.pro-toggle-btn.active{background:var(--bg-tertiary);color:var(--label-primary);box-shadow:var(--shadow-sm)}
+.pro-save-badge{font-size:var(--ts-caption2);font-weight:700;padding:2px 6px;background:var(--system-green);color:white;border-radius:4px}
+
 /* Plan cards */
 .pro-plans{display:flex;flex-direction:column;gap:var(--s16);padding:var(--s4) 0 var(--s8)}
 
@@ -788,6 +797,12 @@ ul{list-style:none}
 .pro-plan-card:nth-child(1){animation-delay:.05s}
 .pro-plan-card:nth-child(2){animation-delay:.1s}
 .pro-plan-card:nth-child(3){animation-delay:.15s}
+.pro-plan-card:nth-child(4){animation-delay:.2s}
+
+/* Trial card */
+.pro-plan-trial{background:linear-gradient(160deg,rgba(255,214,10,.08) 0%,rgba(255,159,10,.05) 100%);border-color:rgba(255,214,10,.25)}
+.pro-badge-trial{background:linear-gradient(135deg,var(--system-yellow),var(--system-orange));color:#000;box-shadow:0 2px 8px rgba(255,214,10,.3)}
+.pro-trial-days{margin-top:var(--s8);font-size:var(--ts-caption1);color:var(--system-orange);text-align:center}
 
 /* Featured Pro plan */
 .pro-plan-featured{background:linear-gradient(160deg,rgba(10,132,255,.08) 0%,rgba(94,92,230,.06) 100%);border-color:rgba(10,132,255,.3);box-shadow:0 4px 32px rgba(10,132,255,.15),0 0 0 1px rgba(94,92,230,.12)}
@@ -812,8 +827,10 @@ ul{list-style:none}
 .pro-feat-check{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--system-green),var(--system-teal));display:flex;align-items:center;justify-content:center;font-size:.65rem;color:white;flex-shrink:0;font-weight:700;box-shadow:0 2px 6px rgba(48,209,88,.3)}
 .pro-feat-locked{color:var(--label-tertiary)}
 .pro-feat-lock{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem;opacity:.5}
+.pro-feat-warn{color:var(--system-orange)}
 
-.pro-plan-cta-wrap{margin-top:var(--s4)}
+.pro-plan-cta-wrap{margin-top:var(--s4);min-height:52px}
+.pro-plan-cta-wrap [id^="paypal-"]{min-height:52px}
 .pro-plan-cta{width:100%;padding:var(--s16);border-radius:var(--radius-md);font-size:var(--ts-subhead);font-weight:700;cursor:pointer;border:none;transition:all .2s var(--ease-spring);min-height:52px}
 .pro-plan-current{text-align:center;padding:var(--s12);font-size:var(--ts-subhead);font-weight:600;color:var(--system-green);background:rgba(48,209,88,.08);border-radius:var(--radius-md);border:1px solid rgba(48,209,88,.2)}
 .pro-elite-cta{background:linear-gradient(135deg,var(--system-purple),var(--system-pink));color:white;box-shadow:0 4px 16px rgba(191,90,242,.25)}

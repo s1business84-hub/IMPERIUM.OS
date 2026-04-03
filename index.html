@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=ARnB-ws3Td6taCrKu_SpbGAU896Z8N7xEKk7V8_5bDe2346qvJFVg2mkT2hm4cmBv8g_wLkOLGxE5uKe&vault=true&intent=subscription" data-sdk-integration-source="button-factory"></script>
 </head>
 <body>
 <div id="app">
@@ -41,11 +42,11 @@
           <defs><linearGradient id="lgAuth" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
         </svg>
       </div>
-      <!-- Early Access Banner -->
+      <!-- Free Trial Banner -->
       <div class="auth-early-banner" onclick="openPro()">
-        <div class="auth-early-badge">🎉 EARLY ACCESS</div>
-        <div class="auth-early-text">Free for the first <strong>100 users</strong> · <span class="auth-early-spots" id="auth-early-spots">47 spots left</span></div>
-        <div class="auth-early-cta">See what's included ›</div>
+        <div class="auth-early-badge">🎁 7-DAY FREE TRIAL</div>
+        <div class="auth-early-text">Try <strong>everything free</strong> · Then $8.99/mo for Basic</div>
+        <div class="auth-early-cta">See all plans ›</div>
       </div>
       <h1 class="auth-brand">Imperium<span>OS</span></h1>
       <p class="auth-tagline">3 questions. 4 check-ins. Your AI tracks the rest.</p>
@@ -502,15 +503,15 @@
         <div class="ppc-left">
           <div class="ppc-icon">⭐</div>
           <div class="ppc-text">
-            <div class="ppc-title">Upgrade to Imperium Pro</div>
-            <div class="ppc-sub">Coming soon · Join waitlist &amp; lock early price</div>
+            <div class="ppc-title" id="profile-upgrade-title">Upgrade to Imperium Pro</div>
+            <div class="ppc-sub" id="profile-upgrade-sub">Unlock advanced AI · Cancel anytime</div>
           </div>
         </div>
         <div class="ppc-arrow">›</div>
       </div>
       <div class="settings-group"><div class="sg-title">Preferences</div><div class="sg-card glass-card"><div class="sg-row" onclick="openCurrencyModal()"><span class="sg-label">Currency</span><span class="sg-val" id="s-currency">$ USD</span><span class="sg-arrow">›</span></div></div></div>
       <div class="settings-group"><div class="sg-title">Data</div><div class="sg-card glass-card"><div class="sg-row" onclick="exportData()"><span class="sg-label">Export data</span><span class="sg-arrow">›</span></div><div class="sg-row danger-row" onclick="resetApp()"><span class="sg-label">Delete everything</span><span class="sg-arrow">›</span></div></div></div>
-      <div class="settings-footer"><p>Founded by <strong>Sanskaar Nair</strong> · Co-founded by <strong>Kashish Devnani</strong></p><p>Imperium OS v6.6.3</p></div>
+      <div class="settings-footer"><p>Founded by <strong>Sanskaar Nair</strong> · Co-founded by <strong>Kashish Devnani</strong></p><p>Imperium OS v7.0.0</p></div>
     </div>
   </div>
 
@@ -536,34 +537,64 @@
         <!-- Hero -->
         <div class="pro-hero">
           <div class="pro-hero-glow"></div>
-          <div class="pro-early-pill">🎉 Free for first 100 users · <span id="pro-spots-left">47 spots left</span></div>
+          <div class="pro-trial-notice">⏰ <strong>7-day free trial</strong> · Then Basic plan required to continue</div>
           <h1 class="pro-hero-title">Unlock Your Full <span class="pro-gradient-text">Imperium</span></h1>
-          <p class="pro-hero-sub">AI-powered behavioral intelligence · Lifetime access for early believers</p>
+          <p class="pro-hero-sub">AI-powered behavioral intelligence · Cancel anytime</p>
+        </div>
+
+        <!-- Billing Toggle -->
+        <div class="pro-billing-toggle">
+          <button class="pro-toggle-btn active" id="toggle-monthly" onclick="setBilling('monthly')">Monthly</button>
+          <button class="pro-toggle-btn" id="toggle-annual" onclick="setBilling('annual')">Annual <span class="pro-save-badge">Save 17%</span></button>
         </div>
 
         <!-- Pricing Cards -->
         <div class="pro-plans">
 
-          <!-- Free -->
-          <div class="pro-plan-card">
+          <!-- Trial -->
+          <div class="pro-plan-card pro-plan-trial">
+            <div class="pro-plan-badge pro-badge-trial">🎁 FREE TRIAL</div>
             <div class="pro-plan-header">
-              <div class="pro-plan-name">Free</div>
-              <div class="pro-plan-price"><span class="pro-price-num">$0</span><span class="pro-price-period">/forever</span></div>
-              <div class="pro-plan-tagline">For early believers (first 100)</div>
+              <div class="pro-plan-name">Trial</div>
+              <div class="pro-plan-price"><span class="pro-price-num">$0</span><span class="pro-price-period">/7 days</span></div>
+              <div class="pro-plan-tagline">Try everything free for a week</div>
             </div>
             <ul class="pro-feature-list">
-              <li class="pro-feat"><span class="pro-feat-check">✓</span>4 daily check-ins</li>
+              <li class="pro-feat"><span class="pro-feat-check">✓</span>Full app access</li>
+              <li class="pro-feat"><span class="pro-feat-check">✓</span>AI home assistant</li>
+              <li class="pro-feat"><span class="pro-feat-check">✓</span>Spending tracker</li>
+              <li class="pro-feat"><span class="pro-feat-check">✓</span>Voice check-in</li>
+              <li class="pro-feat"><span class="pro-feat-check">✓</span>Basic insights</li>
+              <li class="pro-feat pro-feat-warn"><span class="pro-feat-lock">⚠️</span>Expires after 7 days</li>
+            </ul>
+            <div class="pro-plan-cta-wrap">
+              <div class="pro-plan-current" id="trial-status">✓ Your current plan</div>
+              <div class="pro-trial-days" id="trial-days-left"></div>
+            </div>
+          </div>
+
+          <!-- Basic -->
+          <div class="pro-plan-card">
+            <div class="pro-plan-header">
+              <div class="pro-plan-name">Basic</div>
+              <div class="pro-plan-price">
+                <span class="pro-price-num" data-monthly="$8.99" data-annual="$89.99">$8.99</span>
+                <span class="pro-price-period" data-monthly="/month" data-annual="/year">/month</span>
+              </div>
+              <div class="pro-plan-tagline">Essential features to continue</div>
+            </div>
+            <ul class="pro-feature-list">
+              <li class="pro-feat"><span class="pro-feat-check">✓</span>Unlimited check-ins</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>AI home assistant</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Spending tracker</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Voice check-in</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>XP & achievements</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Basic pattern insights</li>
               <li class="pro-feat pro-feat-locked"><span class="pro-feat-lock">🔒</span>Advanced AI analysis</li>
-              <li class="pro-feat pro-feat-locked"><span class="pro-feat-lock">🔒</span>Telegram bot integration</li>
-              <li class="pro-feat pro-feat-locked"><span class="pro-feat-lock">🔒</span>Export reports</li>
+              <li class="pro-feat pro-feat-locked"><span class="pro-feat-lock">🔒</span>Telegram bot</li>
             </ul>
             <div class="pro-plan-cta-wrap">
-              <div class="pro-plan-current">✓ Your current plan</div>
+              <div id="paypal-basic"></div>
             </div>
           </div>
 
@@ -573,13 +604,13 @@
             <div class="pro-plan-header">
               <div class="pro-plan-name">Pro</div>
               <div class="pro-plan-price">
-                <span class="pro-price-was">$14.99</span>
-                <span class="pro-price-num">$7.99</span><span class="pro-price-period">/month</span>
+                <span class="pro-price-num" data-monthly="$14.99" data-annual="$149.99">$14.99</span>
+                <span class="pro-price-period" data-monthly="/month" data-annual="/year">/month</span>
               </div>
               <div class="pro-plan-tagline">For people serious about growth</div>
             </div>
             <ul class="pro-feature-list">
-              <li class="pro-feat"><span class="pro-feat-check">✓</span>Everything in Free</li>
+              <li class="pro-feat"><span class="pro-feat-check">✓</span>Everything in Basic</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Unlimited AI analysis</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Deep pattern detection</li>
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Weekly AI report card</li>
@@ -589,7 +620,7 @@
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Export PDF reports</li>
             </ul>
             <div class="pro-plan-cta-wrap">
-              <button class="pro-plan-cta btn-primary" onclick="joinWaitlist('pro')">Join Waitlist — Coming Soon →</button>
+              <div id="paypal-pro"></div>
             </div>
           </div>
 
@@ -599,8 +630,8 @@
             <div class="pro-plan-header">
               <div class="pro-plan-name">Elite</div>
               <div class="pro-plan-price">
-                <span class="pro-price-was">$39.99</span>
-                <span class="pro-price-num">$19.99</span><span class="pro-price-period">/month</span>
+                <span class="pro-price-num" data-monthly="$29.99" data-annual="$299.99">$29.99</span>
+                <span class="pro-price-period" data-monthly="/month" data-annual="/year">/month</span>
               </div>
               <div class="pro-plan-tagline">For high-performers & founders</div>
             </div>
@@ -615,7 +646,7 @@
               <li class="pro-feat"><span class="pro-feat-check">✓</span>Dedicated account manager</li>
             </ul>
             <div class="pro-plan-cta-wrap">
-              <button class="pro-plan-cta pro-elite-cta" onclick="joinWaitlist('elite')">Apply for Elite Access →</button>
+              <div id="paypal-elite"></div>
             </div>
           </div>
 

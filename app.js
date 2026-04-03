@@ -932,17 +932,47 @@ function bootDone() {
 function checkAuth() {
   initEmailJS();
   initTheme();
+  initTrial(); // Initialize trial tracking
+  
   if (S.user && S.onboarded) {
     showBottomNav();
     updateStreak();
+    updateProfileUpgradeCard(); // Update upgrade card status
     navigateTo('screen-home');
     initHomeData();
+    
+    // Show trial warning if expiring soon
+    const daysLeft = getTrialDaysLeft();
+    if (!hasActiveSubscription() && daysLeft <= 2 && daysLeft > 0) {
+      setTimeout(() => showToast(`⏰ ${daysLeft} day${daysLeft === 1 ? '' : 's'} left in trial`, 'warn'), 1500);
+    }
   } else if (S.user) {
     navigateTo('screen-onboarding');
   } else {
     navigateTo('screen-auth');
   }
   initGlobalEffects();
+}
+
+// Update profile card based on subscription status
+function updateProfileUpgradeCard() {
+  const titleEl = document.getElementById('profile-upgrade-title');
+  const subEl = document.getElementById('profile-upgrade-sub');
+  
+  if (hasActiveSubscription()) {
+    const tierName = PLANS[S.subscription.tier]?.name || 'Pro';
+    if (titleEl) titleEl.textContent = `Imperium ${tierName}`;
+    if (subEl) subEl.textContent = 'Manage your subscription';
+  } else {
+    const daysLeft = getTrialDaysLeft();
+    if (daysLeft > 0) {
+      if (titleEl) titleEl.textContent = 'Upgrade to Imperium Pro';
+      if (subEl) subEl.textContent = `${daysLeft} day${daysLeft === 1 ? '' : 's'} left in trial · Tap to upgrade`;
+    } else {
+      if (titleEl) titleEl.textContent = '⚠️ Trial Expired';
+      if (subEl) subEl.textContent = 'Subscribe to continue using Imperium';
+    }
+  }
 }
 
 /* ── NAVIGATION ───────────────────────────────────── */
@@ -3459,12 +3489,182 @@ function getProSpots() {
   return Math.max(3, PRO_BASE_SPOTS - daysPassed);
 }
 
+/* ═══════════════════════════════════════════════════════
+   SUBSCRIPTION & PAYPAL CHECKOUT
+   ═══════════════════════════════════════════════════════ */
+
+// Pricing plans (USD)
+const PLANS = {
+  basic: { monthly: 8.99, annual: 89.99, name: 'Basic' },
+  pro:   { monthly: 14.99, annual: 149.99, name: 'Pro' },
+  elite: { monthly: 29.99, annual: 299.99, name: 'Elite' }
+};
+
+let billingCycle = 'monthly'; // 'monthly' or 'annual'
+let paypalButtonsRendered = false;
+
+// Initialize trial on first app launch
+function initTrial() {
+  if (!S.trialStart) {
+    S.trialStart = Date.now();
+    saveState();
+  }
+}
+
+// Get trial days remaining (0 = expired)
+function getTrialDaysLeft() {
+  if (!S.trialStart) return 7;
+  const msElapsed = Date.now() - S.trialStart;
+  const daysElapsed = Math.floor(msElapsed / 86400000);
+  return Math.max(0, 7 - daysElapsed);
+}
+
+// Check if user has active subscription
+function hasActiveSubscription() {
+  return S.subscription && S.subscription.status === 'active';
+}
+
+// Check if trial expired and no subscription
+function isTrialExpired() {
+  return getTrialDaysLeft() === 0 && !hasActiveSubscription();
+}
+
+// Toggle between monthly and annual billing
+function setBilling(cycle) {
+  billingCycle = cycle;
+  
+  // Update toggle buttons
+  document.getElementById('toggle-monthly')?.classList.toggle('active', cycle === 'monthly');
+  document.getElementById('toggle-annual')?.classList.toggle('active', cycle === 'annual');
+  
+  // Update all price displays
+  document.querySelectorAll('.pro-price-num[data-monthly]').forEach(el => {
+    el.textContent = el.dataset[cycle];
+  });
+  document.querySelectorAll('.pro-price-period[data-monthly]').forEach(el => {
+    el.textContent = el.dataset[cycle];
+  });
+  
+  // Re-render PayPal buttons with new prices
+  renderPayPalButtons();
+}
+
+// Render PayPal subscription buttons
+function renderPayPalButtons() {
+  if (typeof paypal === 'undefined') {
+    console.warn('PayPal SDK not loaded');
+    return;
+  }
+  
+  // Clear existing buttons
+  ['paypal-basic', 'paypal-pro', 'paypal-elite'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+  
+  // Render buttons for each tier
+  Object.keys(PLANS).forEach(tier => {
+    const containerId = `paypal-${tier}`;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const plan = PLANS[tier];
+    const price = billingCycle === 'monthly' ? plan.monthly : plan.annual;
+    const interval = billingCycle === 'monthly' ? 'MONTH' : 'YEAR';
+    
+    paypal.Buttons({
+      style: {
+        shape: 'pill',
+        color: tier === 'elite' ? 'black' : 'gold',
+        layout: 'vertical',
+        label: 'subscribe'
+      },
+      createSubscription: function(data, actions) {
+        return actions.subscription.create({
+          plan_id: 'DYNAMIC', // We'll use inline pricing
+          application_context: {
+            brand_name: 'Imperium OS',
+            shipping_preference: 'NO_SHIPPING',
+            user_action: 'SUBSCRIBE_NOW'
+          },
+          plan: {
+            product_id: 'IMPERIUM_' + tier.toUpperCase(),
+            name: `Imperium ${plan.name} (${billingCycle})`,
+            billing_cycles: [{
+              frequency: { interval_unit: interval, interval_count: 1 },
+              tenure_type: 'REGULAR',
+              sequence: 1,
+              total_cycles: 0, // Infinite
+              pricing_scheme: {
+                fixed_price: { value: price.toFixed(2), currency_code: 'USD' }
+              }
+            }],
+            payment_preferences: {
+              auto_bill_outstanding: true,
+              payment_failure_threshold: 3
+            }
+          }
+        });
+      },
+      onApprove: function(data, actions) {
+        // Subscription successful
+        S.subscription = {
+          id: data.subscriptionID,
+          tier: tier,
+          cycle: billingCycle,
+          status: 'active',
+          startedAt: Date.now()
+        };
+        saveState();
+        
+        showToast(`🎉 Welcome to Imperium ${plan.name}!`, 'success');
+        closePro();
+        
+        // Track conversion
+        console.log('Subscription activated:', S.subscription);
+      },
+      onError: function(err) {
+        console.error('PayPal error:', err);
+        showToast('Payment failed. Please try again.', 'error');
+      }
+    }).render(`#${containerId}`);
+  });
+  
+  paypalButtonsRendered = true;
+}
+
+// Update trial status display
+function updateTrialDisplay() {
+  const daysLeft = getTrialDaysLeft();
+  const trialStatus = document.getElementById('trial-status');
+  const trialDays = document.getElementById('trial-days-left');
+  
+  if (hasActiveSubscription()) {
+    if (trialStatus) {
+      trialStatus.textContent = `✓ ${PLANS[S.subscription.tier]?.name || 'Subscribed'}`;
+      trialStatus.style.color = 'var(--system-blue)';
+    }
+    if (trialDays) trialDays.textContent = '';
+  } else if (daysLeft > 0) {
+    if (trialStatus) trialStatus.textContent = '✓ Your current plan';
+    if (trialDays) trialDays.textContent = `${daysLeft} day${daysLeft === 1 ? '' : 's'} left in trial`;
+  } else {
+    if (trialStatus) {
+      trialStatus.textContent = '⚠️ Trial expired';
+      trialStatus.style.color = 'var(--system-orange)';
+    }
+    if (trialDays) trialDays.textContent = 'Upgrade to continue using Imperium';
+  }
+}
+
 function openPro() {
-  const spots = getProSpots();
-  const spotsEl = document.getElementById('pro-spots-left');
-  if (spotsEl) spotsEl.textContent = spots + ' spots left';
-  const earlyEl = document.getElementById('auth-early-spots');
-  if (earlyEl) earlyEl.textContent = spots + ' spots left';
+  initTrial();
+  updateTrialDisplay();
+  
+  // Initialize PayPal buttons on first open
+  if (!paypalButtonsRendered) {
+    setTimeout(renderPayPalButtons, 100);
+  }
 
   // Remember where we came from so closePro() can return here
   S._proReturnScreen = S.currentScreen || 'screen-auth';
