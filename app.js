@@ -3549,86 +3549,80 @@ function setBilling(cycle) {
   renderPayPalButtons();
 }
 
-// Render PayPal subscription buttons
+// Render PayPal subscription buttons (Basic only — Pro/Elite on waitlist)
 function renderPayPalButtons() {
   if (typeof paypal === 'undefined') {
     console.warn('PayPal SDK not loaded');
     return;
   }
   
-  // Clear existing buttons
-  ['paypal-basic', 'paypal-pro', 'paypal-elite'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '';
-  });
+  // Clear existing button
+  const container = document.getElementById('paypal-basic');
+  if (!container) return;
+  container.innerHTML = '';
   
-  // Render buttons for each tier
-  Object.keys(PLANS).forEach(tier => {
-    const containerId = `paypal-${tier}`;
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const plan = PLANS[tier];
-    const price = billingCycle === 'monthly' ? plan.monthly : plan.annual;
-    const interval = billingCycle === 'monthly' ? 'MONTH' : 'YEAR';
-    
-    paypal.Buttons({
-      style: {
-        shape: 'pill',
-        color: tier === 'elite' ? 'black' : 'gold',
-        layout: 'vertical',
-        label: 'subscribe'
-      },
-      createSubscription: function(data, actions) {
-        return actions.subscription.create({
-          plan_id: 'DYNAMIC', // We'll use inline pricing
-          application_context: {
-            brand_name: 'Imperium OS',
-            shipping_preference: 'NO_SHIPPING',
-            user_action: 'SUBSCRIBE_NOW'
-          },
-          plan: {
-            product_id: 'IMPERIUM_' + tier.toUpperCase(),
-            name: `Imperium ${plan.name} (${billingCycle})`,
-            billing_cycles: [{
-              frequency: { interval_unit: interval, interval_count: 1 },
-              tenure_type: 'REGULAR',
-              sequence: 1,
-              total_cycles: 0, // Infinite
-              pricing_scheme: {
-                fixed_price: { value: price.toFixed(2), currency_code: 'USD' }
-              }
-            }],
-            payment_preferences: {
-              auto_bill_outstanding: true,
-              payment_failure_threshold: 3
+  // Only render Basic tier
+  const tier = 'basic';
+  const plan = PLANS[tier];
+  const price = billingCycle === 'monthly' ? plan.monthly : plan.annual;
+  const interval = billingCycle === 'monthly' ? 'MONTH' : 'YEAR';
+  
+  paypal.Buttons({
+    style: {
+      shape: 'pill',
+      color: 'gold',
+      layout: 'vertical',
+      label: 'subscribe'
+    },
+    createSubscription: function(data, actions) {
+      return actions.subscription.create({
+        plan_id: 'DYNAMIC', // We'll use inline pricing
+        application_context: {
+          brand_name: 'Imperium OS',
+          shipping_preference: 'NO_SHIPPING',
+          user_action: 'SUBSCRIBE_NOW'
+        },
+        plan: {
+          product_id: 'IMPERIUM_BASIC',
+          name: `Imperium ${plan.name} (${billingCycle})`,
+          billing_cycles: [{
+            frequency: { interval_unit: interval, interval_count: 1 },
+            tenure_type: 'REGULAR',
+            sequence: 1,
+            total_cycles: 0, // Infinite
+            pricing_scheme: {
+              fixed_price: { value: price.toFixed(2), currency_code: 'USD' }
             }
+          }],
+          payment_preferences: {
+            auto_bill_outstanding: true,
+            payment_failure_threshold: 3
           }
-        });
-      },
-      onApprove: function(data, actions) {
-        // Subscription successful
-        S.subscription = {
-          id: data.subscriptionID,
-          tier: tier,
-          cycle: billingCycle,
-          status: 'active',
-          startedAt: Date.now()
-        };
-        saveState();
-        
-        showToast(`🎉 Welcome to Imperium ${plan.name}!`, 'success');
-        closePro();
-        
-        // Track conversion
-        console.log('Subscription activated:', S.subscription);
-      },
-      onError: function(err) {
-        console.error('PayPal error:', err);
-        showToast('Payment failed. Please try again.', 'error');
-      }
-    }).render(`#${containerId}`);
-  });
+        }
+      });
+    },
+    onApprove: function(data, actions) {
+      // Subscription successful
+      S.subscription = {
+        id: data.subscriptionID,
+        tier: tier,
+        cycle: billingCycle,
+        status: 'active',
+        startedAt: Date.now()
+      };
+      saveState();
+      
+      showToast(`🎉 Welcome to Imperium ${plan.name}!`, 'success');
+      closePro();
+      
+      // Track conversion
+      console.log('Subscription activated:', S.subscription);
+    },
+    onError: function(err) {
+      console.error('PayPal error:', err);
+      showToast('Payment failed. Please try again.', 'error');
+    }
+  }).render('#paypal-basic');
   
   paypalButtonsRendered = true;
 }
