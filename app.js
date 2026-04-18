@@ -406,9 +406,9 @@ function syncUpdateSliderVal(type) {
     const v = parseFloat(slider.value);
     if (valEl) valEl.textContent = v + 'h';
     if (qualEl) {
-      if (v >= 7 && v <= 9) { qualEl.textContent = '✅ Optimal'; qualEl.style.color = '#10b981'; }
-      else if (v >= 6) { qualEl.textContent = '⚠️ OK but could be better'; qualEl.style.color = '#f59e0b'; }
-      else if (v > 0) { qualEl.textContent = '❌ Sleep deprived'; qualEl.style.color = '#ef4444'; }
+      if (v >= 7 && v <= 9) { qualEl.textContent = '✅ Optimal'; qualEl.style.color = '#34d399'; }
+      else if (v >= 6) { qualEl.textContent = '⚠️ OK but could be better'; qualEl.style.color = '#fbbf24'; }
+      else if (v > 0) { qualEl.textContent = '❌ Sleep deprived'; qualEl.style.color = '#f87171'; }
       else { qualEl.textContent = ''; qualEl.style.color = ''; }
     }
   }
@@ -433,10 +433,10 @@ function syncUpdateStepsQuality() {
   const qualEl = document.getElementById('sync-steps-quality');
   if (!input || !qualEl) return;
   const v = parseInt(input.value) || 0;
-  if (v >= 10000) { qualEl.textContent = '🏆 Excellent'; qualEl.style.color = '#10b981'; }
-  else if (v >= 8000) { qualEl.textContent = '✅ Great'; qualEl.style.color = '#10b981'; }
-  else if (v >= 5000) { qualEl.textContent = '👍 Decent'; qualEl.style.color = '#f59e0b'; }
-  else if (v > 0) { qualEl.textContent = '⚠️ Low movement'; qualEl.style.color = '#ef4444'; }
+  if (v >= 10000) { qualEl.textContent = '🏆 Excellent'; qualEl.style.color = '#34d399'; }
+  else if (v >= 8000) { qualEl.textContent = '✅ Great'; qualEl.style.color = '#34d399'; }
+  else if (v >= 5000) { qualEl.textContent = '👍 Decent'; qualEl.style.color = '#fbbf24'; }
+  else if (v > 0) { qualEl.textContent = '⚠️ Low movement'; qualEl.style.color = '#f87171'; }
   else { qualEl.textContent = ''; qualEl.style.color = ''; }
 }
 
@@ -454,9 +454,9 @@ function syncUpdateScreenQuality() {
   const total = hrs * 60 + mins;
   const qualEl = document.getElementById('sync-screen-quality');
   if (!qualEl) return;
-  if (total > 0 && total <= 120) { qualEl.textContent = '✅ Under 2h — good'; qualEl.style.color = '#10b981'; }
-  else if (total <= 240) { qualEl.textContent = '⚠️ Moderate'; qualEl.style.color = '#f59e0b'; }
-  else if (total > 240) { qualEl.textContent = '❌ Over 4h'; qualEl.style.color = '#ef4444'; }
+  if (total > 0 && total <= 120) { qualEl.textContent = '✅ Under 2h — good'; qualEl.style.color = '#34d399'; }
+  else if (total <= 240) { qualEl.textContent = '⚠️ Moderate'; qualEl.style.color = '#fbbf24'; }
+  else if (total > 240) { qualEl.textContent = '❌ Over 4h'; qualEl.style.color = '#f87171'; }
   else { qualEl.textContent = ''; qualEl.style.color = ''; }
 }
 
