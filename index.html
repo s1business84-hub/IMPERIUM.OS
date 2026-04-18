@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"/>
+  <meta name="theme-color" content="#0a0a0a"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Imperium OS</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://www.paypal.com/sdk/js?client-id=ARnB-ws3Td6taCrKu_SpbGAU896Z8N7xEKk7V8_5bDe2346qvJFVg2mkT2hm4cmBv8g_wLkOLGxE5uKe&currency=USD"></script>
+</head>
+<body>
+<div id="app">
+
+  <!-- BOOT SCREEN -->
+  <div class="screen active" id="screen-boot">
+    <div class="boot-encrypt-wrap">
+      <p class="boot-encrypt-text" id="boot-encrypt-text"></p>
+    </div>
+  </div>
+
+  <!-- AUTH -->
+  <div class="screen" id="screen-auth">
+    <div class="auth-wrap">
+      <div class="auth-logo-mark">
+        <svg width="48" height="48" viewBox="0 0 44 44" fill="none">
+          <rect width="44" height="44" rx="12" fill="url(#lgAuth)"/>
+          <path d="M22 8 L35 13 L35 22 Q35 33 22 38 Q9 33 9 22 L9 13 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+          <path d="M22 14 L22 30 M16 19 L28 19 M17 24 L27 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+          <defs><linearGradient id="lgAuth" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
+        </svg>
+      </div>
+      <div class="auth-early-banner" onclick="openPro()">
+        <div class="auth-early-badge">🎁 7-DAY FREE TRIAL</div>
+        <div class="auth-early-text">Try <strong>everything free</strong> · Then $8.99/mo</div>
+        <div class="auth-early-cta">See plans ›</div>
+      </div>
+      <h1 class="auth-brand">Imperium<span>OS</span></h1>
+      <p class="auth-tagline">3 questions. 4 check-ins. Your AI tracks the rest.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Log In</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+      <form id="form-login" class="auth-form" onsubmit="handleLogin(event)">
+        <input class="auth-input" type="email" id="login-email" placeholder="Email" required autocomplete="email"/>
+        <div class="pw-wrap"><input class="auth-input" type="password" id="login-password" placeholder="Password" required autocomplete="current-password"/><button type="button" class="pw-eye" onclick="togglePw('login-password')">👁</button></div>
+        <button class="btn-primary" type="submit">Log In →</button>
+      </form>
+      <form id="form-signup" class="auth-form hidden" onsubmit="handleSignup(event)">
+        <input class="auth-input" type="text" id="signup-name" placeholder="Full name" required autocomplete="name"/>
+        <input class="auth-input" type="email" id="signup-email" placeholder="Email" required autocomplete="email"/>
+        <div class="pw-wrap"><input class="auth-input" type="password" id="signup-password" placeholder="Password (min 6)" required autocomplete="new-password" minlength="6"/><button type="button" class="pw-eye" onclick="togglePw('signup-password')">👁</button></div>
+        <button class="btn-primary" type="submit">Create Account →</button>
+      </form>
+      <div class="auth-or"><span>or</span></div>
+      <button class="btn-ghost w-full" onclick="continueAsGuest()">Enter as Guest</button>
+      <p class="auth-msg" id="auth-msg"></p>
+      <p class="auth-footer">Founded by <strong>Sanskaar Nair</strong> · Co-founded by <strong>Kashish Devnani</strong></p>
+    </div>
+  </div>
+
+  <!-- ONBOARDING -->
+  <div class="screen" id="screen-onboarding">
+    <div class="ob-shell">
+      <div class="ob-topbar">
+        <button class="ob-back-btn" id="ob-back" onclick="obBack()" style="visibility:hidden">‹ Back</button>
+        <div class="ob-dots"><span class="ob-dot active"></span><span class="ob-dot"></span></div>
+        <span class="ob-step-label" id="ob-step-label">1 of 2</span>
+      </div>
+      <div class="ob-progress-bar"><div class="ob-progress-fill" id="ob-fill" style="width:50%"></div></div>
+      <div class="ob-slides" id="ob-slides">
+        <div class="ob-slide ob-slide-active" id="ob-1">
+          <div class="ob-hero">🧠</div>
+          <div class="ob-text"><h2 class="ob-title">What describes you best?</h2><p class="ob-sub">Imperium adapts to your life.</p></div>
+          <div class="ob-options">
+            <button class="ob-opt" data-v="student" onclick="pickSituation(this)"><span class="ob-opt-icon">📚</span><span class="ob-opt-text"><b>Student</b><small>Studies, exams, self-improvement</small></span><span class="ob-opt-check">✓</span></button>
+            <button class="ob-opt" data-v="working" onclick="pickSituation(this)"><span class="ob-opt-icon">💼</span><span class="ob-opt-text"><b>Working professional</b><small>Job, career, side projects</small></span><span class="ob-opt-check">✓</span></button>
+            <button class="ob-opt" data-v="entrepreneur" onclick="pickSituation(this)"><span class="ob-opt-icon">🚀</span><span class="ob-opt-text"><b>Entrepreneur / Creator</b><small>Building, shipping, growing</small></span><span class="ob-opt-check">✓</span></button>
+            <button class="ob-opt" data-v="other" onclick="pickSituation(this)"><span class="ob-opt-icon">⚡</span><span class="ob-opt-text"><b>Other</b><small>Just optimise my days</small></span><span class="ob-opt-check">✓</span></button>
+          </div>
+          <button class="ob-next-btn" id="ob-next-1" onclick="goObStep(2)" disabled>Continue →</button>
+        </div>
+        <div class="ob-slide" id="ob-2">
+          <div class="ob-hero">🎯</div>
+          <div class="ob-text"><h2 class="ob-title">What is your main focus?</h2><p class="ob-sub">This shapes every insight and AI response.</p></div>
+          <div class="ob-options">
+            <button class="ob-opt" data-v="productivity" onclick="pickGoal(this)"><span class="ob-opt-icon">⚡</span><span class="ob-opt-text"><b>Be more productive</b><small>Stop wasting time, do more</small></span><span class="ob-opt-check">✓</span></button>
+            <button class="ob-opt" data-v="health" onclick="pickGoal(this)"><span class="ob-opt-icon">🏃</span><span class="ob-opt-text"><b>Improve health & habits</b><small>Sleep, exercise, routine</small></span><span class="ob-opt-check">✓</span></button>
+            <button class="ob-opt" data-v="money" onclick="pickGoal(this)"><span class="ob-opt-icon">💰</span><span class="ob-opt-text"><b>Track money & spending</b><small>Know where it goes</small></span><span class="ob-opt-check">✓</span></button>
+            <button class="ob-opt" data-v="overall" onclick="pickGoal(this)"><span class="ob-opt-icon">🧠</span><span class="ob-opt-text"><b>Overall life optimisation</b><small>Everything — the full system</small></span><span class="ob-opt-check">✓</span></button>
+          </div>
+          <button class="ob-next-btn ob-next-final" id="ob-next-2" onclick="finishOnboarding()" disabled>Activate Imperium →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GUIDE OVERLAY -->
+  <div class="guide-overlay hidden" id="guide-overlay">
+    <div class="guide-container">
+      <div class="guide-progress"><div class="guide-progress-fill" id="guide-fill"></div></div>
+      <div class="guide-slides" id="guide-slides">
+        <div class="guide-slide guide-slide-active" id="gs-1"><div class="guide-glow guide-glow-green"></div><div class="guide-emoji">🛡️</div><h2 class="guide-title">Your personal <span class="guide-highlight">intelligence system</span></h2><p class="guide-desc">Imperium OS tracks your behavior, mood, energy, sleep, spending — and turns it into actionable insights.</p><div class="guide-feature-row"><div class="guide-feat"><span>🧠</span>AI learns YOU</div><div class="guide-feat"><span>📊</span>Auto-tracks</div><div class="guide-feat"><span>🔒</span>Private</div></div></div>
+        <div class="guide-slide" id="gs-2"><div class="guide-glow guide-glow-blue"></div><div class="guide-emoji">⚡</div><h2 class="guide-title"><span class="guide-highlight">4 check-ins</span> a day. 30 seconds each.</h2><p class="guide-desc">Morning, afternoon, evening, night — 3 quick questions each.</p><div class="guide-checkin-preview"><div class="guide-cp-item done"><span>🌅</span> Morning</div><div class="guide-cp-item active"><span>☀️</span> Afternoon</div><div class="guide-cp-item"><span>🌆</span> Evening</div><div class="guide-cp-item"><span>🌙</span> Night</div></div><p class="guide-micro">🎤 You can also <strong>speak</strong> your answers</p></div>
+        <div class="guide-slide" id="gs-3"><div class="guide-glow guide-glow-purple"></div><div class="guide-emoji">🔍</div><h2 class="guide-title">AI finds <span class="guide-highlight">hidden patterns</span></h2><p class="guide-desc">After 3 days, the AI detects what affects your productivity, mood, and energy.</p><div class="guide-pattern-demo"><div class="guide-pd-item"><span class="guide-pd-icon">📱</span><div><strong>Screen → Low Energy</strong><br><small>High phone use = afternoon crashes</small></div></div><div class="guide-pd-item"><span class="guide-pd-icon">😴</span><div><strong>Sleep → Productivity</strong><br><small>7+ hours = 2x tasks done</small></div></div></div></div>
+        <div class="guide-slide" id="gs-4"><div class="guide-glow guide-glow-teal"></div><div class="guide-emoji">🔬</div><h2 class="guide-title">Built on <span class="guide-highlight">real science</span></h2><p class="guide-desc">Every insight is from peer-reviewed research.</p><div class="guide-pattern-demo"><div class="guide-pd-item"><span class="guide-pd-icon">🧠</span><div><strong>Neuroplasticity</strong><br><small>66 days rewires your brain (Harvard)</small></div></div><div class="guide-pd-item"><span class="guide-pd-icon">⚡</span><div><strong>Peak Performance</strong><br><small>Best cognitive work 2–4h after waking</small></div></div></div></div>
+        <div class="guide-slide" id="gs-5"><div class="guide-glow guide-glow-orange"></div><div class="guide-emoji">💸</div><h2 class="guide-title">Track money <span class="guide-highlight">without thinking</span></h2><p class="guide-desc">Voice-log or tap categories. AI handles the rest.</p><div class="guide-feature-row"><div class="guide-feat"><span>🗣️</span>Voice log</div><div class="guide-feat"><span>📸</span>Receipt scan</div><div class="guide-feat"><span>📊</span>Auto insights</div></div></div>
+        <div class="guide-slide" id="gs-6"><div class="guide-glow guide-glow-green"></div><div class="guide-emoji">🚀</div><h2 class="guide-title">You're <span class="guide-highlight">ready</span></h2><p class="guide-desc">Start with your first check-in. 30 seconds, <strong>+30 XP</strong>.</p><div class="guide-xp-preview"><div class="guide-xp-bar-bg"><div class="guide-xp-bar-fill"></div></div><div class="guide-xp-text">Level 1 → Level 2 in 4 check-ins</div></div></div>
+      </div>
+      <div class="guide-nav">
+        <button class="guide-skip" id="guide-skip" onclick="skipGuide()">Skip</button>
+        <div class="guide-dots" id="guide-dots"><span class="guide-dot active"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span><span class="guide-dot"></span></div>
+        <button class="guide-next-btn" id="guide-next-btn" onclick="nextGuideStep()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MAIN CHAT SCREEN — ChatGPT / Claude Style
+       ═══════════════════════════════════════════════ -->
+  <div class="screen" id="screen-main">
+    <!-- Header -->
+    <div class="main-header">
+      <button class="hdr-btn" id="sidebar-toggle" onclick="toggleSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="hdr-center">
+        <span class="hdr-title">Imperium</span>
+        <span class="hdr-badge" id="hdr-streak">🔥 0</span>
+      </div>
+      <div class="hdr-right">
+        <button class="hdr-btn" onclick="toggleTheme()" id="theme-toggle-btn" title="Theme">🌙</button>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar-overlay hidden" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+      <div class="sb-profile" onclick="openPanel('profile')">
+        <div class="sb-avatar" id="sb-avatar">👤</div>
+        <div class="sb-info"><div class="sb-name" id="sb-name">Imperium User</div><div class="sb-level" id="sb-level">Lv 1 · 0 XP</div></div>
+      </div>
+      <div class="sb-xp-bar"><div class="sb-xp-fill" id="sb-xp-fill"></div></div>
+      <nav class="sb-nav">
+        <button class="sb-item active" onclick="closeSbGo('chat')"><span>💬</span>Chat</button>
+        <button class="sb-item" onclick="closeSbGo('profile')"><span>👤</span>Profile & Stats</button>
+        <button class="sb-item" onclick="closeSbGo('contact')"><span>📨</span>Contact & Feedback</button>
+        <button class="sb-item" onclick="openPro(); toggleSidebar()"><span>⭐</span>Upgrade to Pro</button>
+      </nav>
+      <div class="sb-actions">
+        <button class="sb-act" onclick="exportData()">📤 Export Data</button>
+        <button class="sb-act" onclick="clearMainChat()">🗑 Clear Chat</button>
+      </div>
+      <div class="sb-footer">
+        <p>Founded by <strong>Sanskaar Nair</strong></p>
+        <p>Co-founded by <strong>Kashish Devnani</strong></p>
+        <p class="sb-ver">Imperium OS v8.0</p>
+      </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area" id="chat-area">
+      <!-- Welcome (when no messages) -->
+      <div class="welcome" id="welcome-state">
+        <div class="welcome-logo">
+          <svg width="52" height="52" viewBox="0 0 44 44" fill="none">
+            <rect width="44" height="44" rx="12" fill="url(#lgW)"/>
+            <path d="M22 8 L35 13 L35 22 Q35 33 22 38 Q9 33 9 22 L9 13 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+            <path d="M22 14 L22 30 M16 19 L28 19 M17 24 L27 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+            <defs><linearGradient id="lgW" x1="0" y1="0" x2="44" y2="44"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
+          </svg>
+        </div>
+        <h1 class="welcome-title" id="welcome-title">Good morning</h1>
+        <p class="welcome-sub">What can I help you with?</p>
+        <div class="action-cards">
+          <div class="action-card" onclick="startCheckinFromChat()">
+            <div class="ac-icon" id="checkin-action-icon">🌅</div>
+            <div class="ac-text"><div class="ac-label" id="checkin-action-label">Morning Check-in</div><div class="ac-sub" id="checkin-action-sub">3 questions · +30 XP</div></div>
+            <div class="ac-arrow">›</div>
+          </div>
+          <div class="action-card" onclick="showInsightsInChat()">
+            <div class="ac-icon">📊</div>
+            <div class="ac-text"><div class="ac-label">My Insights</div><div class="ac-sub" id="insights-action-sub">Patterns & data</div></div>
+            <div class="ac-arrow">›</div>
+          </div>
+          <div class="action-card" onclick="showSpendInChat()">
+            <div class="ac-icon">💸</div>
+            <div class="ac-text"><div class="ac-label">Log Spending</div><div class="ac-sub" id="spend-action-sub">Tap or voice-log</div></div>
+            <div class="ac-arrow">›</div>
+          </div>
+          <div class="action-card" onclick="openSyncFlow()">
+            <div class="ac-icon">❤️</div>
+            <div class="ac-text"><div class="ac-label">Sync Health</div><div class="ac-sub" id="health-action-sub">Sleep, steps, screen</div></div>
+            <div class="ac-arrow">›</div>
+          </div>
+        </div>
+        <div class="science-mini" id="science-card">
+          <div class="science-tag">🔬 Science of the Day</div>
+          <div class="science-fact" id="science-fact"></div>
+          <div class="science-action" id="science-action"></div>
+          <div class="science-source" id="science-source"></div>
+        </div>
+      </div>
+      <!-- Messages -->
+      <div class="chat-feed" id="chat-feed"></div>
+    </div>
+
+    <!-- Suggestion Chips -->
+    <div class="chips" id="suggestion-chips">
+      <button class="chip" onclick="sendChip('How am I doing today?')">📊 How am I doing?</button>
+      <button class="chip" onclick="sendChip('Show my patterns')">🔍 Patterns</button>
+      <button class="chip" onclick="sendChip('Log spending')">💸 Spending</button>
+      <button class="chip" onclick="sendChip('Give me advice')">💡 Advice</button>
+      <button class="chip" onclick="sendChip('Weekly summary')">📈 Summary</button>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="input-bar">
+      <div class="input-row">
+        <button class="ib-btn" onclick="openReceiptUpload()" title="Upload">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <textarea class="chat-input" id="chat-input" placeholder="Message Imperium..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMainChat()}" oninput="autoResizeMainInput(this)"></textarea>
+        <button class="ib-btn" id="main-voice-btn" onclick="toggleMainVoice()" title="Voice">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <button class="ib-send" id="main-send-btn" onclick="sendMainChat()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANELS (slide from right) -->
+  <div class="panel hidden" id="panel-profile">
+    <div class="panel-hdr"><button class="panel-back" onclick="closePanel()">← Back</button><span class="panel-title">Profile</span><span></span></div>
+    <div class="panel-body">
+      <div class="profile-hero">
+        <div class="profile-av-wrap"><svg class="profile-streak-ring" viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" fill="none" stroke="rgba(59,130,246,.12)" stroke-width="4"/><circle cx="40" cy="40" r="36" fill="none" stroke="url(#sG)" stroke-width="4" stroke-linecap="round" stroke-dasharray="226.2" stroke-dashoffset="226.2" id="streak-ring-fill" style="transform:rotate(-90deg);transform-origin:50% 50%;"/><defs><linearGradient id="sG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs></svg><div class="profile-av"><span id="pav-icon">👤</span></div></div>
+        <div class="profile-name" id="p-name">Imperium User</div>
+        <div class="profile-level-row"><span class="profile-level-badge" id="p-level-badge">Lv 1</span><span class="profile-level-title" id="p-level-title">Beginner</span></div>
+        <div class="profile-xp-row"><div class="profile-xp-bar-wrap"><div class="profile-xp-bar" id="p-xp-bar"></div></div><span class="profile-xp-label" id="p-xp-label">0 / 100 XP</span></div>
+        <div class="profile-badges-row"><div class="profile-stat-chip"><span id="p-streak-val">0</span><small>streak 🔥</small></div><div class="profile-stat-chip"><span id="p-total-xp">0</span><small>total XP</small></div><div class="profile-stat-chip"><span id="p-checkin-count">0</span><small>check-ins</small></div></div>
+      </div>
+      <div class="settings-group"><div class="sg-title">Achievements</div><div class="achievements-grid" id="achievements-grid"></div></div>
+      <div class="pro-profile-card" onclick="openPro()"><div class="ppc-left"><div class="ppc-icon">⭐</div><div class="ppc-text"><div class="ppc-title">Upgrade to Pro</div><div class="ppc-sub">Unlock advanced AI</div></div></div><div class="ppc-arrow">›</div></div>
+      <div class="settings-group"><div class="sg-title">Preferences</div><div class="sg-card glass-card"><div class="sg-row" onclick="openCurrencyModal()"><span class="sg-label">Currency</span><span class="sg-val" id="s-currency">$ USD</span><span class="sg-arrow">›</span></div></div></div>
+      <div class="settings-group"><div class="sg-title">Data</div><div class="sg-card glass-card"><div class="sg-row" onclick="exportData()"><span class="sg-label">Export data</span><span class="sg-arrow">›</span></div><div class="sg-row danger-row" onclick="resetApp()"><span class="sg-label">Delete everything</span><span class="sg-arrow">›</span></div></div></div>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="panel-contact">
+    <div class="panel-hdr"><button class="panel-back" onclick="closePanel()">← Back</button><span class="panel-title">Contact</span><span></span></div>
+    <div class="panel-body">
+      <div class="contact-hero"><div class="contact-hero-icon">💬</div><h1 class="contact-hero-title">Talk to Us</h1><p class="contact-hero-sub">Your feedback shapes the next version</p></div>
+      <div class="contact-section">
+        <div class="contact-section-label">How are you finding it?</div>
+        <div class="contact-reactions"><button class="contact-react" data-val="5" onclick="pickReaction(this)">😍<span>Love it</span></button><button class="contact-react" data-val="4" onclick="pickReaction(this)">😊<span>Good</span></button><button class="contact-react" data-val="3" onclick="pickReaction(this)">😐<span>Okay</span></button><button class="contact-react" data-val="2" onclick="pickReaction(this)">😕<span>Needs work</span></button><button class="contact-react" data-val="1" onclick="pickReaction(this)">😤<span>Frustrated</span></button></div>
+      </div>
+      <div class="contact-section">
+        <div class="contact-section-label">Send a message</div>
+        <div class="contact-form glass-card">
+          <div class="contact-type-pills"><button class="contact-type-pill active" data-type="feedback" onclick="pickContactType(this)">💡 Feedback</button><button class="contact-type-pill" data-type="bug" onclick="pickContactType(this)">🐛 Bug</button><button class="contact-type-pill" data-type="feature" onclick="pickContactType(this)">⚡ Feature</button></div>
+          <textarea class="contact-textarea" id="contact-msg" placeholder="What's on your mind?..." rows="4"></textarea>
+          <input class="contact-email-input" id="contact-email" type="email" placeholder="Your email (optional)"/>
+          <button class="btn-primary contact-submit-btn" onclick="submitFeedback()">Send →</button>
+        </div>
+      </div>
+      <div class="contact-section">
+        <div class="contact-section-label">Vote on what's next</div>
+        <div class="contact-votes"><div class="contact-vote-item" onclick="voteFeature(this,'telegram')"><div class="cvote-info"><div class="cvote-title">✈️ Telegram AI</div></div><div class="cvote-bar-wrap"><div class="cvote-bar" style="width:78%"></div></div><div class="cvote-count">78%</div></div><div class="contact-vote-item" onclick="voteFeature(this,'wearable')"><div class="cvote-info"><div class="cvote-title">⌚ Apple Watch</div></div><div class="cvote-bar-wrap"><div class="cvote-bar cvote-bar-green" style="width:64%"></div></div><div class="cvote-count">64%</div></div></div>
+      </div>
+      <div class="contact-section"><div class="contact-socials"><a class="contact-social-btn" href="https://www.instagram.com/imperiumosx" target="_blank"><span>📸</span><div><b>Instagram</b><small>@imperiumosx</small></div><span class="contact-social-arrow">›</span></a></div></div>
+    </div>
+  </div>
+
+  <!-- PRO -->
+  <div class="screen" id="screen-pro">
+    <div class="screen-content">
+      <div class="pro-shell">
+        <button class="pro-close-btn" onclick="closePro()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div class="pro-hero"><div class="pro-hero-glow"></div><div class="pro-trial-notice">⏰ <strong>7-day free trial</strong> · Then Basic required</div><h1 class="pro-hero-title">Unlock Full <span class="pro-gradient-text">Imperium</span></h1><p class="pro-hero-sub">AI-powered intelligence · Cancel anytime</p></div>
+        <div class="pro-billing-toggle"><button class="pro-toggle-btn active" id="toggle-monthly" onclick="setBilling('monthly')">Monthly</button><button class="pro-toggle-btn" id="toggle-annual" onclick="setBilling('annual')">Annual <span class="pro-save-badge">Save 17%</span></button></div>
+        <div class="pro-plans">
+          <div class="pro-plan-card pro-plan-trial"><div class="pro-plan-badge pro-badge-trial">🎁 FREE TRIAL</div><div class="pro-plan-header"><div class="pro-plan-name">Trial</div><div class="pro-plan-price"><span class="pro-price-num">$0</span><span class="pro-price-period">/7 days</span></div></div><ul class="pro-feature-list"><li class="pro-feat"><span class="pro-feat-check">✓</span>Full access</li><li class="pro-feat"><span class="pro-feat-check">✓</span>AI assistant</li><li class="pro-feat pro-feat-warn"><span class="pro-feat-lock">⚠️</span>Expires in 7 days</li></ul><div class="pro-plan-cta-wrap"><div class="pro-plan-current" id="trial-status">✓ Your plan</div><div class="pro-trial-days" id="trial-days-left"></div></div></div>
+          <div class="pro-plan-card"><div class="pro-plan-header"><div class="pro-plan-name">Basic</div><div class="pro-plan-price"><span class="pro-price-num" data-monthly="$8.99" data-annual="$89.99">$8.99</span><span class="pro-price-period" data-monthly="/month" data-annual="/year">/month</span></div></div><ul class="pro-feature-list"><li class="pro-feat"><span class="pro-feat-check">✓</span>Unlimited check-ins</li><li class="pro-feat"><span class="pro-feat-check">✓</span>AI assistant</li><li class="pro-feat"><span class="pro-feat-check">✓</span>XP & achievements</li></ul><div class="pro-plan-cta-wrap"><div id="paypal-basic"></div></div></div>
+          <div class="pro-plan-card pro-plan-featured"><div class="pro-plan-badge">⭐ POPULAR</div><div class="pro-plan-header"><div class="pro-plan-name">Pro</div><div class="pro-plan-price"><span class="pro-price-num" data-monthly="$14.99" data-annual="$149.99">$14.99</span><span class="pro-price-period" data-monthly="/month" data-annual="/year">/month</span></div></div><ul class="pro-feature-list"><li class="pro-feat"><span class="pro-feat-check">✓</span>Everything in Basic</li><li class="pro-feat"><span class="pro-feat-check">✓</span>Deep patterns</li><li class="pro-feat"><span class="pro-feat-check">✓</span>Telegram bot</li></ul><div class="pro-plan-cta-wrap"><button class="pro-plan-cta btn-primary" onclick="joinWaitlist('pro')">Join Waitlist →</button></div></div>
+          <div class="pro-plan-card pro-plan-elite"><div class="pro-plan-badge pro-badge-elite">👑 ELITE</div><div class="pro-plan-header"><div class="pro-plan-name">Elite</div><div class="pro-plan-price"><span class="pro-price-num" data-monthly="$29.99" data-annual="$299.99">$29.99</span><span class="pro-price-period" data-monthly="/month" data-annual="/year">/month</span></div></div><ul class="pro-feature-list"><li class="pro-feat"><span class="pro-feat-check">✓</span>Everything in Pro</li><li class="pro-feat"><span class="pro-feat-check">✓</span>Personal coaching</li><li class="pro-feat"><span class="pro-feat-check">✓</span>API access</li></ul><div class="pro-plan-cta-wrap"><button class="pro-plan-cta pro-elite-cta" onclick="joinWaitlist('elite')">Apply →</button></div></div>
+        </div>
+        <div class="pro-trust-row"><div class="pro-trust-item"><span>🔒</span>Private</div><div class="pro-trust-item"><span>⚡</span>Cancel anytime</div></div>
+        <div class="pro-waitlist-form hidden" id="pro-waitlist-form"><div class="pro-wl-form-title">Join <span id="pro-wl-form-tier">Pro</span> waitlist</div><div class="pro-wl-fields"><div class="pro-wl-row"><input class="pro-wl-input" id="wl-first" type="text" placeholder="First name"/><input class="pro-wl-input" id="wl-last" type="text" placeholder="Last name"/></div><input class="pro-wl-input" id="wl-email" type="email" placeholder="Email"/></div><button class="pro-plan-cta btn-primary" style="margin-top:12px" onclick="submitWaitlist()">Confirm →</button></div>
+        <div class="pro-waitlist-confirm hidden" id="pro-waitlist-confirm"><div class="pro-wl-emoji">🎉</div><div class="pro-wl-title">You're on the list!</div><div class="pro-wl-sub">We'll email when <span id="pro-wl-tier">Pro</span> launches.</div></div>
+        <div style="height:48px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OVERLAYS ═══ -->
+  <div class="spend-amount-overlay hidden" id="spend-amount-overlay">
+    <div class="spend-amount-card glass-card">
+      <div class="spend-amount-header"><span class="spend-amount-emoji" id="spend-amount-emoji">🍕</span><span class="spend-amount-cat" id="spend-amount-cat">Food</span><button class="spend-amount-close" onclick="closeSpendAmount()">✕</button></div>
+      <div class="spend-amount-input-wrap"><span class="spend-amount-currency" id="spend-amount-currency">$</span><input type="number" class="spend-amount-input" id="spend-amount-input" placeholder="0" inputmode="decimal" autofocus/></div>
+      <div class="spend-amount-presets"><button class="spend-amt-preset" onclick="setSpendAmount(5)">$5</button><button class="spend-amt-preset" onclick="setSpendAmount(10)">$10</button><button class="spend-amt-preset" onclick="setSpendAmount(20)">$20</button><button class="spend-amt-preset" onclick="setSpendAmount(50)">$50</button><button class="spend-amt-preset" onclick="setSpendAmount(100)">$100</button></div>
+      <input type="text" class="spend-note-input" id="spend-note-input" placeholder="Add a note…"/>
+      <button class="btn-primary spend-confirm-btn" onclick="confirmQuickSpend()">Log Spend →</button>
+    </div>
+  </div>
+
+  <div class="receipt-overlay hidden" id="receipt-overlay">
+    <div class="receipt-card glass-card">
+      <div class="receipt-header"><span>📸 Upload Receipt</span><button class="receipt-close" onclick="closeReceiptUpload()">✕</button></div>
+      <div class="receipt-drop-zone" id="receipt-drop-zone" onclick="document.getElementById('receipt-file-input').click()"><div class="receipt-drop-icon">📷</div><div class="receipt-drop-text">Tap to take photo or choose image</div><input type="file" id="receipt-file-input" accept="image/*" capture="environment" style="display:none" onchange="handleReceiptFile(event)"/></div>
+      <div class="receipt-preview hidden" id="receipt-preview"><img id="receipt-img" class="receipt-img"/><div class="receipt-scanning" id="receipt-scanning"><div class="receipt-scan-bar"></div><div class="receipt-scan-text">Scanning…</div></div></div>
+      <div class="receipt-results hidden" id="receipt-results"><div class="receipt-results-title">Found:</div><div class="receipt-items-list" id="receipt-items-list"></div><button class="btn-primary" onclick="confirmReceiptItems()">Log All →</button><button class="receipt-retry-btn" onclick="retryReceipt()">Try another</button></div>
+    </div>
+  </div>
+
+  <div class="sync-overlay hidden" id="sync-overlay">
+    <div class="sync-step active" id="sync-step-0"><div class="sync-step-inner"><div class="sync-perm-icon"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="url(#pG)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><defs><linearGradient id="pG" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs></svg></div><div class="sync-perm-title">Access Health Data</div><div class="sync-perm-sub">Sleep, steps, screen time. All on-device.</div><div class="sync-perm-items"><div class="sync-perm-item"><span>😴</span> Sleep</div><div class="sync-perm-item"><span>🚶</span> Steps</div><div class="sync-perm-item"><span>📱</span> Screen</div></div><button class="btn-primary sync-allow-btn" onclick="syncGrantPermission()">Allow →</button><button class="sync-skip-btn" onclick="syncSkipPermission()">Enter manually</button></div></div>
+    <div class="sync-step" id="sync-step-1"><div class="sync-step-inner"><button class="sync-back-btn" onclick="syncGoStep(0)">← Back</button><div class="sync-step-progress"><div class="sync-prog-fill" style="width:33%"></div></div><div class="sync-step-emoji">😴</div><div class="sync-step-title">Sleep duration?</div><div class="sync-slider-wrap"><input type="range" class="sync-slider" id="sync-sleep-slider" min="0" max="12" step="0.5" value="7" oninput="syncUpdateSliderVal('sleep')"/><div class="sync-slider-val" id="sync-sleep-val">7h</div></div><div class="sync-presets"><button class="sync-preset" onclick="syncSetVal('sleep',4)">4h</button><button class="sync-preset" onclick="syncSetVal('sleep',5.5)">5.5h</button><button class="sync-preset" onclick="syncSetVal('sleep',7)">7h</button><button class="sync-preset" onclick="syncSetVal('sleep',8.5)">8.5h</button></div><div class="sync-quality" id="sync-sleep-quality">Good range</div><button class="btn-primary" onclick="syncGoStep(2)">Next → Steps</button></div></div>
+    <div class="sync-step" id="sync-step-2"><div class="sync-step-inner"><button class="sync-back-btn" onclick="syncGoStep(1)">← Back</button><div class="sync-step-progress"><div class="sync-prog-fill" style="width:66%"></div></div><div class="sync-step-emoji">🚶</div><div class="sync-step-title">Steps today?</div><div class="sync-num-input-wrap"><input type="number" class="sync-num-input" id="sync-steps-input" placeholder="0" inputmode="numeric" oninput="syncUpdateStepsQuality()"/><span class="sync-num-unit">steps</span></div><div class="sync-presets"><button class="sync-preset" onclick="syncSetInput('steps',2000)">2K</button><button class="sync-preset" onclick="syncSetInput('steps',5000)">5K</button><button class="sync-preset" onclick="syncSetInput('steps',8000)">8K</button><button class="sync-preset" onclick="syncSetInput('steps',10000)">10K</button></div><div class="sync-quality" id="sync-steps-quality">Enter steps</div><button class="btn-primary" onclick="syncGoStep(3)">Next → Screen Time</button></div></div>
+    <div class="sync-step" id="sync-step-3"><div class="sync-step-inner"><button class="sync-back-btn" onclick="syncGoStep(2)">← Back</button><div class="sync-step-progress"><div class="sync-prog-fill" style="width:100%"></div></div><div class="sync-step-emoji">📱</div><div class="sync-step-title">Screen time?</div><div class="sync-time-row"><div class="sync-time-col"><input type="number" class="sync-time-input" id="sync-screen-hrs" placeholder="0" min="0" max="24" inputmode="numeric" oninput="syncUpdateScreenQuality()"/><span class="sync-time-label">hrs</span></div><span class="sync-time-colon">:</span><div class="sync-time-col"><input type="number" class="sync-time-input" id="sync-screen-mins" placeholder="0" min="0" max="59" step="5" inputmode="numeric" oninput="syncUpdateScreenQuality()"/><span class="sync-time-label">min</span></div></div><div class="sync-presets"><button class="sync-preset" onclick="syncSetScreen(1,0)">1h</button><button class="sync-preset" onclick="syncSetScreen(2,0)">2h</button><button class="sync-preset" onclick="syncSetScreen(3,30)">3.5h</button><button class="sync-preset" onclick="syncSetScreen(5,0)">5h</button></div><div class="sync-quality" id="sync-screen-quality">Enter time</div><button class="btn-primary sync-final-btn" onclick="syncSaveAll()">Save & Score →</button></div></div>
+    <div class="sync-step" id="sync-step-4"><div class="sync-step-inner sync-score-reveal"><div class="sync-score-burst" id="sync-score-burst">⚡</div><div class="sync-score-label">TODAY'S SCORE</div><div class="sync-score-num" id="sync-score-num">0</div><div class="sync-score-grade" id="sync-score-grade">Calculating…</div><div class="sync-score-breakdown" id="sync-score-breakdown"></div><button class="btn-primary" onclick="syncClose()">Done →</button></div></div>
+  </div>
+
+  <div class="cmd-overlay hidden" id="cmd-overlay" onclick="closeCommand()">
+    <div class="cmd-palette" onclick="event.stopPropagation()">
+      <div class="cmd-search-row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="cmd-input" id="cmd-input" placeholder="Type a command…" oninput="filterCommands(this.value)" onkeydown="cmdKeyNav(event)" autocomplete="off"/><kbd class="cmd-esc" onclick="closeCommand()">ESC</kbd></div>
+      <div class="cmd-list" id="cmd-list"></div>
+    </div>
+  </div>
+
+  <div class="xp-overlay hidden" id="xp-overlay">
+    <div class="xp-overlay-card"><div class="xp-ov-burst" id="xp-ov-burst">⚡</div><div class="xp-ov-label">LEVEL UP</div><div class="xp-ov-level" id="xp-ov-level">Level 2</div><div class="xp-ov-title" id="xp-ov-title">Focused</div><div class="xp-ov-bar-wrap"><div class="xp-ov-bar" id="xp-ov-bar"></div></div><div class="xp-ov-sub" id="xp-ov-sub">0 / 200 XP to Level 3</div><button class="btn-primary" onclick="closeXPOverlay()">Continue →</button></div>
+  </div>
+
+  <!-- Checkin Overlay -->
+  <div class="checkin-overlay hidden" id="checkin-overlay">
+    <div class="checkin-modal">
+      <div class="checkin-modal-header">
+        <span class="checkin-period-icon" id="checkin-period-icon">🌅</span>
+        <div><div class="checkin-period" id="checkin-period">Morning Check-in</div><div class="checkin-sub" id="checkin-sub">3 questions · +30 XP</div></div>
+        <button class="checkin-close" onclick="closeCheckinOverlay()">✕</button>
+      </div>
+      <div class="checkin-questions" id="checkin-questions"></div>
+      <div class="checkin-done hidden" id="checkin-done">
+        <div class="checkin-done-icon">✅</div>
+        <div class="checkin-done-title" id="checkin-done-title">Check-in complete!</div>
+        <div class="checkin-done-text" id="checkin-done-text">Next available later</div>
+        <div class="checkin-done-progress"><div class="cdp-dots"><span class="cdp-dot" id="cdp-morning"></span><span class="cdp-dot" id="cdp-afternoon"></span><span class="cdp-dot" id="cdp-evening"></span><span class="cdp-dot" id="cdp-night"></span></div><div class="cdp-label" id="cdp-label">1/4</div></div>
+        <button class="btn-primary" onclick="closeCheckinOverlay()" style="margin-top:16px">Done →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spend Quick Overlay -->
+  <div class="spend-quick-overlay hidden" id="spend-quick-overlay">
+    <div class="spend-quick-card glass-card">
+      <div class="spend-quick-header"><span>💸 Quick Spend</span><button onclick="closeSpendQuick()">✕</button></div>
+      <div class="spend-cat-grid">
+        <button class="spend-cat-btn" onclick="quickSpend('food')"><span>🍕</span>Food</button>
+        <button class="spend-cat-btn" onclick="quickSpend('coffee')"><span>☕</span>Coffee</button>
+        <button class="spend-cat-btn" onclick="quickSpend('transport')"><span>🚗</span>Transport</button>
+        <button class="spend-cat-btn" onclick="quickSpend('groceries')"><span>🛒</span>Groceries</button>
+        <button class="spend-cat-btn" onclick="quickSpend('online')"><span>🛍</span>Online</button>
+        <button class="spend-cat-btn" onclick="quickSpend('apps')"><span>📱</span>Apps</button>
+      </div>
+      <div class="spend-actions-row"><button class="spend-upload-btn" onclick="openReceiptUpload()">📸 Upload receipt</button></div>
+      <div class="spend-today-log" id="spend-today-log"></div>
+    </div>
+  </div>
+
+  <input type="file" id="ast-screenshot-input" accept="image/*" capture="environment" style="display:none" onchange="handleAssistantScreenshot(event)"/>
+  <input type="file" id="ast-file-input" accept=".csv,.xlsx,.xls,.pdf,.json,.txt,image/*" style="display:none" onchange="handleAssistantFile(event)"/>
+
+</div>
+<script src="app.js"></script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+</body>
+</html>
