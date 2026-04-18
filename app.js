@@ -187,10 +187,7 @@ function getNextPeriod(period) {
 
 /* ── CHECKIN OVERLAY ──────────────────────────────── */
 function startCheckinFromChat() {
-  const overlay = document.getElementById('checkin-overlay');
-  if (!overlay) return;
-  overlay.classList.remove('hidden');
-  initCheckinModal();
+  startConversationalCheckin();
 }
 
 function closeCheckinOverlay() {
@@ -817,25 +814,192 @@ function closeGuide() {
 }
 
 /* ── MAIN SCREEN INIT ─────────────────────────────── */
+/* ── CONVERSATIONAL CHECK-IN FLOW ─────────────────── */
+let checkinConvo = { active: false, period: null, questions: [], step: 0, answers: {} };
+
 function initMainScreen() {
   updateWelcomeGreeting();
   updateSidebar();
   updateActionCards();
   initScienceCard();
 
-  // Show welcome message if no chat messages
   const feed = document.getElementById('chat-feed');
   if (feed && !feed.children.length) {
-    const name = S.user ? S.user.name.split(' ')[0] : 'there';
-    const period = getCurrentPeriod();
-    const todayCI = S.checkins[new Date().toDateString()] || {};
-    const completedCount = Object.keys(todayCI).length;
-    let msg;
-    if (completedCount === 0) msg = "Hey " + name + " 👋 Welcome to your day. Tap the check-in card or just ask me anything.";
-    else if (completedCount < 4) msg = "Welcome back, " + name + ". You've done " + completedCount + "/4 check-ins today. " + (todayCI[period] ? "Your " + period + " check-in is done ✅" : "Time for your " + period + " check-in!");
-    else msg = "All 4 check-ins complete today! 🎉 You're crushing it, " + name + ". Ask me anything.";
-    addChatMessage('ai', msg);
+    startConversationalCheckin();
   }
+}
+
+function startConversationalCheckin() {
+  const name = S.user ? S.user.name.split(' ')[0] : 'there';
+  const h = new Date().getHours();
+  const period = getCurrentPeriod();
+  const periodInfo = CHECKIN_PERIODS[period];
+  const today = new Date().toDateString();
+  const todayCI = S.checkins[today] || {};
+  const completedCount = Object.keys(todayCI).length;
+
+  // Hide welcome state, show chat
+  const welcome = document.getElementById('welcome-state');
+  if (welcome) welcome.classList.add('hidden');
+
+  // Time-aware greeting
+  const greetings = {
+    morning: ["Good morning, " + name + "! ☀️ Hope you slept well.", "Morning, " + name + "! 🌅 Ready to take on the day?"],
+    afternoon: ["Hey " + name + "! ☀️ How's your afternoon going?", "Afternoon, " + name + "! 🌤️ Let's check in."],
+    evening: ["Evening, " + name + "! 🌆 Winding down?", "Hey " + name + "! 🌇 Let's reflect on today."],
+    night: ["Hey " + name + " 🌙 Almost time to rest.", "Night check-in time, " + name + " 🌙"]
+  };
+  const greet = greetings[period][Math.floor(Math.random() * 2)];
+
+  if (completedCount >= 4) {
+    addChatMessage('ai', greet + "\n\nAll 4 check-ins are done today — you're on fire! 🔥🎉\n\nAnything else I can help with? You can ask me about your patterns, log spending, or just chat.");
+    return;
+  }
+
+  if (todayCI[period]) {
+    const next = getNextPeriod(period);
+    const nextLabel = next ? CHECKIN_PERIODS[next].label.toLowerCase() : null;
+    const nextTime = next ? CHECKIN_PERIODS[next].hours[0] : null;
+    const nextStr = next ? "\n\n⏰ Your next check-in is the " + nextLabel + (nextTime ? " (around " + (nextTime > 12 ? (nextTime-12) + "pm" : nextTime + "am") + ")" : "") + "." : "\n\n🎉 You've completed all check-ins for today!";
+    addChatMessage('ai', greet + "\n\nYou've already done your " + period + " check-in ✅ (" + completedCount + "/4 today)." + nextStr + "\n\nWhat would you like to do? I'm here if you need anything! 😊");
+    return;
+  }
+
+  // Start the conversational check-in
+  checkinConvo = {
+    active: true,
+    period: period,
+    questions: CHECKIN_QUESTIONS[period],
+    step: 0,
+    answers: {}
+  };
+
+  const friendlyIntro = {
+    morning: "Let's start your day right — I've got 3 quick questions for you. Just speak or type your answers! 🎤",
+    afternoon: "Quick afternoon check-in — 3 little questions to see how your day's going! 💬",
+    evening: "Let's do a quick evening reflection — just 3 questions, takes 30 seconds! ✨",
+    night: "Before you wind down, let's capture today — 3 quick questions! 🌙"
+  };
+
+  addChatMessage('ai', greet + "\n\n" + friendlyIntro[period]);
+
+  // Ask first question after a brief pause
+  setTimeout(function() {
+    askCheckinQuestion();
+  }, 1200);
+}
+
+function askCheckinQuestion() {
+  if (!checkinConvo.active) return;
+  const q = checkinConvo.questions[checkinConvo.step];
+  if (!q) return;
+
+  const questionNum = checkinConvo.step + 1;
+  const total = checkinConvo.questions.length;
+  let prompt = "**" + questionNum + "/" + total + "** — " + q.text;
+
+  if (q.type === 'options') {
+    prompt += "\n\n" + q.options.map(function(o, i) { return "  " + (i+1) + ". " + o; }).join("\n");
+    prompt += "\n\n_(Say or type your choice)_";
+  } else {
+    prompt += "\n\n_(Speak or type your answer)_";
+  }
+
+  addChatMessage('ai', prompt);
+}
+
+function handleCheckinAnswer(text) {
+  if (!checkinConvo.active) return false;
+  const q = checkinConvo.questions[checkinConvo.step];
+  if (!q) return false;
+
+  let answer = text.trim();
+
+  // For options, try to match by number or text
+  if (q.type === 'options') {
+    const num = parseInt(answer);
+    if (num >= 1 && num <= q.options.length) {
+      answer = q.options[num - 1];
+    } else {
+      // Fuzzy match
+      const lower = answer.toLowerCase();
+      const match = q.options.find(function(o) { return o.toLowerCase().includes(lower) || lower.includes(o.toLowerCase().replace(/[^a-z ]/g,'')); });
+      if (match) answer = match;
+      else {
+        // Accept first word match
+        const wordMatch = q.options.find(function(o) { return o.toLowerCase().split(/\s+/).some(function(w) { return lower.includes(w.toLowerCase()) && w.length > 2; }); });
+        if (wordMatch) answer = wordMatch;
+      }
+    }
+  }
+
+  checkinConvo.answers[q.id] = answer;
+  checkinConvo.step++;
+
+  // Friendly acknowledgments
+  const acks = ["Got it! 👍", "Noted! ✏️", "Nice, thanks! 😊", "Okay! 👌", "Logged! ✅", "Heard you! 🎧"];
+  const ack = acks[Math.floor(Math.random() * acks.length)];
+
+  if (checkinConvo.step < checkinConvo.questions.length) {
+    addChatMessage('ai', ack);
+    setTimeout(function() { askCheckinQuestion(); }, 800);
+  } else {
+    // All questions answered — complete the check-in
+    finishConversationalCheckin(ack);
+  }
+  return true;
+}
+
+function finishConversationalCheckin(ack) {
+  const period = checkinConvo.period;
+  const answers = checkinConvo.answers;
+  const name = S.user ? S.user.name.split(' ')[0] : 'there';
+  const today = new Date().toDateString();
+
+  // Save check-in
+  if (!S.checkins[today]) S.checkins[today] = {};
+  S.checkins[today][period] = { answers: answers, timestamp: new Date().toISOString() };
+
+  // Parse afternoon spending
+  if (period === 'afternoon' && answers.spend) {
+    const amtMatch = answers.spend.match(/\$?\s?(\d+(?:\.\d{1,2})?)/);
+    if (amtMatch) {
+      const amt = parseFloat(amtMatch[1]);
+      if (amt > 0) {
+        const noteMatch = answers.spend.replace(/\$?\s?\d+(?:\.\d{1,2})?/, '').trim();
+        S.transactions.push({ id: Date.now().toString(), type: 'expense', amount: amt, category: 'general', note: noteMatch || 'afternoon check-in', date: new Date().toISOString() });
+      }
+    }
+  }
+
+  saveState();
+  grantXP(30, period + ' check-in');
+  checkAchievements();
+  recalcTodayScore();
+  checkinConvo = { active: false, period: null, questions: [], step: 0, answers: {} };
+
+  // Generate insight
+  const insight = generateCheckinInsight(period, answers);
+
+  // Next check-in info
+  const todayCI = S.checkins[today] || {};
+  const completedCount = Object.keys(todayCI).length;
+  const next = getNextPeriod(period);
+  let nextMsg = '';
+  if (completedCount >= 4) {
+    nextMsg = "\n\n🎉 **All 4 check-ins done today!** You're absolutely crushing it, " + name + "!";
+  } else if (next) {
+    const nextInfo = CHECKIN_PERIODS[next];
+    const nextHour = nextInfo.hours[0];
+    const timeStr = nextHour > 12 ? (nextHour - 12) + "pm" : nextHour + "am";
+    nextMsg = "\n\n⏰ Next check-in: **" + nextInfo.label + "** (around " + timeStr + "). I'll be here! 😊";
+  }
+
+  // Suggestions
+  const suggestions = "\n\nAnything else you'd like to do? You can:\n• Say **\"how am I doing\"** for insights\n• Say **\"log spending\"** to track expenses\n• Or just chat with me about anything! 💬";
+
+  addChatMessage('ai', ack + " Check-in complete! +30 XP ⚡\n\n" + insight + nextMsg + suggestions);
+  updateActionCards();
 }
 
 function updateWelcomeGreeting() {
@@ -895,7 +1059,7 @@ function addChatMessage(role, text) {
     ? '<div class="msg-avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v6c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L12 2z"/></svg></div>'
     : '<div class="msg-avatar">' + (S.user ? S.user.name[0].toUpperCase() : 'U') + '</div>';
 
-  const formattedText = text.replace(/\n/g, '<br>');
+  const formattedText = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/_(.+?)_/g, '<em>$1</em>').replace(/\n/g, '<br>');
   const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   div.innerHTML = avatar + '<div><div class="msg-bubble">' + formattedText + '</div><div class="msg-time">' + time + '</div></div>';
   feed.appendChild(div);
@@ -981,6 +1145,18 @@ async function sendMainChat(q) {
   if (inputEl && !q) { inputEl.value = ''; inputEl.style.height = 'auto'; }
 
   addChatMessage('user', text);
+
+  // If conversational check-in is active, route answer there
+  if (checkinConvo.active) {
+    handleCheckinAnswer(text);
+    return;
+  }
+
+  // Check for "check in" or "checkin" request to start flow
+  if (/^(check.?in|start check.?in|do.*check.?in)/i.test(text.trim())) {
+    startConversationalCheckin();
+    return;
+  }
 
   // Check for transaction
   const parsed = parseHomeTx(text);
