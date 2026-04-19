@@ -1049,21 +1049,31 @@ function addChatMessage(role, text) {
   const feed = document.getElementById('chat-feed');
   const welcome = document.getElementById('welcome-state');
   if (!feed) return;
-
-  // Hide welcome, show feed
   if (welcome) welcome.classList.add('hidden');
-
   const div = document.createElement('div');
   div.className = 'msg msg-' + role;
   const avatar = role === 'ai'
     ? '<div class="msg-avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v6c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L12 2z"/></svg></div>'
     : '<div class="msg-avatar">' + (S.user ? S.user.name[0].toUpperCase() : 'U') + '</div>';
-
   const formattedText = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/_(.+?)_/g, '<em>$1</em>').replace(/\n/g, '<br>');
   const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   div.innerHTML = avatar + '<div><div class="msg-bubble">' + formattedText + '</div><div class="msg-time">' + time + '</div></div>';
   feed.appendChild(div);
-  
+  const chatArea = document.getElementById('chat-area');
+  if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function addChatRich(html) {
+  const feed = document.getElementById('chat-feed');
+  const welcome = document.getElementById('welcome-state');
+  if (!feed) return;
+  if (welcome) welcome.classList.add('hidden');
+  const div = document.createElement('div');
+  div.className = 'msg msg-ai';
+  const avatar = '<div class="msg-avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v6c0 5.5 4.3 10.7 10 12 5.7-1.3 10-6.5 10-12V7L12 2z"/></svg></div>';
+  const time = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  div.innerHTML = avatar + '<div><div class="msg-bubble rich-card">' + html + '</div><div class="msg-time">' + time + '</div></div>';
+  feed.appendChild(div);
   const chatArea = document.getElementById('chat-area');
   if (chatArea) chatArea.scrollTop = chatArea.scrollHeight;
 }
@@ -1112,7 +1122,41 @@ async function callLLM(userMessage) {
   if (now - LLM_CONFIG.lastUsed < LLM_CONFIG.rateLimitMs) return { error: 'Please wait a moment' };
   LLM_CONFIG.lastUsed = now; saveLLMConfig();
   const context = getAppContext();
-  const systemPrompt = `You are Imperium AI. User: ${context.user.name}, Situation: ${context.situation}, Goal: ${context.goal}, Level ${context.level}, ${context.streak} day streak, ${context.totalCheckins} check-ins. Recent check-ins: ${JSON.stringify(context.recentCheckins)}. Health: ${JSON.stringify(context.passiveData)}. Transactions: ${context.transactions.length}. Be concise (2-4 sentences), actionable, use emojis. Reference specific data when possible.`;
+  const todayDate = new Date().toDateString();
+  const todayCI = context.recentCheckins[todayDate] || {};
+  const todayPD = context.passiveData[todayDate];
+  const period = getCurrentPeriod();
+  const recentTx = context.transactions.slice(-5);
+  const systemPrompt = `You are Imperium — a sharp, perceptive personal AI that actually thinks before speaking. You're not a generic chatbot. You have REAL data about this person.
+
+USER PROFILE:
+- Name: ${context.user.name}
+- Life situation: ${context.situation || 'not specified'}
+- Core goal: ${context.goal || 'optimize life'}
+- Level ${context.level}, ${context.streak}-day streak, ${context.totalCheckins} total check-ins
+
+TODAY (${todayDate}, ${period}):
+- Check-ins done: ${JSON.stringify(todayCI)}
+- Health: ${todayPD ? 'Sleep ' + todayPD.sleep + 'h, Steps ' + todayPD.steps + ', Screen ' + todayPD.screenTime + 'min, Score ' + todayPD.score + '/100' : 'not synced'}
+- Recent spending: ${recentTx.length > 0 ? recentTx.map(t => t.type + ' ' + t.amount + ' ' + (t.note||'')).join(', ') : 'none'}
+
+LAST 7 DAYS CHECK-INS:
+${JSON.stringify(context.recentCheckins, null, 0)}
+
+HEALTH HISTORY:
+${JSON.stringify(context.passiveData, null, 0)}
+
+RULES:
+1. Reference SPECIFIC data points — quote their actual numbers, priorities, answers
+2. Notice PATTERNS — if sleep dropped 3 days in a row, SAY that. If they keep missing afternoon check-ins, point it out
+3. Be warm but direct — like a smart friend who genuinely cares, not a corporate assistant
+4. Give ONE concrete, actionable suggestion, not a list of 5 generic tips
+5. Keep responses 2-5 sentences. No filler. Every word should earn its place
+6. If they set a morning priority, check if afternoon data shows they followed through
+7. Connect dots between their data — sleep affects energy affects execution
+8. Use emojis sparingly and naturally, not excessively
+9. If you don't have enough data to say something meaningful, be honest about it
+10. NEVER say "As an AI" or "I don't have feelings" — you're Imperium, act like it`;
 
   try {
     let url, payload;
@@ -1237,14 +1281,11 @@ function generateLocalResponse(text) {
   const todayCI = S.checkins[today] || {};
   const todayPD = S.passiveData[today];
   const completedPeriods = Object.keys(todayCI).length;
+  const name = S.user ? S.user.name.split(' ')[0] : 'there';
+  const period = getCurrentPeriod();
 
   if (t.includes('today') || t.includes('how am i') || t.includes('status') || t.includes('doing')) {
-    let reply = "📊 Today's status:\n\n📋 Check-ins: " + completedPeriods + "/4\n";
-    if (todayPD) {
-      reply += "🚶 Steps: " + todayPD.steps + "\n😴 Sleep: " + todayPD.sleep + "h\n📱 Screen: " + todayPD.screenTime + " min\n⚡ Score: " + todayPD.score + "/100\n";
-    }
-    if (todayCI.morning) reply += "\nMorning priority: \"" + (todayCI.morning.answers.priority || '—') + "\"";
-    addChatMessage('ai', reply);
+    showInsightsInChat();
     return;
   }
 
@@ -1253,76 +1294,362 @@ function generateLocalResponse(text) {
     return;
   }
 
-  if (t.includes('advice') || t.includes('help') || t.includes('improve')) {
-    const period = getCurrentPeriod();
-    const adviceMap = {
-      morning: "🌅 Morning advice:\n\n1. Do your #1 priority before checking notifications\n2. First 90 min are peak cognitive — use for deep work\n3. 10 min of movement increases focus by 30%",
-      afternoon: "☀️ Afternoon advice:\n\n1. Block 45 min right now for your priority\n2. Energy dips at 2-3pm are normal — do admin, not creative work\n3. Rate your morning honestly",
-      evening: "🌆 Evening advice:\n\n1. Review what you accomplished vs planned\n2. Capture ideas NOW — they won't survive till morning\n3. Set tomorrow's intention before you relax",
-      night: "🌙 Night advice:\n\n1. Blue light after 9pm reduces sleep quality 25%\n2. Write down tomorrow's #1 task\n3. Protect your sleep — it's your performance multiplier"
-    };
-    addChatMessage('ai', adviceMap[period]);
+  if (t.includes('advice') || t.includes('help') || t.includes('improve') || t.includes('tip')) {
+    let advice = '';
+    // Actually reference their data
+    if (todayCI.morning && todayCI.morning.answers.priority) {
+      const priority = todayCI.morning.answers.priority;
+      if (todayCI.afternoon && todayCI.afternoon.answers.progress) {
+        const progress = todayCI.afternoon.answers.progress;
+        if (progress.includes('No') || progress.includes('Partially')) {
+          advice = "Your priority was \"" + priority + "\" and you " + (progress.includes('No') ? "didn't get to it" : "partially completed it") + ". Here's what works: break it into the smallest possible next action — something you can start in the next 2 minutes. Momentum beats motivation every time.";
+        } else {
+          advice = "You executed on \"" + priority + "\" today — that's what separates builders from dreamers. For tomorrow, try setting your priority the night before. Research shows this primes your subconscious to work on it while you sleep.";
+        }
+      } else {
+        advice = "Your priority today is \"" + priority + "\". " + (period === 'morning' ? "You've got peak cognitive hours right now — do it before email, before social media, before anything else." : period === 'afternoon' ? "It's afternoon — if you haven't started yet, give yourself a 25-minute focused sprint right now. Just 25 minutes, then reassess." : "Day's winding down. If this didn't get done, that's data, not failure. What blocked you? That's what to fix tomorrow.");
+      }
+    } else if (todayPD) {
+      if (todayPD.sleep < 6.5) {
+        advice = "You got " + todayPD.sleep + "h of sleep, " + name + ". I'll be honest — everything else is downstream of this. Your willpower, focus, and mood are all running at maybe 60% capacity. Tonight, set a non-negotiable lights-out time and work backwards.";
+      } else if (todayPD.screenTime > 240) {
+        advice = "" + Math.floor(todayPD.screenTime/60) + "+ hours of screen time today. That's about " + Math.round(todayPD.screenTime/60*7) + " hours a week — roughly a full workday lost. Try this: pick one 1-hour block today and go fully analog. Read, walk, think. See how it feels.";
+      } else {
+        advice = "Your numbers look " + (todayPD.score >= 70 ? "strong" : "decent") + " today (score: " + todayPD.score + "/100). " + (todayPD.steps < 5000 ? "One thing — your steps are low. Even a 15-minute walk would boost your afternoon energy and creativity significantly." : "Keep this momentum going. The compound effect of consistent good days is enormous.");
+      }
+    } else {
+      const advicePool = {
+        morning: "It's morning — your willpower is at its peak. Do the hardest thing first. Not the urgent thing, the *important* thing. The emails can wait.",
+        afternoon: "Afternoon energy dip is real and normal. This is when you do admin, reply to messages, take a walk. Don't fight your biology — work with it.",
+        evening: "Evening is for reflection, not regret. What worked today? Do more of that. What didn't? Adjust. Simple.",
+        night: "Winding down? Here's the one thing that'll make tomorrow 2x better: decide your #1 priority right now, before you sleep. Your brain will process it overnight."
+      };
+      advice = advicePool[period];
+    }
+    addChatMessage('ai', advice);
     return;
   }
 
-  if (t.includes('spend') || t.includes('money') || t.includes('spent')) {
-    const monthTx = S.transactions.filter(tx => {
-      const d = new Date(tx.date); const n = new Date();
-      return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  if (t.includes('spend') || t.includes('money') || t.includes('spent') || t.includes('budget') || t.includes('expense')) {
+    showSpendingInChat();
+    return;
+  }
+
+  if (t.includes('summary') || t.includes('overview') || t.includes('weekly') || t.includes('week')) {
+    showWeeklySummaryRich();
+    return;
+  }
+
+  if (t.includes('motivat') || t.includes('unmotivat') || t.includes('tired') || t.includes('stuck') || t.includes('frustrated')) {
+    const msgs = [
+      "I hear you, " + name + ". Being stuck isn't a character flaw — it's a signal. Usually it means the task is too big or too vague. What's the absolute smallest next step you could take? Like, embarrassingly small. Do just that.",
+      "" + name + ", motivation is unreliable — it comes and goes like weather. What works is making the right thing the easy thing. Can you make your next task take less than 5 minutes? Start there.",
+      "Feeling stuck is actually a sign you care, " + name + ". If it didn't matter, you wouldn't be frustrated. Take a 10-minute walk, change your environment, then come back and do ONE thing. Not five. One."
+    ];
+    addChatMessage('ai', msgs[Math.floor(Math.random() * msgs.length)]);
+    return;
+  }
+
+  if (t.includes('sleep') && !t.includes('log') && !t.includes('spent')) {
+    if (todayPD) {
+      const avgSleep = getAvgMetric('sleep');
+      addChatMessage('ai', "Last night: **" + todayPD.sleep + "h** of sleep." + (avgSleep ? " Your 7-day average is " + avgSleep.toFixed(1) + "h." : "") + (todayPD.sleep < 7 ? "\n\nYou're below the 7h threshold where cognitive performance drops measurably. Tonight, try cutting screen time 30 minutes earlier — the data shows that's the highest-leverage sleep fix." : "\n\nAbove 7h — that's where you want to be. Sleep is your foundation for everything else."));
+    } else {
+      addChatMessage('ai', "I don't have today's sleep data yet. Sync your health to let me track patterns! Tap ❤️ **Sync Health** or say **sync**.");
+    }
+    return;
+  }
+
+  if (t.includes('sync') || t.includes('health')) {
+    openSyncFlow();
+    return;
+  }
+
+  // Default — be helpful, not generic
+  const ctx = [];
+  if (completedPeriods > 0) ctx.push(completedPeriods + '/4 check-ins done');
+  if (todayPD) ctx.push('score ' + todayPD.score + '/100');
+  if (todayCI.morning) ctx.push('priority: "' + (todayCI.morning.answers.priority || '') + '"');
+
+  addChatMessage('ai', "Hey " + name + "! I'm not sure what you're looking for, but here's what I can do:\n\n• **\"How am I doing?\"** — your visual dashboard with scores & patterns\n• **\"Give me advice\"** — personalized tips based on your actual data\n• **\"Log spending\"** — track expenses by voice or text\n• **\"I'm stuck\"** — when you need a push\n• **\"Weekly summary\"** — your week at a glance\n\n" + (ctx.length > 0 ? "_Right now: " + ctx.join(' · ') + "_" : "Or just tell me what's on your mind."));
+}
+
+function getAvgMetric(metric) {
+  const dates = Object.keys(S.passiveData).sort().slice(-7);
+  if (dates.length < 2) return null;
+  let total = 0, count = 0;
+  dates.forEach(function(d) { if (S.passiveData[d] && S.passiveData[d][metric]) { total += S.passiveData[d][metric]; count++; } });
+  return count > 0 ? total / count : null;
+}
+
+function showSpendingInChat() {
+  const monthTx = S.transactions.filter(function(tx) {
+    var d = new Date(tx.date), n = new Date();
+    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  });
+
+  if (!monthTx.length) {
+    addChatMessage('ai', "No spending tracked this month yet! Just say something like **\"spent $15 on lunch\"** or tap 💸 to log manually.");
+    return;
+  }
+
+  const expenses = monthTx.filter(function(tx){return tx.type==='expense';});
+  const income = monthTx.filter(function(tx){return tx.type==='income';});
+  const totalSpent = expenses.reduce(function(s,tx){return s+tx.amount;}, 0);
+  const totalInc = income.reduce(function(s,tx){return s+tx.amount;}, 0);
+  const net = totalInc - totalSpent;
+
+  // Group expenses by category/note
+  var cats = {};
+  expenses.forEach(function(tx) {
+    var key = tx.category && tx.category !== 'general' ? tx.category : (tx.note || 'other');
+    key = key.substring(0, 20);
+    if (!cats[key]) cats[key] = 0;
+    cats[key] += tx.amount;
+  });
+  var catEntries = Object.entries(cats).sort(function(a,b){return b[1]-a[1];});
+  var maxCat = catEntries.length > 0 ? catEntries[0][1] : 1;
+
+  var html = '<div style="font-size:15px;font-weight:700;margin-bottom:10px">💰 Monthly Spending</div>';
+
+  // Summary cards
+  html += '<div style="display:flex;gap:6px;margin-bottom:12px">';
+  html += '<div style="flex:1;padding:10px;background:rgba(52,211,153,.08);border-radius:10px;text-align:center"><div style="font-size:11px;opacity:.6">Income</div><div style="font-size:17px;font-weight:700;color:#34d399">+' + fmt(totalInc) + '</div></div>';
+  html += '<div style="flex:1;padding:10px;background:rgba(248,113,113,.08);border-radius:10px;text-align:center"><div style="font-size:11px;opacity:.6">Spent</div><div style="font-size:17px;font-weight:700;color:#f87171">-' + fmt(totalSpent) + '</div></div>';
+  html += '<div style="flex:1;padding:10px;background:rgba(99,102,241,.08);border-radius:10px;text-align:center"><div style="font-size:11px;opacity:.6">Net</div><div style="font-size:17px;font-weight:700;color:' + (net>=0?'#34d399':'#f87171') + '">' + (net>=0?'+':'') + fmt(net) + '</div></div>';
+  html += '</div>';
+
+  // Category breakdown bars
+  if (catEntries.length > 0) {
+    html += '<div style="font-size:12px;font-weight:600;margin-bottom:6px;opacity:.7">Breakdown</div>';
+    catEntries.slice(0, 6).forEach(function(entry) {
+      var pct = Math.round((entry[1] / maxCat) * 100);
+      html += '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="opacity:.8">' + entry[0] + '</span><span style="font-weight:600">' + fmt(entry[1]) + '</span></div>';
+      html += '<div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#6366f1,#a78bfa);border-radius:3px"></div></div></div>';
     });
-    const totalSpent = monthTx.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0);
-    const totalInc = monthTx.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0);
-    if (!monthTx.length) addChatMessage('ai', "No transactions this month. Say 'Spent $X on Y' or tap 💸 Log Spending.");
-    else addChatMessage('ai', "💰 This month:\n\nIncome: " + fmt(totalInc) + "\nSpent: " + fmt(totalSpent) + "\nNet: " + fmt(totalInc - totalSpent));
-    return;
   }
 
-  if (t.includes('summary') || t.includes('overview') || t.includes('weekly')) {
-    const reply = generateSummaryText();
-    addChatMessage('ai', reply);
-    return;
+  // Recent transactions
+  var recent = monthTx.slice(-4).reverse();
+  html += '<div style="font-size:12px;font-weight:600;margin:10px 0 6px;opacity:.7">Recent</div>';
+  recent.forEach(function(tx) {
+    var icon = tx.type === 'income' ? '💚' : '🔴';
+    var sign = tx.type === 'income' ? '+' : '-';
+    html += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px"><span>' + icon + ' ' + (tx.note || tx.category || 'Transaction') + '</span><span style="font-weight:600;color:' + (tx.type==='income'?'#34d399':'#f87171') + '">' + sign + fmt(tx.amount) + '</span></div>';
+  });
+
+  addChatRich(html);
+}
+
+function showWeeklySummaryRich() {
+  const dates = [];
+  for (var i = 6; i >= 0; i--) {
+    var d = new Date(); d.setDate(d.getDate() - i);
+    dates.push(d.toDateString());
+  }
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  var html = '<div style="font-size:15px;font-weight:700;margin-bottom:10px">📈 Weekly Summary</div>';
+
+  // Check-in heatmap
+  html += '<div style="font-size:12px;font-weight:600;margin-bottom:6px;opacity:.7">Check-in streak</div>';
+  html += '<div style="display:flex;gap:4px;margin-bottom:12px">';
+  dates.forEach(function(date) {
+    var ci = S.checkins[date] || {};
+    var count = Object.keys(ci).length;
+    var d = new Date(date);
+    var dayLabel = dayNames[d.getDay()];
+    var color = count >= 4 ? '#34d399' : count >= 2 ? '#fbbf24' : count >= 1 ? 'rgba(251,191,36,.4)' : 'rgba(255,255,255,.08)';
+    html += '<div style="flex:1;text-align:center"><div style="font-size:10px;opacity:.5;margin-bottom:4px">' + dayLabel + '</div><div style="height:28px;border-radius:6px;background:' + color + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">' + (count > 0 ? count : '') + '</div></div>';
+  });
+  html += '</div>';
+
+  // Score trend
+  var hasScores = dates.some(function(d){return S.passiveData[d] && S.passiveData[d].score;});
+  if (hasScores) {
+    html += '<div style="font-size:12px;font-weight:600;margin-bottom:6px;opacity:.7">Wellness score trend</div>';
+    html += '<div style="display:flex;align-items:end;gap:4px;height:60px;margin-bottom:12px">';
+    dates.forEach(function(date) {
+      var pd = S.passiveData[date];
+      var score = pd ? pd.score : 0;
+      var h = Math.max(4, (score / 100) * 56);
+      var color = score >= 70 ? '#34d399' : score >= 45 ? '#fbbf24' : score > 0 ? '#f87171' : 'rgba(255,255,255,.06)';
+      html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center"><div style="width:100%;height:' + h + 'px;background:' + color + ';border-radius:4px 4px 0 0"></div>' + (score > 0 ? '<div style="font-size:9px;margin-top:2px;opacity:.6">' + score + '</div>' : '<div style="font-size:9px;margin-top:2px;opacity:.3">—</div>') + '</div>';
+    });
+    html += '</div>';
   }
 
-  addChatMessage('ai', "I'm your Imperium AI. Try:\n\n• 'How am I doing?' — today's status\n• 'Show patterns' — AI insights\n• 'Give me advice' — time-specific tips\n• 'Spent $40 on food' — log spending\n• 'Weekly summary' — overview\n\nOr just talk to me about anything.");
+  // Week spending
+  var weekTx = S.transactions.filter(function(tx) { return dates.indexOf(new Date(tx.date).toDateString()) >= 0; });
+  var weekSpent = weekTx.filter(function(tx){return tx.type==='expense';}).reduce(function(s,tx){return s+tx.amount;},0);
+  var weekInc = weekTx.filter(function(tx){return tx.type==='income';}).reduce(function(s,tx){return s+tx.amount;},0);
+  html += '<div style="display:flex;gap:8px;margin-bottom:10px">';
+  html += '<div style="flex:1;padding:10px;background:rgba(255,255,255,.04);border-radius:10px"><div style="font-size:11px;opacity:.6">Week spent</div><div style="font-size:16px;font-weight:700;color:#f87171">' + fmt(weekSpent) + '</div></div>';
+  html += '<div style="flex:1;padding:10px;background:rgba(255,255,255,.04);border-radius:10px"><div style="font-size:11px;opacity:.6">Week income</div><div style="font-size:16px;font-weight:700;color:#34d399">' + fmt(weekInc) + '</div></div>';
+  html += '</div>';
+
+  // Stats
+  var totalCI = 0;
+  dates.forEach(function(d) { totalCI += Object.keys(S.checkins[d] || {}).length; });
+  html += '<div style="display:flex;gap:6px">';
+  html += '<div style="flex:1;padding:8px;background:rgba(99,102,241,.08);border-radius:8px;text-align:center;font-size:12px"><div style="font-size:18px;font-weight:700">' + totalCI + '</div>check-ins</div>';
+  html += '<div style="flex:1;padding:8px;background:rgba(251,191,36,.08);border-radius:8px;text-align:center;font-size:12px"><div style="font-size:18px;font-weight:700">' + (S.streak||0) + '</div>day streak</div>';
+  html += '<div style="flex:1;padding:8px;background:rgba(52,211,153,.08);border-radius:8px;text-align:center;font-size:12px"><div style="font-size:18px;font-weight:700">' + weekTx.length + '</div>transactions</div>';
+  html += '</div>';
+
+  addChatRich(html);
 }
 
 function generateSummaryText() {
-  const today = new Date().toDateString();
-  const health = S.passiveData[today];
-  const todayCI = S.checkins[today];
-  const todayTx = (S.transactions || []).filter(t => new Date(t.date).toDateString() === today);
-  let text = '📋 Today\'s Summary\n\n';
-  if (health) {
-    text += '🏥 Health: ' + (health.sleep ? health.sleep + 'h sleep, ' : '') + (health.steps ? health.steps + ' steps, ' : '') + (health.screenTime ? Math.floor(health.screenTime / 60) + 'h screen' : '') + '\n';
-    if (health.score) text += '⚡ Score: ' + health.score + '/100\n';
-  } else text += '🏥 Health: Not synced\n';
-  text += '\n';
-  if (todayCI) { const periods = Object.keys(todayCI); text += '✅ Check-ins: ' + periods.length + '/4 (' + periods.join(', ') + ')\n'; }
-  else text += '✅ Check-ins: None today\n';
-  text += '\n';
-  if (todayTx.length > 0) { const total = todayTx.reduce((s, t) => s + t.amount, 0); text += '💸 Spending: ' + S.currency + total.toFixed(2) + ' (' + todayTx.length + ' tx)\n'; }
-  else text += '💸 Spending: Nothing logged\n';
-  text += '\n🔥 Streak: ' + (S.streak || 0) + ' | ⚡ XP: ' + (S.totalXp || 0) + ' | Level ' + (S.level || 1);
-  return text;
+  showWeeklySummaryRich();
+  return null;
 }
 
 /* ── INSIGHTS IN CHAT ─────────────────────────────── */
 function showInsightsInChat() {
   unlockAchievement('insights-visit');
   const patterns = detectLifePatterns();
-  if (!patterns.length) {
-    addChatMessage('ai', '🧠 Not enough data yet to detect patterns. Complete check-ins for 3+ days and I\'ll start finding patterns in your behavior.');
-    return;
+  const today = new Date().toDateString();
+  const todayPD = S.passiveData[today];
+  const todayCI = S.checkins[today] || {};
+  const completedCount = Object.keys(todayCI).length;
+  const name = S.user ? S.user.name.split(' ')[0] : 'there';
+
+  // Build rich visual HTML
+  let html = '<div style="font-size:15px;font-weight:700;margin-bottom:10px">📊 Your Dashboard</div>';
+
+  // Today's Score Ring
+  if (todayPD) {
+    const score = todayPD.score || 0;
+    const color = score >= 70 ? '#34d399' : score >= 45 ? '#fbbf24' : '#f87171';
+    const label = score >= 80 ? 'Crushing it' : score >= 60 ? 'Solid day' : score >= 40 ? 'Could be better' : 'Rough day';
+    html += '<div style="display:flex;align-items:center;gap:14px;padding:12px;background:rgba(99,102,241,.08);border-radius:12px;margin-bottom:10px">';
+    html += '<div style="position:relative;width:64px;height:64px;flex-shrink:0"><svg viewBox="0 0 36 36" style="width:64px;height:64px;transform:rotate(-90deg)"><circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="3"/><circle cx="18" cy="18" r="15.5" fill="none" stroke="' + color + '" stroke-width="3" stroke-dasharray="' + (score * 0.974) + ' 97.4" stroke-linecap="round" style="transition:stroke-dasharray .8s ease"/></svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:' + color + '">' + score + '</div></div>';
+    html += '<div><div style="font-weight:600;font-size:14px">' + label + '</div><div style="font-size:12px;opacity:.7">Today\'s wellness score</div></div></div>';
   }
-  let msg = '🧠 Patterns I\'ve noticed:\n\n';
-  patterns.forEach(p => { msg += p.icon + ' **' + p.title + '**: ' + p.insight + '\n\n'; });
-  addChatMessage('ai', msg);
+
+  // Health Bars
+  if (todayPD) {
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+    // Sleep bar
+    const sleepPct = Math.min(100, (todayPD.sleep / 9) * 100);
+    const sleepColor = todayPD.sleep >= 7 ? '#34d399' : todayPD.sleep >= 6 ? '#fbbf24' : '#f87171';
+    html += '<div style="padding:10px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.06)"><div style="font-size:11px;opacity:.6;margin-bottom:4px">😴 Sleep</div><div style="font-size:18px;font-weight:700;color:' + sleepColor + '">' + todayPD.sleep + 'h</div><div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:6px"><div style="height:100%;width:' + sleepPct + '%;background:' + sleepColor + ';border-radius:2px;transition:width .6s ease"></div></div></div>';
+    // Steps bar
+    const stepsPct = Math.min(100, (todayPD.steps / 10000) * 100);
+    const stepsColor = todayPD.steps >= 8000 ? '#34d399' : todayPD.steps >= 5000 ? '#fbbf24' : '#f87171';
+    html += '<div style="padding:10px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.06)"><div style="font-size:11px;opacity:.6;margin-bottom:4px">🚶 Steps</div><div style="font-size:18px;font-weight:700;color:' + stepsColor + '">' + todayPD.steps.toLocaleString() + '</div><div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:6px"><div style="height:100%;width:' + stepsPct + '%;background:' + stepsColor + ';border-radius:2px;transition:width .6s ease"></div></div></div>';
+    // Screen time
+    const screenH = Math.floor(todayPD.screenTime / 60);
+    const screenM = todayPD.screenTime % 60;
+    const screenPct = Math.min(100, (todayPD.screenTime / 360) * 100);
+    const screenColor = todayPD.screenTime <= 120 ? '#34d399' : todayPD.screenTime <= 240 ? '#fbbf24' : '#f87171';
+    html += '<div style="padding:10px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.06)"><div style="font-size:11px;opacity:.6;margin-bottom:4px">📱 Screen</div><div style="font-size:18px;font-weight:700;color:' + screenColor + '">' + screenH + 'h' + (screenM > 0 ? screenM + 'm' : '') + '</div><div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:6px"><div style="height:100%;width:' + screenPct + '%;background:' + screenColor + ';border-radius:2px;transition:width .6s ease"></div></div></div>';
+    // Check-ins
+    html += '<div style="padding:10px;background:rgba(255,255,255,.04);border-radius:10px;border:1px solid rgba(255,255,255,.06)"><div style="font-size:11px;opacity:.6;margin-bottom:4px">✅ Check-ins</div><div style="font-size:18px;font-weight:700;color:' + (completedCount >= 3 ? '#34d399' : completedCount >= 1 ? '#fbbf24' : '#f87171') + '">' + completedCount + '/4</div><div style="display:flex;gap:4px;margin-top:8px">' + ['morning','afternoon','evening','night'].map(function(p){return '<div style="flex:1;height:4px;border-radius:2px;background:' + (todayCI[p] ? '#34d399' : 'rgba(255,255,255,.1)') + '"></div>';}).join('') + '</div></div>';
+    html += '</div>';
+  } else {
+    html += '<div style="padding:14px;background:rgba(255,255,255,.04);border-radius:10px;text-align:center;margin-bottom:10px;border:1px dashed rgba(255,255,255,.1)"><div style="font-size:24px;margin-bottom:6px">❤️</div><div style="font-size:13px;opacity:.6">Health not synced today</div><div style="margin-top:8px"><button onclick="openSyncFlow()" style="background:linear-gradient(135deg,#6366f1,#a78bfa);border:none;color:#fff;padding:6px 16px;border-radius:8px;font-size:12px;cursor:pointer">Sync Now</button></div></div>';
+  }
+
+  // Patterns section
+  if (patterns.length > 0) {
+    html += '<div style="font-size:13px;font-weight:600;margin:12px 0 8px;opacity:.8">🧠 Patterns (last 7 days)</div>';
+    patterns.forEach(function(p) {
+      const isGood = p.icon.includes('✅');
+      const barColor = isGood ? '#34d399' : '#fbbf24';
+      const pctMatch = p.insight.match(/(\d+)%/);
+      const numMatch = p.insight.match(/(\d+\.?\d*)(h|hr)/i);
+      let barPct = pctMatch ? parseInt(pctMatch[1]) : (numMatch ? Math.min(100, (parseFloat(numMatch[1]) / 9) * 100) : (isGood ? 78 : 40));
+      html += '<div style="padding:10px;background:rgba(255,255,255,.04);border-radius:10px;margin-bottom:6px;border-left:3px solid ' + barColor + '">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600;font-size:13px">' + p.icon.replace(/[✅⚠️]/g,'') + ' ' + p.title + '</span><span style="font-size:11px;padding:2px 8px;border-radius:6px;background:' + (isGood ? 'rgba(52,211,153,.15);color:#34d399' : 'rgba(251,191,36,.15);color:#fbbf24') + '">' + (isGood ? 'On track' : 'Needs work') + '</span></div>';
+      html += '<div style="font-size:12px;opacity:.7;margin-top:4px">' + p.insight + '</div>';
+      html += '<div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:8px"><div style="height:100%;width:' + barPct + '%;background:' + barColor + ';border-radius:2px"></div></div>';
+      html += '</div>';
+    });
+  } else {
+    html += '<div style="padding:14px;background:rgba(255,255,255,.04);border-radius:10px;text-align:center;margin-top:8px"><div style="font-size:13px;opacity:.6">🧠 Complete 3+ days of check-ins to unlock pattern detection</div></div>';
+  }
+
+  // Spending snapshot
+  const monthTx = S.transactions.filter(function(tx) {
+    var d = new Date(tx.date), n = new Date();
+    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  });
+  if (monthTx.length > 0) {
+    const totalSpent = monthTx.filter(function(tx){return tx.type==='expense';}).reduce(function(s,tx){return s+tx.amount;}, 0);
+    const totalInc = monthTx.filter(function(tx){return tx.type==='income';}).reduce(function(s,tx){return s+tx.amount;}, 0);
+    const net = totalInc - totalSpent;
+    html += '<div style="font-size:13px;font-weight:600;margin:12px 0 8px;opacity:.8">💰 This Month</div>';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<div style="flex:1;padding:10px;background:rgba(52,211,153,.08);border-radius:10px;text-align:center"><div style="font-size:11px;opacity:.6">Income</div><div style="font-size:16px;font-weight:700;color:#34d399">+' + fmt(totalInc) + '</div></div>';
+    html += '<div style="flex:1;padding:10px;background:rgba(248,113,113,.08);border-radius:10px;text-align:center"><div style="font-size:11px;opacity:.6">Spent</div><div style="font-size:16px;font-weight:700;color:#f87171">-' + fmt(totalSpent) + '</div></div>';
+    html += '<div style="flex:1;padding:10px;background:rgba(99,102,241,.08);border-radius:10px;text-align:center"><div style="font-size:11px;opacity:.6">Net</div><div style="font-size:16px;font-weight:700;color:' + (net >= 0 ? '#34d399' : '#f87171') + '">' + fmt(net) + '</div></div>';
+    html += '</div>';
+  }
+
+  // Streak & XP
+  html += '<div style="display:flex;gap:8px;margin-top:10px">';
+  html += '<div style="flex:1;padding:10px;background:linear-gradient(135deg,rgba(251,191,36,.1),rgba(251,146,60,.1));border-radius:10px;text-align:center"><div style="font-size:20px">🔥</div><div style="font-size:16px;font-weight:700">' + (S.streak || 0) + '</div><div style="font-size:11px;opacity:.6">Day streak</div></div>';
+  html += '<div style="flex:1;padding:10px;background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(167,139,250,.1));border-radius:10px;text-align:center"><div style="font-size:20px">⚡</div><div style="font-size:16px;font-weight:700">' + (S.totalXp || 0) + '</div><div style="font-size:11px;opacity:.6">Total XP</div></div>';
+  html += '<div style="flex:1;padding:10px;background:linear-gradient(135deg,rgba(52,211,153,.1),rgba(34,211,238,.1));border-radius:10px;text-align:center"><div style="font-size:20px">🏆</div><div style="font-size:16px;font-weight:700">Lv ' + (S.level || 1) + '</div><div style="font-size:11px;opacity:.6">Level</div></div>';
+  html += '</div>';
+
+  addChatRich(html);
+
+  // Add smart commentary
+  if (todayPD || patterns.length > 0) {
+    setTimeout(function() {
+      let commentary = buildSmartInsightCommentary(todayPD, todayCI, patterns, name);
+      addChatMessage('ai', commentary);
+    }, 600);
+  }
+}
+
+function buildSmartInsightCommentary(todayPD, todayCI, patterns, name) {
+  const parts = [];
+  // Cross-reference sleep + energy + execution
+  if (todayPD && todayCI.morning) {
+    const sleep = todayPD.sleep;
+    const energy = todayCI.morning.answers.energy || '';
+    const priority = todayCI.morning.answers.priority || '';
+    if (sleep < 6.5 && energy.toLowerCase().includes('low')) {
+      parts.push("I notice you got only " + sleep + "h of sleep and flagged low energy this morning. There's a clear connection there — even 30 extra minutes tonight could shift tomorrow's whole trajectory.");
+    } else if (sleep >= 7.5 && energy.toLowerCase().includes('high')) {
+      parts.push("Good sleep (" + sleep + "h) is clearly fueling your high energy today. That's your edge — protect it.");
+    }
+    if (todayCI.afternoon) {
+      const progress = todayCI.afternoon.answers.progress || '';
+      if (progress.includes('Yes') && priority) {
+        parts.push("You said your priority was \"" + priority + "\" and you followed through ✅. That's execution, " + name + ". Consistency like this compounds.");
+      } else if (progress.includes('No') && priority) {
+        const distraction = todayCI.afternoon.answers.distraction || '';
+        parts.push("Your morning priority was \"" + priority + "\" but you didn't execute on it." + (distraction ? " \"" + distraction + "\" pulled your focus." : "") + " Tomorrow, try blocking the first 90 minutes for ONLY this task.");
+      }
+    }
+  }
+  // Screen time pattern
+  if (todayPD && todayPD.screenTime > 240) {
+    parts.push("Over 4 hours of screen time today — that's roughly " + Math.round(todayPD.screenTime * 7 / 60) + " hours a week if this continues. What if you reclaimed even half of that?");
+  }
+  // Pattern-based
+  patterns.forEach(function(p) {
+    if (p.title === 'Execution' && p.insight.includes('Gap')) {
+      parts.push("Your execution rate shows a gap between what you plan and what you do. The fix isn't motivation — it's making the task smaller. What's the 15-minute version of your priority?");
+    }
+    if (p.title === 'Mood' && p.insight.includes('meh')) {
+      parts.push("Your mood trend is dipping. Look at what's different on your 'great' days vs 'meh' days — usually it's sleep quality or whether you executed on your priority.");
+    }
+  });
+  if (parts.length === 0) {
+    parts.push("Looking at your data — you're building solid consistency, " + name + ". The patterns will get more revealing as you keep checking in. Keep showing up. 🎯");
+  }
+  return parts.slice(0, 2).join('\n\n');
 }
 
 /* ── SPEND IN CHAT ────────────────────────────────── */
 function showSpendInChat() {
-  const overlay = document.getElementById('spend-quick-overlay');
-  if (overlay) overlay.classList.remove('hidden');
+  showSpendingInChat();
 }
 
 function closeSpendQuick() {

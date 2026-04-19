@@ -310,6 +310,7 @@ img{max-width:100%;display:block}
 .msg-ai .msg-avatar{background:var(--gradient-main);color:#fff;box-shadow:var(--glow-green)}
 .msg-user .msg-avatar{background:var(--gradient-warm);color:#fff}
 .msg-bubble{max-width:85%;padding:var(--s4) var(--s5);border-radius:var(--radius-lg);font-size:14px;line-height:1.6}
+.msg-bubble.rich-card{max-width:92%;padding:var(--s5);background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--accent-blue)}
 .msg-ai .msg-bubble{background:var(--surface);border:1px solid var(--border);border-left:2px solid var(--accent)}
 .msg-user .msg-bubble{background:var(--gradient-cool);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.2)}
 .msg-time{font-size:10px;color:var(--text-tertiary);margin-top:4px}
