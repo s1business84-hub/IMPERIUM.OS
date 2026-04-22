@@ -124,13 +124,19 @@
        MAIN CHAT SCREEN — ChatGPT / Claude Style
        ═══════════════════════════════════════════════ -->
   <div class="screen" id="screen-main">
+    <div class="screen-ambient ambient-one"></div>
+    <div class="screen-ambient ambient-two"></div>
+    <div class="screen-grid"></div>
     <!-- Header -->
     <div class="main-header">
       <button class="hdr-btn" id="sidebar-toggle" onclick="toggleSidebar()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div class="hdr-center">
-        <span class="hdr-title">Imperium</span>
+        <div class="hdr-copy">
+          <span class="hdr-title">Imperium</span>
+          <span class="hdr-subtitle" id="hdr-subtitle">Your daily operating system</span>
+        </div>
         <span class="hdr-badge" id="hdr-streak">🔥 0</span>
       </div>
       <div class="hdr-right">
@@ -167,16 +173,38 @@
     <div class="chat-area" id="chat-area">
       <!-- Welcome (when no messages) -->
       <div class="welcome" id="welcome-state">
-        <div class="welcome-logo">
-          <svg width="52" height="52" viewBox="0 0 44 44" fill="none">
-            <rect width="44" height="44" rx="12" fill="url(#lgW)"/>
-            <path d="M22 8 L35 13 L35 22 Q35 33 22 38 Q9 33 9 22 L9 13 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
-            <path d="M22 14 L22 30 M16 19 L28 19 M17 24 L27 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-            <defs><linearGradient id="lgW" x1="0" y1="0" x2="44" y2="44"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
-          </svg>
+        <div class="welcome-intro">
+          <div class="welcome-logo">
+            <svg width="52" height="52" viewBox="0 0 44 44" fill="none">
+              <rect width="44" height="44" rx="12" fill="url(#lgW)"/>
+              <path d="M22 8 L35 13 L35 22 Q35 33 22 38 Q9 33 9 22 L9 13 Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M22 14 L22 30 M16 19 L28 19 M17 24 L27 24" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+              <defs><linearGradient id="lgW" x1="0" y1="0" x2="44" y2="44"><stop stop-color="#10b981"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
+            </svg>
+          </div>
+          <div class="welcome-copy">
+            <div class="welcome-kicker">AI Co-pilot · Real-time life dashboard</div>
+            <h1 class="welcome-title" id="welcome-title">Good morning</h1>
+            <p class="welcome-sub" id="welcome-sub">What can I help you with?</p>
+          </div>
         </div>
-        <h1 class="welcome-title" id="welcome-title">Good morning</h1>
-        <p class="welcome-sub">What can I help you with?</p>
+        <div class="welcome-stats">
+          <div class="welcome-stat-card">
+            <div class="welcome-stat-label">Today score</div>
+            <div class="welcome-stat-value" id="welcome-stat-score">--</div>
+            <div class="welcome-stat-sub" id="welcome-stat-score-sub">Sync health to unlock</div>
+          </div>
+          <div class="welcome-stat-card">
+            <div class="welcome-stat-label">Check-ins</div>
+            <div class="welcome-stat-value" id="welcome-stat-checkins">0/4</div>
+            <div class="welcome-stat-sub" id="welcome-stat-next">Next up: morning</div>
+          </div>
+          <div class="welcome-stat-card welcome-stat-card-focus">
+            <div class="welcome-stat-label">Current focus</div>
+            <div class="welcome-stat-value welcome-stat-text" id="welcome-stat-focus">No priority yet</div>
+            <div class="welcome-stat-sub" id="welcome-stat-focus-sub">Your priority appears here</div>
+          </div>
+        </div>
         <div class="action-cards">
           <div class="action-card" onclick="startCheckinFromChat()">
             <div class="ac-icon" id="checkin-action-icon">🌅</div>
@@ -232,6 +260,10 @@
         <button class="ib-send" id="main-send-btn" onclick="sendMainChat()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
+      </div>
+      <div class="input-meta">
+        <span id="input-meta-left">Voice, receipts, and smart replies</span>
+        <span>↵ send · shift + ↵ newline</span>
       </div>
     </div>
   </div>

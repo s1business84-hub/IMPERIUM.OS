@@ -639,6 +639,7 @@ function updateSidebar() {
   if (xpFill) xpFill.style.width = pct + '%';
   if (avatarEl && S.user && S.user.name) avatarEl.textContent = S.user.name[0].toUpperCase();
   if (streakEl) streakEl.textContent = '🔥 ' + (S.streak || 0);
+  updateHeaderContext();
 }
 
 /* ── PANELS ───────────────────────────────────────── */
@@ -1007,7 +1008,79 @@ function updateWelcomeGreeting() {
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const name = S.user ? S.user.name.split(' ')[0] : '';
   const titleEl = document.getElementById('welcome-title');
+  const subEl = document.getElementById('welcome-sub');
   if (titleEl) titleEl.textContent = greet + (name ? ', ' + name : '');
+  if (subEl) subEl.textContent = getWelcomeSubtext();
+  updateHeaderContext();
+  updateWelcomeStats();
+}
+
+function getWelcomeSubtext() {
+  const today = new Date().toDateString();
+  const todayCI = S.checkins[today] || {};
+  const todayPD = S.passiveData[today];
+  const currentPeriod = getCurrentPeriod();
+  const currentDone = !!todayCI[currentPeriod];
+  if (todayPD && todayPD.score >= 75) return 'You have strong momentum today — protect it and keep stacking wins.';
+  if (todayPD && todayPD.score < 50) return 'Your dashboard is picking up some drag today — let’s make the next move count.';
+  if (!currentDone) return 'Your next best move is a quick ' + CHECKIN_PERIODS[currentPeriod].label.toLowerCase() + '.';
+  return 'Your dashboard is synced and ready — tap a card or ask Imperium anything.';
+}
+
+function updateHeaderContext() {
+  const subtitleEl = document.getElementById('hdr-subtitle');
+  if (!subtitleEl) return;
+  const today = new Date().toDateString();
+  const todayCI = S.checkins[today] || {};
+  const currentPeriod = getCurrentPeriod();
+  const currentDone = !!todayCI[currentPeriod];
+  const todayPD = S.passiveData[today];
+  if (todayPD && todayPD.score) {
+    subtitleEl.textContent = 'Score ' + todayPD.score + '/100 · ' + Object.keys(todayCI).length + '/4 check-ins';
+    return;
+  }
+  subtitleEl.textContent = currentDone
+    ? 'Current check-in complete · Explore your insights'
+    : 'Next up: ' + CHECKIN_PERIODS[currentPeriod].label;
+}
+
+function updateWelcomeStats() {
+  const today = new Date().toDateString();
+  const todayCI = S.checkins[today] || {};
+  const todayPD = S.passiveData[today];
+  const completedCount = Object.keys(todayCI).length;
+  const scoreEl = document.getElementById('welcome-stat-score');
+  const scoreSubEl = document.getElementById('welcome-stat-score-sub');
+  const checkinsEl = document.getElementById('welcome-stat-checkins');
+  const nextEl = document.getElementById('welcome-stat-next');
+  const focusEl = document.getElementById('welcome-stat-focus');
+  const focusSubEl = document.getElementById('welcome-stat-focus-sub');
+  const morningPriority = todayCI.morning && todayCI.morning.answers ? todayCI.morning.answers.priority : '';
+  const currentPeriod = getCurrentPeriod();
+  const nextPeriod = todayCI[currentPeriod] ? getNextPeriod(currentPeriod) : currentPeriod;
+
+  if (scoreEl) scoreEl.textContent = todayPD ? todayPD.score + '/100' : '--';
+  if (scoreSubEl) scoreSubEl.textContent = todayPD
+    ? (todayPD.score >= 75 ? 'High momentum day' : todayPD.score >= 55 ? 'Solid base to build on' : 'A few levers need attention')
+    : 'Sync sleep, steps, and screen time';
+
+  if (checkinsEl) checkinsEl.textContent = completedCount + '/4';
+  if (nextEl) {
+    nextEl.textContent = nextPeriod
+      ? 'Next up: ' + CHECKIN_PERIODS[nextPeriod].label
+      : 'Daily cycle complete 🎉';
+  }
+
+  if (focusEl) focusEl.textContent = morningPriority || 'No priority locked in yet';
+  if (focusSubEl) {
+    if (todayCI.afternoon && todayCI.afternoon.answers && todayCI.afternoon.answers.progress) {
+      focusSubEl.textContent = 'Afternoon status: ' + todayCI.afternoon.answers.progress;
+    } else if (morningPriority) {
+      focusSubEl.textContent = 'Morning priority set — now convert it into execution';
+    } else {
+      focusSubEl.textContent = 'Your priority appears here after morning check-in';
+    }
+  }
 }
 
 function updateActionCards() {
@@ -1042,6 +1115,8 @@ function updateActionCards() {
   const todayPD = S.passiveData[today];
   const healthSub = document.getElementById('health-action-sub');
   if (healthSub) healthSub.textContent = todayPD ? '⚡ Score: ' + todayPD.score + '/100' : 'Not synced today';
+  updateWelcomeStats();
+  updateHeaderContext();
 }
 
 /* ── CHAT MESSAGES ────────────────────────────────── */
